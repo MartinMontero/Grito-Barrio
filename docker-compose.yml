@@ -1,0 +1,160 @@
+# ============================================================================
+# Docker Compose for Protocolo CDMX
+# 
+# This configuration provides a complete development environment with:
+# - Hot reload for rapid development
+# - Volume mounts for live code editing
+# - Consistent environment across team members
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Development Server
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: protocolo-cdmx-dev
+    
+    ports:
+      - "5173:5173"  # Vite dev server
+      - "3000:3000"  # Alternative port
+    
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      # Use named volume for node_modules to avoid conflicts
+      - node_modules:/app/node_modules
+      # Persist build cache
+      - build_cache:/app/.cache
+    
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # Enable polling for file watching in Docker
+      - VITE_HMR_HOST=localhost
+      - VITE_HMR_PORT=5173
+    
+    # Enable interactive mode for debugging
+    stdin_open: true
+    tty: true
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ============================================================================
+  # Production Build Test
+  # ============================================================================
+  prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - VITE_APP_VERSION=local-docker
+        - VITE_BUILD_DATE=${BUILD_DATE}
+        - VITE_BUILD_COMMIT=${BUILD_COMMIT}
+    container_name: protocolo-cdmx-prod
+    
+    ports:
+      - "8080:80"  # Production build
+    
+    environment:
+      - NGINX_HOST=localhost
+      - NGINX_PORT=80
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    restart: unless-stopped
+    
+    profiles:
+      - prod  # Only start with: docker-compose --profile prod up
+
+  # ============================================================================
+  # Test Runner
+  # ============================================================================
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: protocolo-cdmx-test
+    
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    
+    environment:
+      - NODE_ENV=test
+      - CI=true
+    
+    # Run tests and exit
+    command: npm test -- --run
+    
+    profiles:
+      - test  # Only start with: docker-compose --profile test up
+
+  # ============================================================================
+  # Storybook (if using)
+  # ============================================================================
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: protocolo-cdmx-storybook
+    
+    ports:
+      - "6006:6006"
+    
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    
+    command: npm run storybook
+    
+    profiles:
+      - storybook  # Only start with: docker-compose --profile storybook up
+
+# ============================================================================
+# Named Volumes
+# ============================================================================
+volumes:
+  node_modules:
+    driver: local
+  build_cache:
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  default:
+    name: protocolo-cdmx-network
+    driver: bridge

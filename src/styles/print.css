@@ -1,0 +1,440 @@
+/**
+ * Print Styles
+ * Protocolo CDMX
+ * 
+ * Print-optimized CSS for legal-grade documentation
+ */
+
+@media print {
+  /* Reset and Base */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Hide UI Elements */
+  .no-print,
+  .print\:hidden,
+  nav,
+  header:not(.print-header),
+  footer:not(.print-footer),
+  .sidebar,
+  .drawer,
+  .modal,
+  .dialog,
+  [role="dialog"],
+  button:not(.print-button),
+  .btn,
+  .button,
+  .tooltip,
+  .dropdown-menu,
+  .popover,
+  .toast,
+  .alert:not(.print-alert) {
+    display: none !important;
+  }
+
+  /* Layout */
+  .print-container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Page Setup */
+  @page {
+    size: A4;
+    margin: 20mm 15mm 25mm 15mm;
+    
+    @top-center {
+      content: "Protocolo CDMX - Documento Legal";
+      font-size: 9pt;
+      color: #666;
+    }
+    
+    @bottom-center {
+      content: "Página " counter(page) " de " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+    
+    @bottom-right {
+      content: "Confidencial";
+      font-size: 8pt;
+      color: #999;
+    }
+  }
+
+  @page :first {
+    @top-center {
+      content: none;
+    }
+  }
+
+  /* Page Breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  .no-page-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+    color: #000;
+    font-weight: bold;
+  }
+
+  h1 {
+    font-size: 18pt;
+    margin-bottom: 12pt;
+    border-bottom: 2pt solid #000;
+    padding-bottom: 6pt;
+  }
+
+  h2 {
+    font-size: 14pt;
+    margin-top: 18pt;
+    margin-bottom: 10pt;
+    border-bottom: 1pt solid #ccc;
+    padding-bottom: 4pt;
+  }
+
+  h3 {
+    font-size: 12pt;
+    margin-top: 14pt;
+    margin-bottom: 8pt;
+  }
+
+  p {
+    margin-bottom: 8pt;
+    text-align: justify;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Links */
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666;
+  }
+
+  a[href^="javascript:"]:after,
+  a[href^="#"]:after {
+    content: "";
+  }
+
+  /* Lists */
+  ul, ol {
+    margin-bottom: 10pt;
+    padding-left: 20pt;
+  }
+
+  li {
+    margin-bottom: 4pt;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    font-size: 10pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  th, td {
+    border: 1pt solid #000;
+    padding: 6pt 8pt;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  /* Forms */
+  input, textarea, select {
+    border: 1pt solid #000;
+    padding: 4pt;
+    font-family: inherit;
+    font-size: 10pt;
+    background: transparent;
+  }
+
+  /* Cards and Containers */
+  .card,
+  .print-card {
+    border: 1pt solid #000;
+    padding: 12pt;
+    margin-bottom: 12pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .card-header {
+    border-bottom: 1pt solid #000;
+    padding-bottom: 8pt;
+    margin-bottom: 8pt;
+  }
+
+  /* Signature Fields */
+  .signature-field {
+    border-bottom: 1pt solid #000;
+    height: 60pt;
+    margin-top: 30pt;
+    margin-bottom: 8pt;
+  }
+
+  .signature-label {
+    font-size: 10pt;
+    font-weight: bold;
+  }
+
+  /* Field Labels */
+  .field-label {
+    font-weight: bold;
+    margin-bottom: 4pt;
+  }
+
+  .field-value {
+    border-bottom: 1pt solid #ccc;
+    padding: 4pt 0;
+    margin-bottom: 8pt;
+    min-height: 20pt;
+  }
+
+  /* QR Code */
+  .qr-code {
+    float: right;
+    margin-left: 20pt;
+    margin-bottom: 20pt;
+  }
+
+  /* Header/Footer for Print */
+  .print-header {
+    border-bottom: 2pt solid #000;
+    padding-bottom: 10pt;
+    margin-bottom: 20pt;
+  }
+
+  .print-footer {
+    border-top: 1pt solid #000;
+    padding-top: 10pt;
+    margin-top: 20pt;
+    font-size: 9pt;
+    text-align: center;
+  }
+
+  /* Legal Notice */
+  .legal-notice {
+    border: 1pt solid #000;
+    padding: 10pt;
+    margin: 20pt 0;
+    font-size: 9pt;
+    background-color: #f9f9f9 !important;
+  }
+
+  /* Watermark */
+  .watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 48pt;
+    color: rgba(200, 200, 200, 0.3);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Incident Badge */
+  .incident-badge {
+    border: 2pt solid #000;
+    padding: 8pt 12pt;
+    display: inline-block;
+    font-weight: bold;
+    margin-bottom: 12pt;
+  }
+
+  /* Checklists */
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8pt;
+    margin-bottom: 6pt;
+  }
+
+  .checklist-checkbox {
+    width: 12pt;
+    height: 12pt;
+    border: 1pt solid #000;
+    flex-shrink: 0;
+    margin-top: 2pt;
+  }
+
+  .checklist-checkbox.checked {
+    background-color: #000;
+  }
+
+  /* Images */
+  img {
+    max-width: 100% !important;
+    height: auto;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Utility Classes */
+  .text-center {
+    text-align: center;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .font-bold {
+    font-weight: bold;
+  }
+
+  .font-mono {
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .border {
+    border: 1pt solid #000;
+  }
+
+  .border-b {
+    border-bottom: 1pt solid #000;
+  }
+
+  .p-4 {
+    padding: 12pt;
+  }
+
+  .mb-4 {
+    margin-bottom: 12pt;
+  }
+
+  .mt-4 {
+    margin-top: 12pt;
+  }
+
+  .w-full {
+    width: 100%;
+  }
+
+  /* Two Column Layout */
+  .two-column {
+    display: flex;
+    gap: 20pt;
+  }
+
+  .two-column > * {
+    flex: 1;
+  }
+
+  /* Grid */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12pt;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12pt;
+  }
+
+  /* Metadata Section */
+  .metadata-section {
+    background-color: #f5f5f5 !important;
+    border: 1pt solid #000;
+    padding: 10pt;
+    margin-bottom: 16pt;
+    font-size: 10pt;
+  }
+
+  .metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8pt;
+  }
+
+  .metadata-item {
+    break-inside: avoid;
+  }
+
+  .metadata-label {
+    font-size: 8pt;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  .metadata-value {
+    font-weight: bold;
+  }
+}
+
+/* High Contrast Mode for Print */
+@media print and (prefers-contrast: high) {
+  body {
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  * {
+    border-color: #000 !important;
+  }
+}
+
+/* Screen Styles (not print) */
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}

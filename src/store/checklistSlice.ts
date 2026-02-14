@@ -1,0 +1,408 @@
+/**
+ * Checklist Slice
+ * Protocolo CDMX - Zustand Store
+ *
+ * Manages emergency response checklists with time-based phases
+ */
+
+import type { StateCreator } from 'zustand'
+import type { ChecklistItem, EmergencyPhase, ChecklistCategory } from '@/types'
+import {
+  getCurrentTimestamp,
+  calculateProgress,
+  updateInArray,
+  persistToIndexedDB
+} from '@/lib/store-helpers'
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface ChecklistState {
+  [incidentId: string]: ChecklistItem[]
+}
+
+export interface ChecklistSlice {
+  // State
+  checklists: ChecklistState
+  currentPhase: EmergencyPhase
+
+  // Actions
+  initializeChecklist: (incidentId: string) => void
+  toggleItem: (incidentId: string, itemId: string, completedBy: string) => void
+  getProgress: (incidentId: string) => number
+  getItemsByPhase: (incidentId: string, phase: EmergencyPhase) => ChecklistItem[]
+  getItemsByCategory: (incidentId: string, category: ChecklistCategory) => ChecklistItem[]
+  getCompletedItems: (incidentId: string) => ChecklistItem[]
+  getPendingItems: (incidentId: string) => ChecklistItem[]
+  getMandatoryPending: (incidentId: string) => ChecklistItem[]
+  setCurrentPhase: (phase: EmergencyPhase) => void
+  getPhaseProgress: (incidentId: string, phase: EmergencyPhase) => number
+  resetChecklist: (incidentId: string) => void
+  addCustomItem: (incidentId: string, item: Omit<ChecklistItem, 'id' | 'completed'>) => void
+  removeItem: (incidentId: string, itemId: string) => void
+}
+
+// =============================================================================
+// DEFAULT CHECKLIST ITEMS
+// =============================================================================
+
+const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
+  // Phase 0-5min: Immediate Response
+  {
+    text: 'Verificar seguridad de la escena - Evaluar riesgos inmediatos',
+    completed: false,
+    category: 'safety',
+    timeWindow: '0-5min',
+    mandatory: true
+  },
+  {
+    text: 'Activar protocolo de respuesta rápida',
+    completed: false,
+    category: 'communication',
+    timeWindow: '0-5min',
+    mandatory: true
+  },
+  {
+    text: 'Identificar número de ocupantes en riesgo',
+    completed: false,
+    category: 'safety',
+    timeWindow: '0-5min',
+    mandatory: true
+  },
+  {
+    text: 'Verificar presencia de menores o personas vulnerables',
+    completed: false,
+    category: 'safety',
+    timeWindow: '0-5min',
+    mandatory: true
+  },
+  {
+    text: 'Iniciar documentación fotográfica/video',
+    completed: false,
+    category: 'documentation',
+    timeWindow: '0-5min',
+    mandatory: false
+  },
+
+  // Phase 5-20min: Initial Stabilization
+  {
+    text: 'Contactar abogado de guardia',
+    completed: false,
+    category: 'legal',
+    timeWindow: '5-20min',
+    mandatory: true
+  },
+  {
+    text: 'Verificar orden judicial (si existe)',
+    completed: false,
+    category: 'legal',
+    timeWindow: '5-20min',
+    mandatory: true
+  },
+  {
+    text: 'Establecer línea de comunicación segura',
+    completed: false,
+    category: 'communication',
+    timeWindow: '5-20min',
+    mandatory: true
+  },
+  {
+    text: 'Preparar punto seguro de evacuación',
+    completed: false,
+    category: 'logistics',
+    timeWindow: '5-20min',
+    mandatory: false
+  },
+  {
+    text: 'Documentar testimonios iniciales',
+    completed: false,
+    category: 'documentation',
+    timeWindow: '5-20min',
+    mandatory: false
+  },
+
+  // Phase 20-45min: Legal and Documentation
+  {
+    text: 'Realizar triage legal completo',
+    completed: false,
+    category: 'legal',
+    timeWindow: '20-45min',
+    mandatory: true
+  },
+  {
+    text: 'Documentar toda evidencia disponible',
+    completed: false,
+    category: 'documentation',
+    timeWindow: '20-45min',
+    mandatory: true
+  },
+  {
+    text: 'Contactar medios/comunicación estratégica',
+    completed: false,
+    category: 'communication',
+    timeWindow: '20-45min',
+    mandatory: false
+  },
+  {
+    text: 'Coordinar recursos de apoyo psicológico',
+    completed: false,
+    category: 'medical',
+    timeWindow: '20-45min',
+    mandatory: false
+  },
+
+  // Phase 45-60min: Sustained Support
+  {
+    text: 'Revisar progreso y ajustar estrategia',
+    completed: false,
+    category: 'follow_up',
+    timeWindow: '45-60min',
+    mandatory: true
+  },
+  {
+    text: 'Confirmar plan de seguimiento',
+    completed: false,
+    category: 'follow_up',
+    timeWindow: '45-60min',
+    mandatory: true
+  },
+  {
+    text: 'Documentar resolución o estado actual',
+    completed: false,
+    category: 'documentation',
+    timeWindow: '45-60min',
+    mandatory: true
+  },
+  {
+    text: 'Briefing con equipo completo',
+    completed: false,
+    category: 'follow_up',
+    timeWindow: '45-60min',
+    mandatory: false
+  }
+]
+
+// =============================================================================
+// INITIAL STATE
+// =============================================================================
+
+const initialChecklistState: Omit<ChecklistSlice, keyof ChecklistSlice> = {
+  checklists: {},
+  currentPhase: '0-5min'
+}
+
+// =============================================================================
+// SLICE CREATOR
+// =============================================================================
+
+export const createChecklistSlice: StateCreator<
+  ChecklistSlice,
+  [['zustand/persist', unknown]],
+  [],
+  ChecklistSlice
+> = persistToIndexedDB<ChecklistSlice>('protocolo-checklists', true)(
+  (set, get) => ({
+    ...initialChecklistState,
+
+    /**
+     * Initialize a new checklist for an incident
+     */
+    initializeChecklist: (incidentId: string) => {
+      set(state => {
+        // Don't overwrite existing checklist
+        if (state.checklists[incidentId]?.length > 0) {
+          return state
+        }
+
+        // Generate unique IDs for each item
+        const items: ChecklistItem[] = defaultChecklistItems.map((item, index) => ({
+          ...item,
+          id: `${incidentId}-item-${index}`
+        }))
+
+        return {
+          checklists: {
+            ...state.checklists,
+            [incidentId]: items
+          }
+        }
+      })
+    },
+
+    /**
+     * Toggle an item's completed status with auto-timestamp
+     */
+    toggleItem: (incidentId: string, itemId: string, completedBy: string) => {
+      set(state => {
+        const checklist = state.checklists[incidentId]
+        if (!checklist) return state
+
+        const updatedChecklist = checklist.map(item => {
+          if (item.id !== itemId) return item
+
+          const newCompleted = !item.completed
+
+          return {
+            ...item,
+            completed: newCompleted,
+            timestamp: newCompleted ? getCurrentTimestamp() : undefined,
+            completedBy: newCompleted ? completedBy : undefined
+          }
+        })
+
+        return {
+          checklists: {
+            ...state.checklists,
+            [incidentId]: updatedChecklist
+          }
+        }
+      })
+    },
+
+    /**
+     * Get overall progress percentage for an incident
+     */
+    getProgress: (incidentId: string): number => {
+      const checklist = get().checklists[incidentId]
+      if (!checklist || checklist.length === 0) return 0
+
+      const completed = checklist.filter(item => item.completed).length
+      return calculateProgress(completed, checklist.length)
+    },
+
+    /**
+     * Get items filtered by phase
+     */
+    getItemsByPhase: (incidentId: string, phase: EmergencyPhase): ChecklistItem[] => {
+      const checklist = get().checklists[incidentId]
+      if (!checklist) return []
+
+      return checklist.filter(item => item.timeWindow === phase)
+    },
+
+    /**
+     * Get items filtered by category
+     */
+    getItemsByCategory: (incidentId: string, category: ChecklistCategory): ChecklistItem[] => {
+      const checklist = get().checklists[incidentId]
+      if (!checklist) return []
+
+      return checklist.filter(item => item.category === category)
+    },
+
+    /**
+     * Get all completed items
+     */
+    getCompletedItems: (incidentId: string): ChecklistItem[] => {
+      const checklist = get().checklists[incidentId]
+      if (!checklist) return []
+
+      return checklist.filter(item => item.completed)
+    },
+
+    /**
+     * Get all pending (not completed) items
+     */
+    getPendingItems: (incidentId: string): ChecklistItem[] => {
+      const checklist = get().checklists[incidentId]
+      if (!checklist) return []
+
+      return checklist.filter(item => !item.completed)
+    },
+
+    /**
+     * Get mandatory items that are still pending
+     */
+    getMandatoryPending: (incidentId: string): ChecklistItem[] => {
+      const checklist = get().checklists[incidentId]
+      if (!checklist) return []
+
+      return checklist.filter(item => item.mandatory && !item.completed)
+    },
+
+    /**
+     * Set the current emergency phase
+     */
+    setCurrentPhase: (phase: EmergencyPhase) => {
+      set({ currentPhase: phase })
+    },
+
+    /**
+     * Get progress for a specific phase
+     */
+    getPhaseProgress: (incidentId: string, phase: EmergencyPhase): number => {
+      const phaseItems = get().getItemsByPhase(incidentId, phase)
+      if (phaseItems.length === 0) return 0
+
+      const completed = phaseItems.filter(item => item.completed).length
+      return calculateProgress(completed, phaseItems.length)
+    },
+
+    /**
+     * Reset a checklist to initial state
+     */
+    resetChecklist: (incidentId: string) => {
+      set(state => {
+        const items = state.checklists[incidentId]
+        if (!items) return state
+
+        const resetItems = items.map((item, index) => ({
+          ...item,
+          id: `${incidentId}-item-${index}`,
+          completed: false,
+          timestamp: undefined,
+          completedBy: undefined
+        }))
+
+        return {
+          checklists: {
+            ...state.checklists,
+            [incidentId]: resetItems
+          }
+        }
+      })
+    },
+
+    /**
+     * Add a custom item to a checklist
+     */
+    addCustomItem: (
+      incidentId: string,
+      item: Omit<ChecklistItem, 'id' | 'completed'>
+    ) => {
+      set(state => {
+        const checklist = state.checklists[incidentId] || []
+        const newItem: ChecklistItem = {
+          ...item,
+          id: `${incidentId}-custom-${Date.now()}`,
+          completed: false
+        }
+
+        return {
+          checklists: {
+            ...state.checklists,
+            [incidentId]: [...checklist, newItem]
+          }
+        }
+      })
+    },
+
+    /**
+     * Remove an item from a checklist
+     */
+    removeItem: (incidentId: string, itemId: string) => {
+      set(state => {
+        const checklist = state.checklists[incidentId]
+        if (!checklist) return state
+
+        return {
+          checklists: {
+            ...state.checklists,
+            [incidentId]: checklist.filter(item => item.id !== itemId)
+          }
+        }
+      })
+    }
+  })
+)
