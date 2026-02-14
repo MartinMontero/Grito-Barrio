@@ -1,0 +1,17 @@
+name = "protocolo-cdmx"
+type = "webpack"
+account_id = "" # Fill in with your Cloudflare account ID
+workers_dev = true
+
+[site]
+bucket = "./dist"
+
+[build]
+command = "npm run build"
+
+# Environment variables
+[env.production]
+name = "protocolo-cdmx-prod"
+
+[env.staging]
+name = "protocolo-cdmx-staging"

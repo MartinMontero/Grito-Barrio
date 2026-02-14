@@ -1,0 +1,128 @@
+################################################################################
+# CLOUDFLARE PAGES HEADERS CONFIGURATION
+# Protocolo CDMX - Emergency Response PWA
+# 
+# This file controls HTTP headers for optimal PWA performance and security
+# Docs: https://developers.cloudflare.com/pages/platform/headers/
+################################################################################
+
+# ============================================
+# SERVICE WORKER - NO CACHE
+# Critical for PWA functionality
+# Service worker must always be fresh
+# ============================================
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate, no-cache
+  X-Content-Type-Options: nosniff
+
+/workbox-*.js
+  Cache-Control: public, max-age=0, must-revalidate, no-cache
+  X-Content-Type-Options: nosniff
+
+# ============================================
+# MANIFEST - SHORT CACHE
+# Manifest can be cached briefly but should update
+# ============================================
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600, must-revalidate
+  Content-Type: application/manifest+json
+  X-Content-Type-Options: nosniff
+
+/manifest.json
+  Cache-Control: public, max-age=3600, must-revalidate
+  Content-Type: application/manifest+json
+  X-Content-Type-Options: nosniff
+
+# ============================================
+# STATIC ASSETS - LONG CACHE
+# Hashed files can be cached forever
+# ============================================
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# ============================================
+# IMAGES - MEDIUM CACHE
+# ============================================
+*.png
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+
+*.jpg
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+
+*.jpeg
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+
+*.svg
+  Cache-Control: public, max-age=86400
+  X-Content-Type-Options: nosniff
+
+*.ico
+  Cache-Control: public, max-age=604800
+  X-Content-Type-Options: nosniff
+
+# ============================================
+# FONTS - LONG CACHE
+# ============================================
+*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+*.woff
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+*.ttf
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# ============================================
+# HTML FILES - NO CACHE
+# Always get fresh HTML for SPA
+# ============================================
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate, no-cache
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# ============================================
+# ROOT - NO CACHE
+# ============================================
+/
+  Cache-Control: public, max-age=0, must-revalidate, no-cache
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# ============================================
+# SECURITY HEADERS - GLOBAL
+# Applied to all routes
+# ============================================
+/*
+  # Prevent MIME type sniffing
+  X-Content-Type-Options: nosniff
+  
+  # Clickjacking protection
+  X-Frame-Options: DENY
+  
+  # XSS Protection
+  X-XSS-Protection: 1; mode=block
+  
+  # Referrer policy
+  Referrer-Policy: strict-origin-when-cross-origin
+  
+  # Permissions policy (limit browser features)
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(self), payment=()
+  
+  # Strict transport security (HTTPS only)
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  
+  # Content Security Policy (CSP)
+  # Strict CSP for security - adjust if needed
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; media-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';
