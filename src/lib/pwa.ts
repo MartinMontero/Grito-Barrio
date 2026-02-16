@@ -4,9 +4,9 @@
 // 
 // This file registers the service worker and handles:
 // - PWA installation prompts
-# - Service worker updates
-# - Offline/online state detection
-# - Push notifications (future)
+// - Service worker updates
+// - Offline/online state detection
+// - Push notifications (future)
 // ============================================================================
 
 export function registerServiceWorker() {
