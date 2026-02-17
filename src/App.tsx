@@ -193,10 +193,8 @@ function App() {
       
       case 'legal-triage':
         return (
-          <LegalTriageWizard 
-            occupantCategory={currentView.occupantCategory}
-            onComplete={() => setCurrentView({ type: 'legal' })}
-            onCancel={handleBack}
+          <LegalTriageWizard
+            incidentId={activeIncident?.id}
           />
         )
       
@@ -214,52 +212,39 @@ function App() {
       
       case 'emergency-dashboard':
         return (
-          <EmergencyDashboard 
-            incident={activeIncident}
-            checklist={activeChecklist}
-            onOpenChecklist={(incidentId) => setCurrentView({ type: 'emergency-checklist', incidentId })}
-            onOpenEvidence={() => setCurrentView({ type: 'evidence-collection', incidentId: activeIncident?.id })}
-            onOpenLegalTriage={(category) => setCurrentView({ type: 'legal-triage', occupantCategory: category })}
-            onOpenPAS={() => setCurrentView({ type: 'pas-protocol' })}
-            onCloseIncident={() => setCurrentView({ type: 'home' })}
-            className="min-h-screen"
+          <EmergencyDashboard
+            onWithdrawalTrigger={(reason: string) => setCurrentView({ type: 'home' })}
+            onDocumentPress={() => setCurrentView({ type: 'evidence-collection', incidentId: activeIncident?.id })}
+            onContactPress={() => {}}
           />
         )
       
       case 'emergency-checklist':
         return (
-          <EmergencyChecklist 
-            incidentId={currentView.incidentId || activeIncident?.id}
-            checklist={activeChecklist}
-            checklistProgress={checklistProgress}
-            onUpdateItem={() => {}}
-            onComplete={handleBack}
-            onCancel={handleBack}
+          <EmergencyChecklist
+            incidentId={currentView.incidentId || activeIncident?.id || ''}
           />
         )
       
       case 'pas-protocol':
         return (
-          <PASProtocolGuide 
-            emergencyType={activeIncident?.emergencyType}
-            onBack={handleBack}
+          <PASProtocolGuide
+            onComplete={handleBack}
           />
         )
       
       case 'evidence-collection':
         return (
-          <EvidenceCollection 
+          <EvidenceCollection
             incidentId={currentView.incidentId || activeIncident?.id || ''}
-            currentUser={currentUser}
-            onClose={handleBack}
+            collectorPseudonym={currentUser?.pseudonym || 'Anónimo'}
           />
         )
       
       case 'role-selection':
         return (
-          <RoleSelector 
-            onSelect={handleRoleSelect}
-            currentRole={userRole}
+          <RoleSelector
+            onRoleSelect={(roles: TeamRole[]) => { if (roles[0]) handleRoleSelect(roles[0]) }}
             userCertificationLevel={currentUser?.certificationLevel || 1}
           />
         )
@@ -267,9 +252,8 @@ function App() {
       case 'role-dashboard':
         if (!userRole) {
           return (
-            <RoleSelector 
-              onSelect={handleRoleSelect}
-              currentRole={null}
+            <RoleSelector
+              onRoleSelect={(roles: TeamRole[]) => { if (roles[0]) handleRoleSelect(roles[0]) }}
               userCertificationLevel={currentUser?.certificationLevel || 1}
             />
           )
@@ -286,7 +270,7 @@ function App() {
               type: 'incident',
               description: `${inc.threatLevel === 'critical' ? 'Incidente crítico' : 'Incidente'} en ${inc.location.colonia}`,
               timestamp: inc.timestamp,
-              actor: inc.reporterPseudonym
+              actor: (inc as any).reporterPseudonym || 'Desconocido'
             }))}
             onActionClick={(actionId) => {
               switch (actionId) {

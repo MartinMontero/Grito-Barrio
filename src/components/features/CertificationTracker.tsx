@@ -24,7 +24,8 @@ import {
   Unlock,
   Zap,
   BookOpen,
-  Target
+  Target,
+  RefreshCw
 } from 'lucide-react'
 import {
   Button,

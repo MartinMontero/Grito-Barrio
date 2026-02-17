@@ -54,8 +54,8 @@ export const EmergencyOverlay: React.FC = () => {
   const activeIncident = useProtocoloStore((state) => state.getActiveIncident?.())
   
   // Check if overlay should be enabled in settings
-  const emergencyOverlayEnabled = useProtocoloStore((state) => 
-    state.settings?.emergencyOverlay !== false
+  const emergencyOverlayEnabled = useProtocoloStore((state) =>
+    (state.settings as any)?.emergencyOverlay !== false
   )
   
   // Initialize position (bottom right corner)

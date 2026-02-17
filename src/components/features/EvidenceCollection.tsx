@@ -41,7 +41,7 @@ import {
   Square,
   Pause,
   FileSignature,
-  Blur,
+  CircleOff as Blur,
   VolumeX,
   Archive,
   FileCheck,

@@ -239,7 +239,7 @@ export async function registerBackgroundSync(tag: string): Promise<boolean> {
   if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
     try {
       const registration = await navigator.serviceWorker.ready
-      await registration.sync.register(tag)
+      await (registration as any).sync.register(tag)
       console.log(`✅ Background sync registered: ${tag}`)
       return true
     } catch (error) {

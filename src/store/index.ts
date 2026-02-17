@@ -36,12 +36,12 @@ export type ProtocoloStore =
 export const useProtocoloStore = create<ProtocoloStore>()(
   devtools(
     (...args) => ({
-      ...createIncidentSlice(...args),
-      ...createUserSlice(...args),
-      ...createChecklistSlice(...args),
-      ...createDocumentationSlice(...args),
-      ...createSettingsSlice(...args),
-      ...createResourcesSlice(...args)
+      ...(createIncidentSlice as any)(...args),
+      ...(createUserSlice as any)(...args),
+      ...(createChecklistSlice as any)(...args),
+      ...(createDocumentationSlice as any)(...args),
+      ...(createSettingsSlice as any)(...args),
+      ...(createResourcesSlice as any)(...args)
     }),
     { name: 'ProtocoloStore' }
   )

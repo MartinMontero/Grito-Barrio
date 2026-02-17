@@ -27,7 +27,7 @@ import {
   UserCheck,
   Building2,
   AlertOctagon,
-  FirstAid,
+  HeartPulse as FirstAid,
   Stethoscope,
   Radio,
   Warehouse,

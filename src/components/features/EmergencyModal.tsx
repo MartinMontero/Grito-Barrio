@@ -94,6 +94,8 @@ export function EmergencyModal({ isOpen, onClose, onIncidentCreate }: EmergencyM
       location: {
         address: `${formData.calle} ${formData.numero}, ${formData.colonia}, Ciudad de México`,
         colonia: formData.colonia,
+        alcaldia: '' as any,
+        postalCode: '',
         coordinates: undefined // Would use geolocation in real app
       },
       alertSource: formData.alertSource,

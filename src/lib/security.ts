@@ -5,12 +5,12 @@
  * Duress mode, auto-lock, panic wipe, and advanced security features
  */
 
-import { 
-  hashPassword, 
-  verifyPassword, 
+import {
+  hashPassword,
+  verifyPassword as cryptoVerifyPassword,
   sha256,
   generateSalt,
-  type HashResult 
+  type HashResult
 } from './crypto'
 import { storage } from './storage'
 import { db } from './db'
@@ -199,7 +199,7 @@ class SecurityManager {
     // Check against real password
     const realHash = storage.local.get<HashResult>(REAL_PASSWORD_HASH_KEY)
     if (realHash) {
-      const isRealValid = await verifyPassword(input, realHash)
+      const isRealValid = await cryptoVerifyPassword(input, realHash)
       if (isRealValid) {
         this.recordSuccessfulLogin()
         return { valid: true, isDuress: false }
@@ -210,7 +210,7 @@ class SecurityManager {
     if (this.config.duressEnabled) {
       const duressHash = storage.local.get<HashResult>(DURESS_PASSWORD_KEY)
       if (duressHash) {
-        const isDuressValid = await verifyPassword(input, duressHash)
+        const isDuressValid = await cryptoVerifyPassword(input, duressHash)
         if (isDuressValid) {
           this.recordSuccessfulLogin()
           this.activateDuressMode()
@@ -730,7 +730,7 @@ class SecurityManager {
     const logs = this.getLogs()
     
     const log: SecurityLog = {
-      id: generateSalt(8),
+      id: Array.from(generateSalt(8), b => b.toString(16).padStart(2, '0')).join(''),
       timestamp: new Date().toISOString(),
       type,
       details,

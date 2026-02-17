@@ -158,9 +158,9 @@ export {
   getConfig,
   updateConfig,
   setRealPassword,
-  setDuressPassword,
-  clearDuressPassword,
-  verifyPassword,
+  setDuressPassword as setSecurityDuressPassword,
+  clearDuressPassword as clearSecurityDuressPassword,
+  verifyPassword as verifySecurityPassword,
   hasPassword,
   hasDuressPassword,
   activateDuressMode,
@@ -200,13 +200,12 @@ export {
   ROLE_DEFINITIONS,
   AVAILABLE_ROLES,
   ROLE_CERTIFICATION_LABELS,
-  ROLE_COLORS,
   getRoleDefinition,
   checkCertificationLevel,
   filterActionsByCertification,
   type CertificationLevel,
   type RoleDefinition,
-  type RoleAction,
+  type PrimaryAction as RoleAction,
   type QuickAccessItem
 } from './roles'
 
@@ -221,9 +220,7 @@ export {
   persistToLocalStorage,
   persistToIndexedDB,
   encryptIfEnabled,
-  decryptIfNeeded,
-  type PersistedState,
-  type StorageConfig
+  decryptIfNeeded
 } from './store-helpers'
 
 // Utils (already exists)

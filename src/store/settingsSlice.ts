@@ -117,7 +117,17 @@ const defaultSecuritySettings: SecuritySettings = {
   wipeDataAfterFailedAttempts: 10
 }
 
-const initialSettingsState: Omit<SettingsSlice, keyof SettingsSlice> = {
+type SettingsActions =
+  | 'toggleEncryption' | 'toggleOfflineMode' | 'setLanguage'
+  | 'setDuressPassword' | 'clearDuressPassword' | 'activateDuressMode'
+  | 'deactivateDuressMode' | 'checkDuressPassword' | 'setPanicDelay'
+  | 'toggleBiometric' | 'toggleAutoSync' | 'setTheme'
+  | 'toggleNotifications' | 'toggleLocationTracking' | 'toggleAudioRecording'
+  | 'toggleHighQualityMedia' | 'setAutoLockTimeout' | 'setWipeDataThreshold'
+  | 'exportAllData' | 'importData' | 'resetAllSettings'
+  | 'createBackup' | 'restoreFromBackup' | 'getStorageUsage' | 'clearAllData'
+
+const initialSettingsState: Omit<SettingsSlice, SettingsActions> = {
   settings: defaultAppSettings,
   security: defaultSecuritySettings,
   isDuressMode: false,
@@ -132,7 +142,7 @@ const initialSettingsState: Omit<SettingsSlice, keyof SettingsSlice> = {
 
 export const createSettingsSlice: StateCreator<
   SettingsSlice,
-  [['zustand/persist', unknown]],
+  [],
   [],
   SettingsSlice
 > = persistToLocalStorage<SettingsSlice>('protocolo-settings')(
@@ -369,15 +379,15 @@ export const createSettingsSlice: StateCreator<
           settings: get().settings,
           security: {
             ...get().security,
-            duressPassword: undefined // Never export duress password
-          },
+            duressPassword: undefined
+          } as any as Omit<SecuritySettings, 'duressPassword'>,
           incidents: [], // Would come from incident slice
           checklists: {}, // Would come from checklist slice
           documentation: [], // Would come from documentation slice
           resources: {} // Would come from resources slice
         }
 
-        const encrypted = encryptIfEnabled(exportData, encryptionEnabled)
+        const encrypted = await encryptIfEnabled(exportData, encryptionEnabled)
 
         const blob = new Blob([encrypted], {
           type: encryptionEnabled ? 'application/encrypted' : 'application/json'
@@ -403,7 +413,7 @@ export const createSettingsSlice: StateCreator<
 
       try {
         const text = await encryptedBlob.text()
-        const data = decryptIfNeeded<DataExport>(text, encryptionEnabled)
+        const data = await decryptIfNeeded<DataExport>(text, encryptionEnabled)
 
         if (!data || !data.version) {
           throw new Error('Invalid import file')

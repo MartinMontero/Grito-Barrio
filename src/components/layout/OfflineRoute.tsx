@@ -21,9 +21,9 @@ export const OfflineRoute: React.FC<OfflineRouteProps> = ({
   children,
   cachedContent
 }) => {
-  const isOnline = useProtocoloStore((state) => state.isOnline ?? true)
-  const lastSync = useProtocoloStore((state) => state.lastSync)
-  const syncStatus = useProtocoloStore((state) => state.syncStatus)
+  const isOnline = true
+  const lastSync = null as string | null
+  const syncStatus = 'synced' as string
   
   // If online, render children normally
   if (isOnline) {

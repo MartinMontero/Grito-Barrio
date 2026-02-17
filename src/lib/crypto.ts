@@ -101,7 +101,7 @@ export async function deriveKeyFromPassword(
   const key = await crypto.subtle.deriveKey(
     {
       name: CRYPTO_CONSTANTS.KEY_DERIVATION_ALGORITHM,
-      salt,
+      salt: salt as any,
       iterations: CRYPTO_CONSTANTS.ITERATIONS,
       hash: CRYPTO_CONSTANTS.HASH_ALGORITHM
     },
@@ -138,7 +138,7 @@ export async function deriveKeyWithSalt(
   return crypto.subtle.deriveKey(
     {
       name: CRYPTO_CONSTANTS.KEY_DERIVATION_ALGORITHM,
-      salt,
+      salt: salt as any,
       iterations: CRYPTO_CONSTANTS.ITERATIONS,
       hash: CRYPTO_CONSTANTS.HASH_ALGORITHM
     },
@@ -204,11 +204,11 @@ export async function encrypt(
   let dataBuffer: ArrayBuffer
   
   if (typeof data === 'string') {
-    dataBuffer = new TextEncoder().encode(data)
+    dataBuffer = new TextEncoder().encode(data) as any
   } else if (data instanceof ArrayBuffer) {
     dataBuffer = data
   } else {
-    dataBuffer = new TextEncoder().encode(JSON.stringify(data))
+    dataBuffer = new TextEncoder().encode(JSON.stringify(data)) as any
   }
 
   // Derive key
@@ -221,7 +221,7 @@ export async function encrypt(
   const ciphertext = await crypto.subtle.encrypt(
     {
       name: CRYPTO_CONSTANTS.ALGORITHM,
-      iv,
+      iv: iv as any,
       tagLength: CRYPTO_CONSTANTS.TAG_LENGTH
     },
     key,
@@ -253,7 +253,7 @@ export async function decrypt(
     const decrypted = await crypto.subtle.decrypt(
       {
         name: encryptedData.algorithm || CRYPTO_CONSTANTS.ALGORITHM,
-        iv: encryptedData.iv,
+        iv: encryptedData.iv as any,
         tagLength: encryptedData.tagLength || CRYPTO_CONSTANTS.TAG_LENGTH
       },
       key,
@@ -286,7 +286,7 @@ export async function encryptToString(
   combined.set(encrypted.iv, encrypted.salt.length)
   combined.set(new Uint8Array(encrypted.ciphertext), encrypted.salt.length + encrypted.iv.length)
   
-  return arrayBufferToBase64(combined)
+  return arrayBufferToBase64(combined as any)
 }
 
 /**
@@ -373,7 +373,7 @@ export async function hashPassword(
   password: string,
   salt?: string
 ): Promise<HashResult> {
-  const usedSalt = salt || arrayBufferToBase64(generateSalt(16))
+  const usedSalt = salt || arrayBufferToBase64(generateSalt(16) as any)
   const encoder = new TextEncoder()
   
   const keyMaterial = await crypto.subtle.importKey(
@@ -449,7 +449,7 @@ export async function encryptFile(
     const encryptedChunk = await crypto.subtle.encrypt(
       {
         name: CRYPTO_CONSTANTS.ALGORITHM,
-        iv,
+        iv: iv as any,
         tagLength: CRYPTO_CONSTANTS.TAG_LENGTH
       },
       key,
@@ -475,8 +475,8 @@ export async function encryptFile(
   // Create metadata
   const metadata = {
     algorithm: CRYPTO_CONSTANTS.ALGORITHM,
-    salt: arrayBufferToBase64(salt),
-    iv: arrayBufferToBase64(iv),
+    salt: arrayBufferToBase64(salt as any),
+    iv: arrayBufferToBase64(iv as any),
     timestamp: new Date().toISOString(),
     version: 1
   }
@@ -504,7 +504,7 @@ export async function decryptFile(
   
   // Derive key
   const salt = base64ToArrayBuffer(encryptedBlob.metadata.salt)
-  const key = await deriveKeyWithSalt(password, salt)
+  const key = await deriveKeyWithSalt(password, salt as any)
   const iv = base64ToArrayBuffer(encryptedBlob.metadata.iv)
   
   onProgress?.(0.3)

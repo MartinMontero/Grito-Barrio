@@ -29,7 +29,7 @@ import {
   Utensils,
   Heart,
   Bath,
-  CookingPot,
+  UtensilsCrossed as CookingPot,
   Calendar,
   User,
   FileText,

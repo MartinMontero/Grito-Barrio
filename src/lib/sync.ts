@@ -381,7 +381,7 @@ class SyncEngine {
       type: 'CREATE',
       store,
       data,
-      priority,
+      priority: priority ?? 5,
       maxRetries: this.config.maxRetries
     })
   }
@@ -393,9 +393,9 @@ class SyncEngine {
     return this.queue.add({
       type: 'UPDATE',
       store,
-      data: { ...data, id },
+      data: { ...(data as object), id },
       originalId: id,
-      priority,
+      priority: priority ?? 5,
       maxRetries: this.config.maxRetries
     })
   }
@@ -409,7 +409,7 @@ class SyncEngine {
       store,
       data: { id },
       originalId: id,
-      priority,
+      priority: priority ?? 5,
       maxRetries: this.config.maxRetries
     })
   }
@@ -716,7 +716,7 @@ export function queueAction(
     type,
     store,
     data,
-    priority,
+    priority: priority ?? 5,
     maxRetries: DEFAULT_CONFIG.maxRetries
   })
 }

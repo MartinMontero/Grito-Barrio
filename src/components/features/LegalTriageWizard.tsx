@@ -267,12 +267,12 @@ const VIOLENCE_PATHS: Record<Exclude<ViolenceType, null>, {
 // UTILITY FUNCTIONS
 // =============================================================================
 
-function getPriorityColor(priority: PriorityLevel): { bg: string; text: string; border: string } {
+function getPriorityColor(priority: PriorityLevel): { bg: string; text: string; border: string; light: string } {
   const colors = {
-    maxima: { bg: 'bg-red-600', text: 'text-red-700', border: 'border-red-200' },
-    alta: { bg: 'bg-orange-500', text: 'text-orange-700', border: 'border-orange-200' },
-    media: { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-200' },
-    baja: { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-200' }
+    maxima: { bg: 'bg-red-600', text: 'text-red-700', border: 'border-red-200', light: 'bg-red-50' },
+    alta: { bg: 'bg-orange-500', text: 'text-orange-700', border: 'border-orange-200', light: 'bg-orange-50' },
+    media: { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-200', light: 'bg-yellow-50' },
+    baja: { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-200', light: 'bg-green-50' }
   }
   return colors[priority]
 }

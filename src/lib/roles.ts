@@ -30,7 +30,7 @@ import {
   Hash,
   MessagesSquare,
   Warehouse,
-  FirstAid
+  HeartPulse as FirstAid
 } from 'lucide-react'
 import type { TeamRole } from '@/types'
 

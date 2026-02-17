@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Building2,
   Siren,
-  Stethoscope
+  Stethoscope,
+  Trash2
 } from 'lucide-react'
 import {
   Button,
