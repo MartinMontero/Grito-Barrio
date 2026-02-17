@@ -49,7 +49,13 @@ export interface DocumentationSlice {
 // INITIAL STATE
 // =============================================================================
 
-const initialDocumentationState: Omit<DocumentationSlice, keyof DocumentationSlice> = {
+type DocumentationActions =
+  | 'addEntry' | 'updateEntry' | 'addToChainOfCustody' | 'getEntriesByIncident'
+  | 'getEntriesByType' | 'getEntryById' | 'exportEntries' | 'importEntries'
+  | 'setCurrentEntry' | 'startCapture' | 'endCapture' | 'verifyIntegrity'
+  | 'deleteEntry' | 'getTotalSize'
+
+const initialDocumentationState: Omit<DocumentationSlice, DocumentationActions> = {
   entries: [],
   currentEntry: null,
   isCapturing: false,
@@ -62,7 +68,7 @@ const initialDocumentationState: Omit<DocumentationSlice, keyof DocumentationSli
 
 export const createDocumentationSlice: StateCreator<
   DocumentationSlice,
-  [['zustand/persist', unknown]],
+  [],
   [],
   DocumentationSlice
 > = persistToIndexedDB<DocumentationSlice>('protocolo-documentation', true)(
@@ -185,7 +191,7 @@ export const createDocumentationSlice: StateCreator<
       }
 
       // Encrypt if enabled
-      const encrypted = encryptIfEnabled(exportData, encryptionEnabled)
+      const encrypted = await encryptIfEnabled(exportData, encryptionEnabled)
 
       // Create blob
       const blob = new Blob([encrypted], {
@@ -204,7 +210,7 @@ export const createDocumentationSlice: StateCreator<
     ): Promise<boolean> => {
       try {
         const text = await encryptedBlob.text()
-        const data = decryptIfNeeded<{
+        const data = await decryptIfNeeded<{
           incidentId: string
           exportedAt: string
           entries: DocumentationEntry[]

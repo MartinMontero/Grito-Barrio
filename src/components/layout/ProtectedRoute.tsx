@@ -29,7 +29,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const location = useLocation()
   const currentUser = useProtocoloStore((state) => state.currentUser)
-  const isLoading = useProtocoloStore((state) => state.loadingStates?.user)
+  const isLoading = useProtocoloStore((state) => (state as any).loadingStates?.user ?? false)
   
   // Show loading state
   if (isLoading) {

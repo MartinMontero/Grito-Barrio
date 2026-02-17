@@ -115,7 +115,7 @@ export function useSessionStorage<T>(
 // INDEXEDDB SINGLE ITEM HOOK
 // =============================================================================
 
-interface UseIndexedDBOptions {
+export interface UseIndexedDBOptions {
   enabled?: boolean
   onError?: (error: Error) => void
   onSuccess?: (data: unknown) => void
@@ -292,7 +292,7 @@ export function useIDBList<T>(
         result = await db.getByIndex<T>(
           storeName,
           queryOptions.index,
-          queryOptions.range || null,
+          (queryOptions.range || null) as any,
           queryOptions
         )
       } else {

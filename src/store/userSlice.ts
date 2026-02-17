@@ -52,7 +52,7 @@ export interface UserSlice {
 // Pre-registered users (in production, this comes from encrypted storage)
 const MOCK_USERS: Record<string, { pinHash: string; user: ExtendedUserProfile }> = {
   'comandante': {
-    pinHash: hashData('1234'),
+    pinHash: '1234',
     user: {
       pseudonym: 'comandante',
       role: 'coordinator',
@@ -68,7 +68,7 @@ const MOCK_USERS: Record<string, { pinHash: string; user: ExtendedUserProfile }>
     }
   },
   'defensor1': {
-    pinHash: hashData('5678'),
+    pinHash: '5678',
     user: {
       pseudonym: 'defensor1',
       role: 'legal',
@@ -84,7 +84,7 @@ const MOCK_USERS: Record<string, { pinHash: string; user: ExtendedUserProfile }>
     }
   },
   'medico1': {
-    pinHash: hashData('9012'),
+    pinHash: '9012',
     user: {
       pseudonym: 'medico1',
       role: 'medical',
@@ -105,12 +105,12 @@ const MOCK_USERS: Record<string, { pinHash: string; user: ExtendedUserProfile }>
 // INITIAL STATE
 // =============================================================================
 
-const initialUserState: Omit<UserSlice, keyof UserSlice> = {
-  currentUser: null,
+const initialUserState = {
+  currentUser: null as ExtendedUserProfile | null,
   isAuthenticated: false,
-  lastLoginAt: null,
+  lastLoginAt: null as string | null,
   loginAttempts: 0,
-  lockedUntil: null
+  lockedUntil: null as string | null
 }
 
 // =============================================================================
@@ -119,7 +119,7 @@ const initialUserState: Omit<UserSlice, keyof UserSlice> = {
 
 export const createUserSlice: StateCreator<
   UserSlice,
-  [['zustand/persist', unknown]],
+  [],
   [],
   UserSlice
 > = persistToLocalStorage<UserSlice>('protocolo-user')(
@@ -140,11 +140,11 @@ export const createUserSlice: StateCreator<
       }
 
       // Hash the provided PIN
-      const pinHash = hashData(pin)
-      
+      const pinHash = await hashData(pin)
+
       // Look up user
       const userRecord = MOCK_USERS[pseudonym.toLowerCase()]
-      
+
       if (!userRecord || userRecord.pinHash !== pinHash) {
         // Increment login attempts
         const newAttempts = state.loginAttempts + 1

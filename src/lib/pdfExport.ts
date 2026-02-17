@@ -50,15 +50,15 @@ export async function generateFormPDF(
     title: template.title,
     subject: `Formulario ${template.id} - Incidente ${formData.incidentId || 'N/A'}`,
     author: formData.createdBy,
-    keywords: ['Protocolo CDMX', 'Incidente', template.type, 'Legal'],
+    keywords: ['Protocolo CDMX', 'Incidente', template.type, 'Legal'].join(', '),
     creator: 'Protocolo CDMX App'
   })
 
   // Enable PDF/A compliance if requested
   if (options.pdfaCompliance) {
     // Add PDF/A metadata
-    doc.setCreationDate(new Date(formData.createdAt))
-    doc.setModificationDate(new Date(formData.updatedAt))
+    ;(doc as any).setCreationDate?.(new Date(formData.createdAt))
+    ;(doc as any).setModificationDate?.(new Date(formData.updatedAt))
   }
 
   let currentY = 20

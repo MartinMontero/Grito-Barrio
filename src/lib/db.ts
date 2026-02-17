@@ -743,7 +743,7 @@ export async function getStorageEstimate(): Promise<{
       return {
         usage: estimate.usage || 0,
         quota: estimate.quota || 0,
-        usageDetails: estimate.usageDetails as Record<string, number>
+        usageDetails: (estimate as any).usageDetails as Record<string, number>
       }
     } catch (error) {
       console.error('Failed to get storage estimate:', error)

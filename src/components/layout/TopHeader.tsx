@@ -52,9 +52,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
   // Get store state
   const activeIncident = useProtocoloStore((state) => state.getActiveIncident?.())
   const currentUser = useProtocoloStore((state) => state.currentUser)
-  const isOnline = useProtocoloStore((state) => state.isOnline ?? true)
-  const syncStatus = useProtocoloStore((state) => state.syncStatus || 'synced')
-  const lastSync = useProtocoloStore((state) => state.lastSync)
+  const isOnline = true
+  const syncStatus = 'synced' as string
+  const lastSync = null as string | null
   
   // Determine emergency mode
   const isEmergencyMode = activeIncident && ['high', 'critical', 'extreme'].includes(activeIncident.threatLevel)

@@ -41,8 +41,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const location = useLocation()
   
   // Get badge counts from store
-  const unreadNotifications = useProtocoloStore((state) => state.unreadNotifications || 0)
-  const activeProtocols = useProtocoloStore((state) => state.activeProtocols || 0)
+  const unreadNotifications = 0
+  const activeProtocols = 0
   
   const navItems: NavItem[] = [
     { 

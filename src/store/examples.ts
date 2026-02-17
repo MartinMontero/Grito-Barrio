@@ -6,7 +6,8 @@
  */
 
 import { useProtocoloStore } from './index'
-import type { AlertData, TeamMember } from '@/types'
+import type { TeamMember } from '@/types'
+import type { AlertData } from '@/store/incidentSlice'
 
 // =============================================================================
 // EXAMPLE 1: Creating a New Incident

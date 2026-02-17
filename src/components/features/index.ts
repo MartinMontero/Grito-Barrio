@@ -6,7 +6,7 @@
  */
 
 // Navigation
-export { BottomNavigation } from './BottomNavigation'
+export { BottomNavigation as FeatureBottomNavigation } from './BottomNavigation'
 export { Header } from './Header'
 
 // Main Pages
@@ -43,11 +43,10 @@ export { ContactTree } from './ContactTree'
 export { QuickDial } from './QuickDial'
 export { MessageTemplates } from './MessageTemplates'
 
-// Default exports for convenience
-export { default as SettingsDefault } from './Settings'
-export { default as BottomNavigationDefault } from './BottomNavigation'
-export { default as HeaderDefault } from './Header'
-export { default as HomePageDefault } from './HomePage'
+// Aliased re-exports for convenience
+export { Settings as SettingsDefault } from './Settings'
+export { Header as HeaderDefault } from './Header'
+export { HomePage as HomePageDefault } from './HomePage'
 export { default as EmergencyDashboardDefault } from './EmergencyDashboard'
 export { default as EmergencyChecklistDefault } from './EmergencyChecklist'
 export { default as PASProtocolGuideDefault } from './PASProtocolGuide'

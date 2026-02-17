@@ -155,7 +155,7 @@ class BackupManager {
 
         // Filter by date range
         if (options.dateRange) {
-          items = items.filter((item: Record<string, unknown>) => {
+          items = (items as any[]).filter((item: Record<string, unknown>) => {
             const timestamp = item.timestamp as string
             if (!timestamp) return true
             const date = new Date(timestamp)
@@ -165,7 +165,7 @@ class BackupManager {
 
         // Filter by incident IDs
         if (options.incidentIds && store !== 'users' && store !== 'settings') {
-          items = items.filter((item: Record<string, unknown>) => {
+          items = (items as any[]).filter((item: Record<string, unknown>) => {
             const id = item.id as string
             const incidentId = item.incidentId as string
             return options.incidentIds!.includes(id) || options.incidentIds!.includes(incidentId)
@@ -182,7 +182,7 @@ class BackupManager {
         dataVersion: 1,
         type: 'partial',
         size: 0,
-        encrypted: options.encrypt && !!this.encryptionKey,
+        encrypted: !!(options.encrypt && this.encryptionKey),
         stores,
         recordCounts: Object.fromEntries(
           Object.entries(data).map(([k, v]) => [k, v.length])
@@ -326,9 +326,9 @@ class BackupManager {
           if (options.merge) {
             // Merge: only add items that don't exist
             const existing = (await db.getAll(storeName as StoreName)).data || []
-            const existingIds = new Set(existing.map((i: Record<string, unknown>) => i.id || i.pseudonym))
-            
-            const newItems = items.filter((i: Record<string, unknown>) => !existingIds.has(i.id || i.pseudonym))
+            const existingIds = new Set((existing as any[]).map((i: Record<string, unknown>) => i.id || i.pseudonym))
+
+            const newItems = (items as any[]).filter((i: Record<string, unknown>) => !existingIds.has(i.id || i.pseudonym))
             
             for (const item of newItems) {
               await db.put(storeName as StoreName, item)

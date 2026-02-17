@@ -1,3 +1,3 @@
-export * from './index'
-export { Input, Switch, Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './Input'
-export { Dialog, DialogPortal, DialogOverlay, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from './Input'
+// Re-export Separator from the main barrel
+// This file exists for backward compatibility with imports like '@/components/ui/Separator'
+export { Separator } from './index'

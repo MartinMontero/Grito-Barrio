@@ -27,8 +27,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   
   // Get theme and accessibility settings from store
   const theme = useProtocoloStore((state) => state.settings?.theme || 'system')
-  const highContrast = useProtocoloStore((state) => state.settings?.highContrast || false)
-  const largeText = useProtocoloStore((state) => state.settings?.largeText || false)
+  const highContrast = useProtocoloStore((state) => (state.settings as any)?.highContrast || false)
+  const largeText = useProtocoloStore((state) => (state.settings as any)?.largeText || false)
   
   // Update active tab based on current route
   useEffect(() => {

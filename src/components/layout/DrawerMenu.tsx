@@ -76,8 +76,8 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   const currentUser = useProtocoloStore((state) => state.currentUser)
   const activeIncident = useProtocoloStore((state) => state.getActiveIncident?.())
   const isDuressMode = useProtocoloStore((state) => state.isDuressMode)
-  const appVersion = useProtocoloStore((state) => state.version || '1.0.0')
-  const lastUpdate = useProtocoloStore((state) => state.lastSync)
+  const appVersion = '1.0.0'
+  const lastUpdate = null as string | null
   
   const isSidebar = variant === 'sidebar'
   

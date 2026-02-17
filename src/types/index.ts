@@ -1247,7 +1247,10 @@ export interface AsyncState<T> {
 }
 
 // =============================================================================
-// CONTACT EXPORTS
+// SUB-MODULE RE-EXPORTS
+// Note: Types already defined locally (CertificationLevel, TrainingModule,
+// SafePointType, SafePoint, SupplyItem, ChecklistItem, ContactTree)
+// are NOT re-exported to avoid declaration conflicts.
 // =============================================================================
 
 export type {
@@ -1256,7 +1259,6 @@ export type {
   AvailabilityStatus,
   Contact,
   ContactTreeNode,
-  ContactTree,
   CommunicationLog,
   MessageTemplate,
   QuickDialConfig
@@ -1267,16 +1269,10 @@ export {
   PRIORITY_LABELS
 } from './contacts';
 
-// =============================================================================
-// TRAINING EXPORTS
-// =============================================================================
-
 export type {
-  CertificationLevel,
   TrainingModuleStatus,
   ContentType,
   ScenarioDifficulty,
-  TrainingModule,
   Lesson,
   Quiz,
   Question,
@@ -1298,22 +1294,14 @@ export {
   ACHIEVEMENTS
 } from './training';
 
-// =============================================================================
-// RESOURCES EXPORTS
-// =============================================================================
-
 export type {
-  SafePointType,
   SafePointStatus,
   ResourceCategory,
   ResourceLevel,
   AccessibilityFeature,
-  SafePoint,
   ActivationRecord,
   SafePointHistoryEntry,
-  SupplyItem,
   SupplyChecklist,
-  ChecklistItem,
   ResourceKit,
   KitContent,
   LogisticsRequest,
@@ -1330,10 +1318,6 @@ export {
   RESOURCE_LEVELS,
   ACCESSIBILITY_LABELS
 } from './resources';
-
-// =============================================================================
-// FORMS EXPORTS
-// =============================================================================
 
 export type {
   FormType,

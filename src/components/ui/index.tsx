@@ -242,3 +242,66 @@ const Separator = React.forwardRef<
 Separator.displayName = SeparatorPrimitive.Root.displayName
 
 export { Separator }
+
+// Re-export all components from Input.tsx
+export { Input } from './Input'
+export type { InputProps } from './Input'
+export { Switch } from './Input'
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './Input'
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './Input'
+
+// Re-export all components from extra.tsx
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './extra'
+export { Label } from './extra'
+export { Textarea } from './extra'
+export type { TextareaProps } from './extra'
+export { Skeleton } from './extra'
+export { ScrollArea, ScrollBar } from './extra'
+export { Avatar, AvatarImage, AvatarFallback } from './extra'
+
+// Re-export Radix Select components (overrides basic Select from extra.tsx)
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+} from './select-components'
+export { Checkbox } from './checkbox'
+export { Progress } from './progress'
+export { RadioGroup, RadioGroupItem } from './radio-group'
+export { Slider } from './slider'
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from './dropdown-menu'

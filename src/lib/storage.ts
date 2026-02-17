@@ -467,7 +467,7 @@ class FileSystemWrapper {
     const files: string[] = []
     
     try {
-      for await (const entry of this.directoryHandle.values()) {
+      for await (const entry of (this.directoryHandle as any).values()) {
         if (entry.kind === 'file') {
           files.push(entry.name)
         }
@@ -635,7 +635,7 @@ export async function storeData<T>(
     const { db } = await import('./db')
     await db.init()
     
-    const result = await db.put('settings' as StoreName, {
+    const result = await db.put('settings' as any, {
       key,
       data: encrypt ? JSON.stringify(data) : data,
       encrypted: encrypt,
@@ -683,7 +683,7 @@ export async function getData<T>(
       data: T | string
       encrypted: boolean
       timestamp: number
-    }>('settings' as StoreName, key)
+    }>('settings' as any, key)
     
     if (result.success && result.data) {
       const { data } = result.data

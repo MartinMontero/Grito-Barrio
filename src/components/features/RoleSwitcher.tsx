@@ -109,7 +109,7 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
               const definition = getRoleDefinition(role)
               const RoleIcon = roleIcons[role]
               const isActive = role === currentRole
-              const isAvailable = definition.minCertificationLevel <= userCertificationLevel
+              const isAvailable = definition.certificationRequired <= userCertificationLevel
               
               return (
                 <button
@@ -155,10 +155,10 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
                         )}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {definition.responsibilities[0]}
+                        {definition.features[0]}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Cert. mínima: Nivel {definition.minCertificationLevel}
+                        Cert. mínima: Nivel {definition.certificationRequired}
                       </p>
                     </div>
                   </div>

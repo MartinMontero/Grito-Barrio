@@ -79,9 +79,9 @@ import {
   Label
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { 
-  SupplyChecklist, 
-  ChecklistItem,
+import type {
+  SupplyChecklist as SupplyChecklistType,
+  ChecklistItem as ChecklistItemType,
   ResourceLevel,
   ResourceCategory
 } from '@/types/resources'
@@ -92,9 +92,9 @@ import { RESOURCE_LEVELS, RESOURCE_CATEGORIES } from '@/types/resources'
 // =============================================================================
 
 interface SupplyChecklistProps {
-  checklists: SupplyChecklist[]
-  onCreateChecklist?: (checklist: Omit<SupplyChecklist, 'id' | 'createdAt' | 'updatedAt'>) => void
-  onUpdateChecklist?: (checklistId: string, updates: Partial<SupplyChecklist>) => void
+  checklists: SupplyChecklistType[]
+  onCreateChecklist?: (checklist: Omit<SupplyChecklistType, 'id' | 'createdAt' | 'updatedAt'>) => void
+  onUpdateChecklist?: (checklistId: string, updates: Partial<SupplyChecklistType>) => void
   onDeleteChecklist?: (checklistId: string) => void
   onToggleItem?: (checklistId: string, itemId: string, completed: boolean) => void
   onUpdateItemQuantity?: (checklistId: string, itemId: string, quantity: number) => void
@@ -105,7 +105,7 @@ interface SupplyChecklistProps {
 // PRE-DEFINED CHECKLISTS
 // =============================================================================
 
-const PREDEFINED_CHECKLISTS: Omit<SupplyChecklist, 'id' | 'createdAt' | 'updatedAt'>[] = [
+const PREDEFINED_CHECKLISTS: Omit<SupplyChecklistType, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
     name: 'Kit Básico de Respuesta',
     description: 'Equipo esencial para 2-5 brigadistas',
@@ -205,7 +205,7 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
       id: `template-${index}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    })) as SupplyChecklist[]
+    })) as SupplyChecklistType[]
     
     return [...predefined, ...propChecklists]
   }, [propChecklists])
@@ -227,7 +227,7 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
   }, [allChecklists, searchQuery, selectedLevel, selectedCategory, activeTab])
 
   // Calculate progress for a checklist
-  const getChecklistProgress = (checklist: SupplyChecklist) => {
+  const getChecklistProgress = (checklist: SupplyChecklistType) => {
     const total = checklist.items.length
     const completed = checklist.items.filter(item => item.isCompleted).length
     return { completed, total, percentage: total > 0 ? (completed / total) * 100 : 0 }
@@ -590,7 +590,7 @@ const StatCard: React.FC<StatCardProps> = ({ value, label, icon, variant = 'defa
 interface CreateChecklistDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreate?: (checklist: Omit<SupplyChecklist, 'id' | 'createdAt' | 'updatedAt'>) => void
+  onCreate?: (checklist: Omit<SupplyChecklistType, 'id' | 'createdAt' | 'updatedAt'>) => void
 }
 
 const CreateChecklistDialog: React.FC<CreateChecklistDialogProps> = ({ open, onOpenChange, onCreate }) => {
@@ -598,7 +598,7 @@ const CreateChecklistDialog: React.FC<CreateChecklistDialogProps> = ({ open, onO
   const [description, setDescription] = useState('')
   const [level, setLevel] = useState<ResourceLevel>('basico')
   const [category, setCategory] = useState<ResourceCategory>('logistica')
-  const [items, setItems] = useState<ChecklistItem[]>([])
+  const [items, setItems] = useState<ChecklistItemType[]>([])
   const [newItemName, setNewItemName] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState(1)
   const [newItemUnit, setNewItemUnit] = useState('piezas')
@@ -819,7 +819,7 @@ const CreateChecklistDialog: React.FC<CreateChecklistDialogProps> = ({ open, onO
 interface ChecklistDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  checklist: SupplyChecklist
+  checklist: SupplyChecklistType
   onToggleItem?: (checklistId: string, itemId: string, completed: boolean) => void
   onUpdateItemQuantity?: (checklistId: string, itemId: string, quantity: number) => void
 }

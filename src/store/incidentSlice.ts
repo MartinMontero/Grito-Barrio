@@ -71,7 +71,13 @@ export interface IncidentSlice {
 // INITIAL STATE
 // =============================================================================
 
-const initialIncidentState: Omit<IncidentSlice, keyof IncidentSlice> = {
+type IncidentActions =
+  | 'createIncident' | 'setActiveIncident' | 'updateIncident' | 'closeIncident'
+  | 'assignTeamMember' | 'removeTeamMember' | 'updateTeamMemberStatus'
+  | 'triggerWithdrawal' | 'getActiveIncident' | 'getIncidentById'
+  | 'getOpenIncidents' | 'getIncidentsByStatus'
+
+const initialIncidentState: Omit<IncidentSlice, IncidentActions> = {
   incidents: [],
   activeIncidentId: null,
   incidentHistory: []
@@ -83,7 +89,7 @@ const initialIncidentState: Omit<IncidentSlice, keyof IncidentSlice> = {
 
 export const createIncidentSlice: StateCreator<
   IncidentSlice,
-  [['zustand/persist', unknown]],
+  [],
   [],
   IncidentSlice
 > = persistToIndexedDB<IncidentSlice>('protocolo-incidents', true)(

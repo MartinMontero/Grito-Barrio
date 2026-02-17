@@ -297,7 +297,7 @@ const LessonContent: React.FC<LessonContentProps> = ({
     case 'video':
       return <VideoLesson lesson={lesson} isCompleted={isCompleted} onComplete={onComplete} />
     case 'quiz':
-      return <QuizLesson quiz={lesson.quiz!} isCompleted={isCompleted} onComplete={onQuizComplete} />
+      return <QuizLesson quiz={lesson.quiz!} onComplete={onQuizComplete} />
     case 'checklist':
       return <ChecklistLesson lesson={lesson} isCompleted={isCompleted} onComplete={onComplete} />
     default:

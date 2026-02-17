@@ -187,7 +187,12 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
 // INITIAL STATE
 // =============================================================================
 
-const initialChecklistState: Omit<ChecklistSlice, keyof ChecklistSlice> = {
+type ChecklistActions =
+  | 'initializeChecklist' | 'toggleItem' | 'getProgress' | 'getItemsByPhase'
+  | 'getItemsByCategory' | 'getCompletedItems' | 'getPendingItems' | 'getMandatoryPending'
+  | 'setCurrentPhase' | 'getPhaseProgress' | 'resetChecklist' | 'addCustomItem' | 'removeItem'
+
+const initialChecklistState: Omit<ChecklistSlice, ChecklistActions> = {
   checklists: {},
   currentPhase: '0-5min'
 }
@@ -198,7 +203,7 @@ const initialChecklistState: Omit<ChecklistSlice, keyof ChecklistSlice> = {
 
 export const createChecklistSlice: StateCreator<
   ChecklistSlice,
-  [['zustand/persist', unknown]],
+  [],
   [],
   ChecklistSlice
 > = persistToIndexedDB<ChecklistSlice>('protocolo-checklists', true)(

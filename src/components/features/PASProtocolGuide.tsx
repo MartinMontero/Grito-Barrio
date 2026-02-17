@@ -240,16 +240,16 @@ export const PASProtocolGuide: React.FC<PASProtocolGuideProps> = ({
               ))}
             </ul>
 
-            {stepConfig.warning && (
+            {'warning' in stepConfig && stepConfig.warning && (
               <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-800 dark:text-red-200 font-medium">{stepConfig.warning}</p>
               </div>
             )}
 
-            {stepConfig.warnings && (
+            {'warnings' in stepConfig && stepConfig.warnings && (
               <div className="space-y-2">
-                {stepConfig.warnings.map((w, i) => (
+                {(stepConfig.warnings as string[]).map((w: string, i: number) => (
                   <div key={i} className="flex items-start gap-2">
                     <AlertOctagon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-red-800 dark:text-red-200 font-medium">{w}</p>

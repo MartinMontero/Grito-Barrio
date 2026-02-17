@@ -60,7 +60,7 @@ import {
   TabsTrigger,
   ScrollArea,
   Switch,
-  Label,
+  Label as UILabel,
   Separator,
   Tooltip,
   TooltipContent,
@@ -68,7 +68,8 @@ import {
   TooltipTrigger,
   Alert,
   AlertTitle,
-  AlertDescription
+  AlertDescription,
+  Progress
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { SafePoint, SafePointType, ActivationRecord, AccessibilityFeature } from '@/types/resources'
@@ -864,8 +865,8 @@ const ActivationDialog: React.FC<ActivationDialogProps> = ({
 }
 
 // Label component
-const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <label className={cn("text-sm font-medium", className)}>{children}</label>
+const Label: React.FC<{ children: React.ReactNode; className?: string; htmlFor?: string }> = ({ children, className, htmlFor }) => (
+  <label htmlFor={htmlFor} className={cn("text-sm font-medium", className)}>{children}</label>
 )
 
 export default SafePointsMap

@@ -5,7 +5,7 @@
  * Middleware for persistence, encryption, and shared store functionality
  */
 
-import { generateSecureId, encryptObject, decryptObject } from '@/lib/encryption'
+import { generateSecureRandomId as generateSecureId, encryptObject, decryptObject } from '@/lib/encryption'
 import { storeData, getData } from '@/lib/storage'
 import type { StateCreator, StoreApi } from 'zustand'
 
@@ -184,7 +184,7 @@ export function isValidIncidentId(id: string): boolean {
 /**
  * Encrypt sensitive data if encryption is enabled
  */
-export function encryptIfEnabled<T>(data: T, encryptionEnabled: boolean): string {
+export async function encryptIfEnabled<T>(data: T, encryptionEnabled: boolean): Promise<string> {
   if (encryptionEnabled) {
     return encryptObject(data as object)
   }
@@ -194,9 +194,9 @@ export function encryptIfEnabled<T>(data: T, encryptionEnabled: boolean): string
 /**
  * Decrypt data if it was encrypted
  */
-export function decryptIfNeeded<T>(data: string, encryptionEnabled: boolean): T | null {
+export async function decryptIfNeeded<T>(data: string, encryptionEnabled: boolean): Promise<T | null> {
   if (encryptionEnabled) {
-    return decryptObject<T>(data)
+    return decryptObject<T & object>(data)
   }
   try {
     return JSON.parse(data) as T

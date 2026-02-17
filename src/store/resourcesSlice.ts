@@ -176,7 +176,19 @@ const defaultSupplies: SupplyItem[] = [
 // INITIAL STATE
 // =============================================================================
 
-const initialResourcesState: Omit<ResourcesSlice, keyof ResourcesSlice> = {
+type ResourcesActions =
+  | 'addSafePoint' | 'updateSafePoint' | 'removeSafePoint' | 'getSafePointById'
+  | 'getSafePointsByType' | 'getAvailableSafePoints' | 'getNearbySafePoints'
+  | 'verifySafePoint' | 'toggleSafePointAvailability'
+  | 'addContact' | 'updateContact' | 'removeContact' | 'getContactById'
+  | 'getContactsByRole' | 'getContactsByPriority' | 'getEmergencyContacts'
+  | 'reorderContactsByPriority'
+  | 'addSupply' | 'updateSupply' | 'removeSupply' | 'getSupplyByName'
+  | 'getSuppliesByCategory' | 'getLowStockSupplies' | 'updateSupplyQuantity'
+  | 'consumeSupply' | 'restockSupply'
+  | 'exportResources' | 'importResources' | 'getResourceStats'
+
+const initialResourcesState: Omit<ResourcesSlice, ResourcesActions> = {
   safePoints: defaultSafePoints,
   contacts: defaultContacts,
   supplies: defaultSupplies,
@@ -189,7 +201,7 @@ const initialResourcesState: Omit<ResourcesSlice, keyof ResourcesSlice> = {
 
 export const createResourcesSlice: StateCreator<
   ResourcesSlice,
-  [['zustand/persist', unknown]],
+  [],
   [],
   ResourcesSlice
 > = persistToIndexedDB<ResourcesSlice>('protocolo-resources', false)(

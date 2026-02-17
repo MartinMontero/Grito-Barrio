@@ -53,7 +53,7 @@ import {
   TooltipTrigger
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { Contact, ContactTree, ContactTreeNode } from '@/types/contacts'
+import type { Contact, ContactTree as ContactTreeType, ContactTreeNode } from '@/types/contacts'
 
 // =============================================================================
 // TYPES
@@ -61,13 +61,13 @@ import type { Contact, ContactTree, ContactTreeNode } from '@/types/contacts'
 
 interface ContactTreeProps {
   contacts: Contact[]
-  tree?: ContactTree
+  tree?: ContactTreeType
   onCall?: (contactId: string) => void
   onMessage?: (contactId: string) => void
   onUpdateNode?: (nodeId: string, updates: Partial<ContactTreeNode>) => void
   onAddNode?: (parentId: string, contactId: string) => void
   onRemoveNode?: (nodeId: string) => void
-  onSaveTree?: (tree: ContactTree) => void
+  onSaveTree?: (tree: ContactTreeType) => void
   className?: string
 }
 
@@ -75,7 +75,7 @@ interface ContactTreeProps {
 // MOCK TREE DATA
 // =============================================================================
 
-const DEFAULT_TREE: ContactTree = {
+const DEFAULT_TREE: ContactTreeType = {
   id: 'tree-1',
   name: 'Árbol de Contactos - Incidente #1',
   root: {
@@ -156,7 +156,7 @@ export const ContactTree: React.FC<ContactTreeProps> = ({
   onSaveTree,
   className
 }) => {
-  const [tree, setTree] = useState<ContactTree>(propTree || DEFAULT_TREE)
+  const [tree, setTree] = useState<ContactTreeType>(propTree || DEFAULT_TREE)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']))
   const [showAddNode, setShowAddNode] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
