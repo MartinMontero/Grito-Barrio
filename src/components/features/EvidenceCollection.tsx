@@ -680,11 +680,68 @@ Protocolo CDMX - Evidencia Legal
     URL.revokeObjectURL(url)
   }
 
-  // Export selected items
+  // Export selected items as a combined text report
   const exportSelected = () => {
     const selected = evidence.filter(item => selectedItems.has(item.id))
-    // Implementation for bulk export would go here
-    alert(`Exportando ${selected.length} elementos...`)
+    if (selected.length === 0) return
+
+    const separator = '\n' + '='.repeat(44) + '\n\n'
+    const header = `REPORTE MASIVO DE EVIDENCIA - PROTOCOLO CDMX
+Incidente: ${incidentId}
+Total de elementos: ${selected.length}
+Generado: ${new Date().toLocaleString('es-MX')}
+
+`
+    const body = selected.map(item => `EVIDENCIA - PROTOCOLO CDMX
+===========================
+
+ID: ${item.id}
+Incidente: ${incidentId}
+Tipo: ${item.type}
+Categoría: ${getCategoryLabel(item.category)}
+
+Recopilado por: ${item.collector}
+Fecha: ${new Date(item.timestamp).toLocaleString('es-MX')}
+
+UBICACIÓN
+---------
+${item.location ? `Latitud: ${item.location.latitude}
+Longitud: ${item.location.longitude}
+Precisión: ${item.location.accuracy}m` : 'No disponible'}
+
+CONTENIDO
+---------
+Título: ${item.caption}
+Descripción: ${item.description}
+
+HASH SHA-256
+------------
+${item.sha256}
+
+CADENA DE CUSTODIA
+------------------
+${item.chainOfCustody.map(entry => `[${new Date(entry.timestamp).toLocaleString('es-MX')}]
+Acción: ${entry.action}
+Actor: ${entry.actor}
+${entry.reason ? `Razón: ${entry.reason}` : ''}`).join('\n\n')}
+
+SEGURIDAD
+---------
+Encriptado: ${item.security.encrypted ? 'Sí' : 'No'}
+Metadata removida: ${item.security.metadataStripped ? 'Sí' : 'No'}
+Ubicación difuminada: ${item.security.locationFuzzed ? 'Sí' : 'No'}
+
+===========================
+Protocolo CDMX - Evidencia Legal`).join(separator)
+
+    const report = header + body
+    const blob = new Blob([report], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `incidente-${incidentId}-${selected.length}-elementos.txt`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // Calculate stats

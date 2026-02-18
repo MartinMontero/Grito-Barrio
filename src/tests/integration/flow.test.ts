@@ -247,8 +247,9 @@ describe('Integration - Complete Emergency Flow', () => {
 
   describe('Data Sync', () => {
     it('should sync incident data across devices', async () => {
-      const device1Data = createMockIncident({ id: 'INC-001', status: 'responding' })
-      const device2Data = createMockIncident({ id: 'INC-001', status: 'resolved' })
+      // device1 is older; device2 is newer — last-write-wins should resolve to device2
+      const device1Data = createMockIncident({ id: 'INC-001', status: 'responding', timestamp: new Date(Date.now() - 1000).toISOString() })
+      const device2Data = createMockIncident({ id: 'INC-001', status: 'resolved', timestamp: new Date().toISOString() })
 
       // Server resolves conflict (latest wins)
       const serverData = device2Data.timestamp > device1Data.timestamp ? device2Data : device1Data

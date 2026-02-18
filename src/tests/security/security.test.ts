@@ -437,7 +437,7 @@ describe('Security - Export Security', () => {
     const password = 'export-password'
     const exportFile = 'data.json'
     
-    const isPasswordProtected = password && exportFile
+    const isPasswordProtected = Boolean(password && exportFile)
     
     expect(isPasswordProtected).toBe(true)
   })

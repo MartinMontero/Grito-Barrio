@@ -9,6 +9,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createMockIncident, createMockFormData, wait } from '../setup'
 
 // Mock IndexedDB
+const mockIndex = {
+  get: vi.fn(),
+  getAll: vi.fn(),
+  openCursor: vi.fn(),
+  count: vi.fn(),
+}
+
 const mockObjectStore = {
   add: vi.fn(),
   put: vi.fn(),
@@ -16,7 +23,7 @@ const mockObjectStore = {
   delete: vi.fn(),
   getAll: vi.fn(),
   getAllKeys: vi.fn(),
-  index: vi.fn(),
+  index: vi.fn(() => mockIndex),
   openCursor: vi.fn(),
   count: vi.fn(),
 }
@@ -612,8 +619,9 @@ describe('Database - Error Handling', () => {
   })
 
   it('should handle read-only transaction write attempt', async () => {
+    mockTransaction.objectStore.mockReturnValue(mockObjectStore)
     mockDB.transaction.mockReturnValue(mockTransaction)
-    
+
     const transaction = mockDB.transaction(['incidents'], 'readonly')
     const store = transaction.objectStore('incidents')
     
