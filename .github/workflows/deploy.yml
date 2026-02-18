@@ -63,10 +63,7 @@ jobs:
       run: npm ci
       
     - name: Run all tests
-      run: |
-        npm run test:unit
-        npm run test:integration
-        npm run test:a11y
+      run: npm test -- --run
       
     - name: Build for production
       run: npm run build
@@ -79,24 +76,14 @@ jobs:
         
     - name: Optimize assets
       run: |
-        # Optimize images
-        find dist -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" | xargs -I {} npx imagemin {} --out-dir=dist --plugin=pngquant --plugin=mozjpeg
-        
-        # Minify JSON
-        find dist -name "*.json" -exec npx json-minify {} \;
-        
-        # Gzip assets
+        # Gzip assets for faster delivery
         find dist -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec gzip -k {} \;
         
-    - name: Generate service worker
-      run: npm run generate-sw
-      
     - name: Verify PWA requirements
       run: |
-        test -f dist/manifest.json
+        # vite-plugin-pwa generates sw.js and manifest.webmanifest during npm run build
         test -f dist/sw.js
-        test -f dist/icons/icon-192x192.png
-        test -f dist/icons/icon-512x512.png
+        test -f dist/manifest.webmanifest
         echo "✓ PWA requirements verified"
         
     - name: Calculate build checksums

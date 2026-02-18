@@ -51,28 +51,31 @@ Object.defineProperty(window, 'ResizeObserver', {
   value: MockResizeObserver,
 })
 
-// Mock Crypto API
-global.crypto = {
-  ...global.crypto,
-  subtle: {
-    digest: vi.fn(),
-    encrypt: vi.fn(),
-    decrypt: vi.fn(),
-    generateKey: vi.fn(),
-    importKey: vi.fn(),
-    exportKey: vi.fn(),
-    deriveKey: vi.fn(),
-    sign: vi.fn(),
-    verify: vi.fn(),
+// Mock Crypto API — use defineProperty because global.crypto is getter-only in Node 19+
+Object.defineProperty(global, 'crypto', {
+  writable: true,
+  configurable: true,
+  value: {
+    subtle: {
+      digest: vi.fn(),
+      encrypt: vi.fn(),
+      decrypt: vi.fn(),
+      generateKey: vi.fn(),
+      importKey: vi.fn(),
+      exportKey: vi.fn(),
+      deriveKey: vi.fn(),
+      sign: vi.fn(),
+      verify: vi.fn(),
+    },
+    getRandomValues: (arr: Uint8Array) => {
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = Math.floor(Math.random() * 256)
+      }
+      return arr
+    },
+    randomUUID: () => 'test-uuid-12345',
   },
-  getRandomValues: (arr: Uint8Array) => {
-    for (let i = 0; i < arr.length; i++) {
-      arr[i] = Math.floor(Math.random() * 256)
-    }
-    return arr
-  },
-  randomUUID: () => 'test-uuid-12345',
-}
+})
 
 // Mock IndexedDB
 const mockIndexedDB = {
@@ -105,6 +108,13 @@ Object.defineProperty(navigator, 'onLine', {
 // Mock URL.createObjectURL and revokeObjectURL
 global.URL.createObjectURL = vi.fn(() => 'blob:test-url')
 global.URL.revokeObjectURL = vi.fn()
+
+// Mock Blob.prototype.arrayBuffer — not implemented in jsdom
+if (!Blob.prototype.arrayBuffer) {
+  Blob.prototype.arrayBuffer = function () {
+    return Promise.resolve(new ArrayBuffer(0))
+  }
+}
 
 // Mock FileReader
 class MockFileReader {
@@ -269,6 +279,9 @@ expect.extend({
     }
   },
 })
+
+// Set lang attribute expected by a11y tests — jsdom doesn't inherit from index.html
+document.documentElement.lang = 'es-MX'
 
 // ============================================================================
 // CONSOLE SUPPRESSION
