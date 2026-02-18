@@ -1082,7 +1082,7 @@ const DataSection: React.FC<{
         try {
           const data = JSON.parse(e.target?.result as string)
           // Process import
-          console.log('Importing data:', data)
+          void data
           setShowImportDialog(false)
         } catch (error) {
           console.error('Import error:', error)

@@ -7,10 +7,20 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "test:ui": "vitest --ui",
+    "test:unit": "vitest run src/tests/unit",
+    "test:integration": "vitest run src/tests/integration",
+    "test:a11y": "vitest run src/tests/accessibility",
+    "test:axe": "vitest run src/tests/accessibility",
+    "test:performance": "vitest run src/tests/performance",
+    "test:coverage": "vitest run --coverage",
+    "coverage:report": "vitest run --coverage --reporter=json",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "analyze": "vite build --mode analyze"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.1.2",

@@ -3,60 +3,92 @@
  * Protocolo CDMX
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, Suspense } from 'react'
 import { Header } from '@/components/features/Header'
 import { BottomNavigation } from '@/components/features/BottomNavigation'
 import { HomePage } from '@/components/features/HomePage'
-import { ProtocolsPage } from '@/components/features/ProtocolsPage'
-import { ProtocolDetailPage } from '@/components/features/ProtocolDetailPage'
-import { LegalPage } from '@/components/features/LegalPage'
-import { LegalResourceDetailPage } from '@/components/features/LegalResourceDetailPage'
-import { ResourcesPage } from '@/components/features/ResourcesPage'
-import { SettingsPage } from '@/components/features/SettingsPage'
-import { EmergencyModal } from '@/components/features/EmergencyModal'
-import { EmergencyDashboard } from '@/components/features/EmergencyDashboard'
-import { EmergencyChecklist } from '@/components/features/EmergencyChecklist'
-import { PASProtocolGuide } from '@/components/features/PASProtocolGuide'
-import { LegalTriageWizard } from '@/components/features/LegalTriageWizard'
-import { EvidenceCollection } from '@/components/features/EvidenceCollection'
-import { RoleSelector } from '@/components/features/RoleSelector'
-import { RoleDashboard } from '@/components/features/RoleDashboard'
 import { QuickActions } from '@/components/features/QuickActions'
 import { useProtocoloStore } from '@/store'
-import type { Protocol, LegalResource, TeamRole, Incident } from '@/types'
+import type { Protocol, LegalResource, TeamRole } from '@/types'
 
-type ViewState = 
+// Lazy-loaded view components (not needed on first paint)
+const ProtocolsPage = React.lazy(() =>
+  import('@/components/features/ProtocolsPage').then(m => ({ default: m.ProtocolsPage }))
+)
+const ProtocolDetailPage = React.lazy(() =>
+  import('@/components/features/ProtocolDetailPage').then(m => ({ default: m.ProtocolDetailPage }))
+)
+const LegalPage = React.lazy(() =>
+  import('@/components/features/LegalPage').then(m => ({ default: m.LegalPage }))
+)
+const LegalResourceDetailPage = React.lazy(() =>
+  import('@/components/features/LegalResourceDetailPage').then(m => ({ default: m.LegalResourceDetailPage }))
+)
+const LegalTriageWizard = React.lazy(() =>
+  import('@/components/features/LegalTriageWizard').then(m => ({ default: m.LegalTriageWizard }))
+)
+const ResourcesPage = React.lazy(() =>
+  import('@/components/features/ResourcesPage').then(m => ({ default: m.ResourcesPage }))
+)
+const SettingsPage = React.lazy(() =>
+  import('@/components/features/SettingsPage').then(m => ({ default: m.SettingsPage }))
+)
+const EmergencyModal = React.lazy(() =>
+  import('@/components/features/EmergencyModal').then(m => ({ default: m.EmergencyModal }))
+)
+const EmergencyDashboard = React.lazy(() =>
+  import('@/components/features/EmergencyDashboard').then(m => ({ default: m.EmergencyDashboard }))
+)
+const EmergencyChecklist = React.lazy(() =>
+  import('@/components/features/EmergencyChecklist').then(m => ({ default: m.EmergencyChecklist }))
+)
+const PASProtocolGuide = React.lazy(() =>
+  import('@/components/features/PASProtocolGuide').then(m => ({ default: m.PASProtocolGuide }))
+)
+const EvidenceCollection = React.lazy(() =>
+  import('@/components/features/EvidenceCollection').then(m => ({ default: m.EvidenceCollection }))
+)
+const RoleSelector = React.lazy(() =>
+  import('@/components/features/RoleSelector').then(m => ({ default: m.RoleSelector }))
+)
+const RoleDashboard = React.lazy(() =>
+  import('@/components/features/RoleDashboard').then(m => ({ default: m.RoleDashboard }))
+)
+
+type ViewState =
   | { type: 'home' }
   | { type: 'protocols' }
-  | { type: 'protocol-detail', protocol: Protocol }
+  | { type: 'protocol-detail'; protocol: Protocol }
   | { type: 'legal' }
-  | { type: 'legal-detail', resource: LegalResource }
-  | { type: 'legal-triage', occupantCategory?: 'primary' | 'family' | 'worker' | 'unauthorized' }
+  | { type: 'legal-detail'; resource: LegalResource }
+  | { type: 'legal-triage'; occupantCategory?: 'primary' | 'family' | 'worker' | 'unauthorized' }
   | { type: 'resources' }
   | { type: 'settings' }
   | { type: 'emergency-dashboard' }
-  | { type: 'emergency-checklist', incidentId?: string }
+  | { type: 'emergency-checklist'; incidentId?: string }
   | { type: 'pas-protocol' }
-  | { type: 'evidence-collection', incidentId?: string }
+  | { type: 'evidence-collection'; incidentId?: string }
   | { type: 'role-selection' }
   | { type: 'role-dashboard' }
+
+function ViewFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewState>({ type: 'home' })
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false)
-  
+
   // Store selectors
   const currentUser = useProtocoloStore((state) => state.currentUser)
   const activeIncident = useProtocoloStore((state) => state.getActiveIncident())
   const incidents = useProtocoloStore((state) => state.incidents)
-  const checklists = useProtocoloStore((state) => state.checklists)
-  const getProgress = useProtocoloStore((state) => state.getProgress)
   const [userRole, setUserRole] = useState<TeamRole | null>(null)
-  
-  // Derived state
-  const activeChecklist = activeIncident ? checklists[activeIncident.id] : null
-  const checklistProgress = activeIncident ? getProgress(activeIncident.id) : 0
-  
+
   const handleTabChange = useCallback((tab: string) => {
     switch (tab) {
       case 'home':
@@ -76,23 +108,23 @@ function App() {
         break
     }
   }, [])
-  
+
   const handleEmergencyPress = useCallback(() => {
     setIsEmergencyModalOpen(true)
   }, [])
-  
+
   const handleCloseEmergency = useCallback(() => {
     setIsEmergencyModalOpen(false)
   }, [])
-  
+
   const handleProtocolSelect = useCallback((protocol: Protocol) => {
     setCurrentView({ type: 'protocol-detail', protocol })
   }, [])
-  
+
   const handleLegalResourceSelect = useCallback((resource: LegalResource) => {
     setCurrentView({ type: 'legal-detail', resource })
   }, [])
-  
+
   const handleBack = useCallback(() => {
     switch (currentView.type) {
       case 'protocol-detail':
@@ -116,18 +148,17 @@ function App() {
         setCurrentView({ type: 'home' })
     }
   }, [currentView.type, activeIncident])
-  
+
   const handleRoleSelect = useCallback((role: TeamRole) => {
     setUserRole(role)
     setCurrentView({ type: 'role-dashboard' })
   }, [setUserRole])
-  
-  const handleEmergencyIncidentCreate = useCallback((incident: Incident) => {
+
+  const handleEmergencyIncidentCreate = useCallback(() => {
     setCurrentView({ type: 'emergency-dashboard' })
     setIsEmergencyModalOpen(false)
   }, [])
-  
-  // Determine active tab based on current view
+
   const getActiveTab = () => {
     switch (currentView.type) {
       case 'home':
@@ -149,90 +180,87 @@ function App() {
         return 'home'
     }
   }
-  
-  // Render current view
+
   const renderView = () => {
     switch (currentView.type) {
       case 'home':
         return (
-          <HomePage 
+          <HomePage
             onEmergencyPress={handleEmergencyPress}
             onNavigate={handleTabChange}
           />
         )
-      
+
       case 'protocols':
         return (
-          <ProtocolsPage 
+          <ProtocolsPage
             onProtocolSelect={handleProtocolSelect}
           />
         )
-      
+
       case 'protocol-detail':
         return (
-          <ProtocolDetailPage 
+          <ProtocolDetailPage
             protocol={currentView.protocol}
             onBack={handleBack}
           />
         )
-      
+
       case 'legal':
         return (
-          <LegalPage 
+          <LegalPage
             onResourceSelect={handleLegalResourceSelect}
           />
         )
-      
+
       case 'legal-detail':
         return (
-          <LegalResourceDetailPage 
+          <LegalResourceDetailPage
             resource={currentView.resource}
             onBack={handleBack}
           />
         )
-      
+
       case 'legal-triage':
         return (
           <LegalTriageWizard
             incidentId={activeIncident?.id}
           />
         )
-      
+
       case 'resources':
-        return (
-          <ResourcesPage />
-        )
-      
+        return <ResourcesPage />
+
       case 'settings':
         return (
-          <SettingsPage 
+          <SettingsPage
             onNavigate={handleTabChange}
           />
         )
-      
+
       case 'emergency-dashboard':
         return (
           <EmergencyDashboard
-            onWithdrawalTrigger={(reason: string) => setCurrentView({ type: 'home' })}
+            onWithdrawalTrigger={() => setCurrentView({ type: 'home' })}
             onDocumentPress={() => setCurrentView({ type: 'evidence-collection', incidentId: activeIncident?.id })}
             onContactPress={() => {}}
           />
         )
-      
+
       case 'emergency-checklist':
         return (
           <EmergencyChecklist
             incidentId={currentView.incidentId || activeIncident?.id || ''}
           />
         )
-      
+
       case 'pas-protocol':
         return (
           <PASProtocolGuide
             onComplete={handleBack}
           />
         )
-      
+
       case 'evidence-collection':
         return (
           <EvidenceCollection
@@ -240,7 +268,7 @@ function App() {
             collectorPseudonym={currentUser?.pseudonym || 'Anónimo'}
           />
         )
-      
+
       case 'role-selection':
         return (
           <RoleSelector
@@ -248,7 +276,7 @@ function App() {
             userCertificationLevel={currentUser?.certificationLevel || 1}
           />
         )
-      
+
       case 'role-dashboard':
         if (!userRole) {
           return (
@@ -259,7 +287,7 @@ function App() {
           )
         }
         return (
-          <RoleDashboard 
+          <RoleDashboard
             role={userRole}
             userCertificationLevel={currentUser?.certificationLevel || 1}
             userPseudonym={currentUser?.pseudonym || 'Usuario'}
@@ -270,7 +298,7 @@ function App() {
               type: 'incident',
               description: `${inc.threatLevel === 'critical' ? 'Incidente crítico' : 'Incidente'} en ${inc.location.colonia}`,
               timestamp: inc.timestamp,
-              actor: (inc as any).reporterPseudonym || 'Desconocido'
+              actor: (inc as unknown as Record<string, unknown>).reporterPseudonym as string || 'Desconocido'
             }))}
             onActionClick={(actionId) => {
               switch (actionId) {
@@ -291,71 +319,73 @@ function App() {
                   break
               }
             }}
-            onQuickAccessClick={(itemId) => {
+            onQuickAccessClick={(_itemId) => {
               // Handle quick access items
             }}
           />
         )
-      
+
       default:
         return null
     }
   }
-  
-  // Check if we should show bottom navigation
+
   const showBottomNav = ![
-    'protocol-detail', 
-    'legal-detail', 
+    'protocol-detail',
+    'legal-detail',
     'emergency-dashboard',
     'emergency-checklist',
     'evidence-collection',
     'pas-protocol',
     'legal-triage'
   ].includes(currentView.type)
-  
-  // Check if we should show quick actions
+
   const showQuickActions = ['home', 'role-dashboard'].includes(currentView.type)
-  
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <Header onEmergencyPress={handleEmergencyPress} />
-      
+
       {/* Main Content */}
       <main className={`
-        pt-14 
+        pt-14
         ${showBottomNav ? 'pb-20' : 'pb-4'}
         min-h-screen
         max-w-lg
         mx-auto
       `}>
-        {renderView()}
+        <Suspense fallback={<ViewFallback />}>
+          {renderView()}
+        </Suspense>
       </main>
-      
+
       {/* Bottom Navigation */}
       {showBottomNav && (
-        <BottomNavigation 
+        <BottomNavigation
           activeTab={getActiveTab()}
           onTabChange={handleTabChange}
         />
       )}
-      
+
       {/* Quick Actions FAB */}
       {showQuickActions && (
-        <QuickActions 
+        <QuickActions
           role={userRole || 'leader'}
           onEmergencyPress={handleEmergencyPress}
           onCameraPress={() => setCurrentView({ type: 'evidence-collection' })}
           onReportPress={() => setCurrentView({ type: 'role-selection' })}
         />
       )}
-      
+
       {/* Emergency Modal */}
-      <EmergencyModal 
-        isOpen={isEmergencyModalOpen}
-        onClose={handleCloseEmergency}
-        onIncidentCreate={handleEmergencyIncidentCreate}
-      />
+      <Suspense fallback={null}>
+        <EmergencyModal
+          isOpen={isEmergencyModalOpen}
+          onClose={handleCloseEmergency}
+          onIncidentCreate={handleEmergencyIncidentCreate}
+        />
+      </Suspense>
     </div>
   )
 }

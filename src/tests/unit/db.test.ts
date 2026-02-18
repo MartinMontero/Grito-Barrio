@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Database Unit Tests
  * Protocolo CDMX
- * 
+ *
  * Tests for IndexedDB operations, CRUD, queries, and migrations
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createMockIncident, createMockFormData, wait } from '../setup'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createMockIncident } from '../setup'
 
 // Mock IndexedDB
 const mockIndex = {
@@ -153,8 +154,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.add(incident)
-      
+      const _request = mockObjectStore.add(incident)
+
       expect(mockObjectStore.add).toHaveBeenCalledWith(incident)
     })
 
@@ -169,14 +170,14 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.add({ id: 'duplicate' })
+      const _request = mockObjectStore.add({ id: 'duplicate' })
       
       // Error would be thrown
       expect(mockObjectStore.add).toHaveBeenCalled()
     })
 
     it('should auto-generate keys when not provided', async () => {
-      mockObjectStore.add.mockImplementation((data) => {
+      mockObjectStore.add.mockImplementation((_data) => {
         const request = {
           onsuccess: null as any,
           result: 1,
@@ -186,8 +187,8 @@ describe('Database - CRUD Operations', () => {
       })
 
       const data = { name: 'Test' }
-      const request = mockObjectStore.add(data)
-      
+      const _request = mockObjectStore.add(data)
+
       expect(mockObjectStore.add).toHaveBeenCalledWith(data)
     })
   })
@@ -196,7 +197,7 @@ describe('Database - CRUD Operations', () => {
     it('should retrieve incident by ID', async () => {
       const incident = createMockIncident()
       
-      mockObjectStore.get.mockImplementation((id) => {
+      mockObjectStore.get.mockImplementation((_id) => {
         const request = {
           onsuccess: null as any,
           result: incident,
@@ -205,7 +206,7 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.get(incident.id)
+      const _request = mockObjectStore.get(incident.id)
       
       expect(mockObjectStore.get).toHaveBeenCalledWith(incident.id)
     })
@@ -220,8 +221,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.get('non-existent')
-      
+      const _request2 = mockObjectStore.get('non-existent')
+
       expect(mockObjectStore.get).toHaveBeenCalledWith('non-existent')
     })
 
@@ -237,8 +238,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.getAll()
-      
+      const _request3 = mockObjectStore.getAll()
+
       expect(mockObjectStore.getAll).toHaveBeenCalled()
     })
 
@@ -254,8 +255,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.getAllKeys()
-      
+      const _request4 = mockObjectStore.getAllKeys()
+
       expect(mockObjectStore.getAllKeys).toHaveBeenCalled()
     })
   })
@@ -275,8 +276,8 @@ describe('Database - CRUD Operations', () => {
       })
 
       const updatedIncident = { ...incident, ...updates }
-      const request = mockObjectStore.put(updatedIncident)
-      
+      const _request5 = mockObjectStore.put(updatedIncident)
+
       expect(mockObjectStore.put).toHaveBeenCalledWith(updatedIncident)
     })
 
@@ -292,8 +293,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.put(newData)
-      
+      const _request6 = mockObjectStore.put(newData)
+
       expect(mockObjectStore.put).toHaveBeenCalledWith(newData)
     })
   })
@@ -311,8 +312,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.delete(key)
-      
+      const _request7 = mockObjectStore.delete(key)
+
       expect(mockObjectStore.delete).toHaveBeenCalledWith(key)
     })
 
@@ -326,8 +327,8 @@ describe('Database - CRUD Operations', () => {
         return request
       })
 
-      const request = mockObjectStore.delete('non-existent')
-      
+      const _request8 = mockObjectStore.delete('non-existent')
+
       expect(mockObjectStore.delete).toHaveBeenCalledWith('non-existent')
     })
   })
@@ -360,8 +361,8 @@ describe('Database - Index Queries', () => {
     })
 
     const index = mockObjectStore.index('status')
-    const request = index.getAll('responding')
-    
+    const _request9 = index.getAll('responding')
+
     expect(mockObjectStore.index).toHaveBeenCalledWith('status')
     expect(mockIndex.getAll).toHaveBeenCalledWith('responding')
   })
@@ -377,7 +378,7 @@ describe('Database - Index Queries', () => {
     })
 
     const index = mockObjectStore.index('alcaldia-status')
-    const request = index.getAll(['Cuauhtémoc', 'active'])
+    const _request10 = index.getAll(['Cuauhtémoc', 'active'])
     
     expect(mockObjectStore.index).toHaveBeenCalledWith('alcaldia-status')
   })
@@ -393,8 +394,8 @@ describe('Database - Index Queries', () => {
     })
 
     const index = mockObjectStore.index('status')
-    const request = index.count('responding')
-    
+    const _request11 = index.count('responding')
+
     expect(mockIndex.count).toHaveBeenCalledWith('responding')
   })
 
@@ -418,8 +419,8 @@ describe('Database - Index Queries', () => {
     })
 
     const index = mockObjectStore.index('timestamp')
-    const request = index.openCursor()
-    
+    const _request12 = index.openCursor()
+
     expect(mockIndex.openCursor).toHaveBeenCalled()
   })
 

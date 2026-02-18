@@ -659,8 +659,8 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
     if (navigator.share) {
       try {
         await navigator.share(shareData)
-      } catch (err) {
-        console.log('Share cancelled')
+      } catch (_err) {
+        // Share dismissed by user
       }
     } else {
       // Fallback: copy to clipboard

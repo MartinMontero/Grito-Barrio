@@ -843,8 +843,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
 
   const handleEmergencyAlert = () => {
     // In a real app, this would trigger the emergency alert flow
-    console.log('Emergency alert activated!')
-    
+
     if (navigator.vibrate) {
       navigator.vibrate([200, 100, 200, 100, 500])
     }
