@@ -2,7 +2,7 @@
 
 ## 🚨 Herramienta de Respuesta Comunitaria para Apoyo en Desalojos Ilegales
 
-Protocolo CDMX es una Progressive Web App (PWA) diseñada para proporcionar información, recursos y protocolos de emergencia a personas en riesgo de desalojos ilegales en la Ciudad de México.
+Grito & Barrio es una Progressive Web App (PWA) diseñada para proporcionar información, recursos y protocolos de emergencia a personas en riesgo de desalojos ilegales en la Ciudad de México.
 
 ## ✨ Características
 
