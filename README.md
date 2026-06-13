@@ -1,4 +1,4 @@
-# Protocolo CDMX
+# Grito Barrio
 
 Herramienta de respuesta comunitaria para apoyo en desalojos ilegales en la Ciudad de México.
 
