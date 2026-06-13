@@ -29,13 +29,15 @@ import {
   generateSecureId,
   constantTimeCompare,
   isCryptoSupported,
-  type HashResult
-} from './crypto'
-import { getDataKey, isVaultInitialized } from './vault'
+  type HashResult,
+} from "./crypto";
+import { getDataKey, isVaultInitialized } from "./vault";
 
 function requireCrypto(): void {
   if (!isCryptoSupported()) {
-    throw new Error('Web Crypto API no disponible: el cifrado seguro no es posible en este navegador.')
+    throw new Error(
+      "Web Crypto API no disponible: el cifrado seguro no es posible en este navegador.",
+    );
   }
 }
 
@@ -43,15 +45,15 @@ function requireCrypto(): void {
  * Resolve the at-rest key, or throw with a clear, actionable error.
  */
 function requireDataKey(): CryptoKey {
-  const key = getDataKey()
+  const key = getDataKey();
   if (!key) {
     throw new Error(
       isVaultInitialized()
-        ? 'La bóveda está bloqueada: desbloquéala con tu contraseña para cifrar/descifrar.'
-        : 'No hay bóveda configurada: define una contraseña para activar el cifrado.'
-    )
+        ? "La bóveda está bloqueada: desbloquéala con tu contraseña para cifrar/descifrar."
+        : "No hay bóveda configurada: define una contraseña para activar el cifrado.",
+    );
   }
-  return key
+  return key;
 }
 
 // =============================================================================
@@ -61,38 +63,47 @@ function requireDataKey(): CryptoKey {
 /**
  * Encrypt a string. With `password` → portable (PBKDF2). Without → at-rest (DEK).
  */
-export async function encryptData(data: string, password?: string): Promise<string> {
-  requireCrypto()
+export async function encryptData(
+  data: string,
+  password?: string,
+): Promise<string> {
+  requireCrypto();
   if (password) {
-    return encryptToString(data, password)
+    return encryptToString(data, password);
   }
-  return encryptStringWithKey(data, requireDataKey())
+  return encryptStringWithKey(data, requireDataKey());
 }
 
 /**
  * Decrypt a string. Throws on wrong key/password or tampering (no fallback).
  */
-export async function decryptData(encryptedData: string, password?: string): Promise<string> {
-  requireCrypto()
+export async function decryptData(
+  encryptedData: string,
+  password?: string,
+): Promise<string> {
+  requireCrypto();
   if (password) {
-    return decryptFromString(encryptedData, password)
+    return decryptFromString(encryptedData, password);
   }
-  return decryptStringWithKey(encryptedData, requireDataKey())
+  return decryptStringWithKey(encryptedData, requireDataKey());
 }
 
-export async function encryptObject<T extends object>(obj: T, password?: string): Promise<string> {
-  return encryptData(JSON.stringify(obj), password)
+export async function encryptObject<T extends object>(
+  obj: T,
+  password?: string,
+): Promise<string> {
+  return encryptData(JSON.stringify(obj), password);
 }
 
 export async function decryptObject<T extends object>(
   encryptedData: string,
-  password?: string
+  password?: string,
 ): Promise<T | null> {
   try {
-    return JSON.parse(await decryptData(encryptedData, password)) as T
+    return JSON.parse(await decryptData(encryptedData, password)) as T;
   } catch (error) {
-    console.error('Error decrypting object:', error)
-    return null
+    console.error("Error decrypting object:", error);
+    return null;
   }
 }
 
@@ -101,21 +112,26 @@ export async function decryptObject<T extends object>(
 // =============================================================================
 
 export async function hashData(data: string): Promise<string> {
-  requireCrypto()
-  return sha256(data)
+  requireCrypto();
+  return sha256(data);
 }
 
 export async function verifyHash(data: string, hash: string): Promise<boolean> {
-  const computed = await hashData(data)
-  return constantTimeCompare(computed, hash)
+  const computed = await hashData(data);
+  return constantTimeCompare(computed, hash);
 }
 
-export async function hashPasswordForStorage(password: string): Promise<HashResult> {
-  return hashPassword(password)
+export async function hashPasswordForStorage(
+  password: string,
+): Promise<HashResult> {
+  return hashPassword(password);
 }
 
-export async function verifyPasswordAgainstHash(password: string, storedHash: HashResult): Promise<boolean> {
-  return verifyPassword(password, storedHash)
+export async function verifyPasswordAgainstHash(
+  password: string,
+  storedHash: HashResult,
+): Promise<boolean> {
+  return verifyPassword(password, storedHash);
 }
 
 // =============================================================================
@@ -123,15 +139,15 @@ export async function verifyPasswordAgainstHash(password: string, storedHash: Ha
 // =============================================================================
 
 export function generateSecureRandomId(): string {
-  requireCrypto()
-  return generateSecureId(16)
+  requireCrypto();
+  return generateSecureId(16);
 }
 
 // =============================================================================
 // EXPORTS
 // =============================================================================
 
-export type { HashResult } from './crypto'
+export type { HashResult } from "./crypto";
 
 export default {
   encryptData,
@@ -142,5 +158,5 @@ export default {
   verifyHash,
   hashPasswordForStorage,
   verifyPasswordAgainstHash,
-  generateSecureRandomId
-}
+  generateSecureRandomId,
+};

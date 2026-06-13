@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  AlertTriangle, 
-  Shield, 
-  Users, 
-  Phone, 
-  Camera, 
-  ChevronDown, 
+  AlertTriangle,
+  Shield,
+  Users,
+  Phone,
+  Camera,
+  ChevronDown,
   ChevronUp,
   Clock,
   MapPin,
@@ -18,45 +18,45 @@ import {
   UserCheck,
   AlertOctagon,
   Share2,
-  Navigation
-} from 'lucide-react'
-import { Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useProtocoloStore } from '@/store'
-import type { 
-  Incident, 
-  EmergencyPhase, 
-  TeamRole, 
+  Navigation,
+} from "lucide-react";
+import { Button } from "@/components/ui";
+import { cn } from "@/lib/utils";
+import { useProtocoloStore } from "@/store";
+import type {
+  Incident,
+  EmergencyPhase,
+  TeamRole,
   TeamMember,
   ChecklistItem,
-  ThreatLevel 
-} from '@/types'
+  ThreatLevel,
+} from "@/types";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface EmergencyDashboardProps {
-  onWithdrawalTrigger?: (reason: string) => void
-  onDocumentPress?: () => void
-  onContactPress?: () => void
+  onWithdrawalTrigger?: (reason: string) => void;
+  onDocumentPress?: () => void;
+  onContactPress?: () => void;
   /** Optional callback fired when the general alert is activated. */
-  onAlertActivated?: () => void
+  onAlertActivated?: () => void;
 }
 
 interface TimerState {
-  minutes: number
-  seconds: number
-  totalSeconds: number
-  phase: EmergencyPhase
-  phaseProgress: number
+  minutes: number;
+  seconds: number;
+  totalSeconds: number;
+  phase: EmergencyPhase;
+  phaseProgress: number;
 }
 
 interface WithdrawalTrigger {
-  id: string
-  label: string
-  severity: 'high' | 'critical'
-  icon: React.ReactNode
+  id: string;
+  label: string;
+  severity: "high" | "critical";
+  icon: React.ReactNode;
 }
 
 // =============================================================================
@@ -64,50 +64,69 @@ interface WithdrawalTrigger {
 // =============================================================================
 
 const WITHDRAWAL_TRIGGERS: WithdrawalTrigger[] = [
-  { 
-    id: 'firearms', 
-    label: 'Armas de fuego presentes', 
-    severity: 'critical',
-    icon: <AlertOctagon className="w-5 h-5" />
+  {
+    id: "firearms",
+    label: "Armas de fuego presentes",
+    severity: "critical",
+    icon: <AlertOctagon className="w-5 h-5" />,
   },
-  { 
-    id: 'armed_groups', 
-    label: 'Grupos armados', 
-    severity: 'critical',
-    icon: <Shield className="w-5 h-5" />
+  {
+    id: "armed_groups",
+    label: "Grupos armados",
+    severity: "critical",
+    icon: <Shield className="w-5 h-5" />,
   },
-  { 
-    id: 'kidnap_threat', 
-    label: 'Amenazas de secuestro', 
-    severity: 'critical',
-    icon: <AlertTriangle className="w-5 h-5" />
+  {
+    id: "kidnap_threat",
+    label: "Amenazas de secuestro",
+    severity: "critical",
+    icon: <AlertTriangle className="w-5 h-5" />,
   },
-  { 
-    id: 'minors_escalation', 
-    label: 'Escalación hacia menores', 
-    severity: 'high',
-    icon: <Users className="w-5 h-5" />
+  {
+    id: "minors_escalation",
+    label: "Escalación hacia menores",
+    severity: "high",
+    icon: <Users className="w-5 h-5" />,
   },
-  { 
-    id: 'medical_emergency', 
-    label: 'Emergencia médica grave', 
-    severity: 'high',
-    icon: <Activity className="w-5 h-5" />
+  {
+    id: "medical_emergency",
+    label: "Emergencia médica grave",
+    severity: "high",
+    icon: <Activity className="w-5 h-5" />,
   },
-  { 
-    id: 'authority_violence', 
-    label: 'Violencia por autoridades', 
-    severity: 'critical',
-    icon: <Shield className="w-5 h-5" />
-  }
-]
+  {
+    id: "authority_violence",
+    label: "Violencia por autoridades",
+    severity: "critical",
+    icon: <Shield className="w-5 h-5" />,
+  },
+];
 
-const PHASE_CONFIG: Record<EmergencyPhase, { label: string; color: string; maxMinutes: number }> = {
-  '0-5min': { label: 'Activación Inmediata', color: 'bg-red-500', maxMinutes: 5 },
-  '5-20min': { label: 'Evaluación en Escena', color: 'bg-orange-500', maxMinutes: 20 },
-  '20-45min': { label: 'Documentación Legal', color: 'bg-yellow-500', maxMinutes: 45 },
-  '45-60min': { label: 'Soporte Sostenido', color: 'bg-blue-500', maxMinutes: 60 }
-}
+const PHASE_CONFIG: Record<
+  EmergencyPhase,
+  { label: string; color: string; maxMinutes: number }
+> = {
+  "0-5min": {
+    label: "Activación Inmediata",
+    color: "bg-red-500",
+    maxMinutes: 5,
+  },
+  "5-20min": {
+    label: "Evaluación en Escena",
+    color: "bg-orange-500",
+    maxMinutes: 20,
+  },
+  "20-45min": {
+    label: "Documentación Legal",
+    color: "bg-yellow-500",
+    maxMinutes: 45,
+  },
+  "45-60min": {
+    label: "Soporte Sostenido",
+    color: "bg-blue-500",
+    maxMinutes: 60,
+  },
+};
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -115,35 +134,35 @@ const PHASE_CONFIG: Record<EmergencyPhase, { label: string; color: string; maxMi
 
 function getThreatLevelColor(level: ThreatLevel): string {
   const colors: Record<ThreatLevel, string> = {
-    'low': 'bg-green-500',
-    'moderate': 'bg-yellow-500',
-    'high': 'bg-orange-500',
-    'critical': 'bg-red-600',
-    'extreme': 'bg-purple-600'
-  }
-  return colors[level] || 'bg-gray-500'
+    low: "bg-green-500",
+    moderate: "bg-yellow-500",
+    high: "bg-orange-500",
+    critical: "bg-red-600",
+    extreme: "bg-purple-600",
+  };
+  return colors[level] || "bg-gray-500";
 }
 
 function getThreatLevelLabel(level: ThreatLevel): string {
   const labels: Record<ThreatLevel, string> = {
-    'low': 'Bajo',
-    'moderate': 'Moderado',
-    'high': 'Alto',
-    'critical': 'Crítico',
-    'extreme': 'Extremo'
-  }
-  return labels[level] || 'Desconocido'
+    low: "Bajo",
+    moderate: "Moderado",
+    high: "Alto",
+    critical: "Crítico",
+    extreme: "Extremo",
+  };
+  return labels[level] || "Desconocido";
 }
 
 function calculatePhase(elapsedMinutes: number): EmergencyPhase {
-  if (elapsedMinutes < 5) return '0-5min'
-  if (elapsedMinutes < 20) return '5-20min'
-  if (elapsedMinutes < 45) return '20-45min'
-  return '45-60min'
+  if (elapsedMinutes < 5) return "0-5min";
+  if (elapsedMinutes < 20) return "5-20min";
+  if (elapsedMinutes < 45) return "20-45min";
+  return "45-60min";
 }
 
 function formatTime(minutes: number, seconds: number): string {
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 // =============================================================================
@@ -151,49 +170,60 @@ function formatTime(minutes: number, seconds: number): string {
 // =============================================================================
 
 interface EmergencyTimerProps {
-  startTime: string
-  onPhaseChange?: (phase: EmergencyPhase) => void
+  startTime: string;
+  onPhaseChange?: (phase: EmergencyPhase) => void;
 }
 
-const EmergencyTimer: React.FC<EmergencyTimerProps> = ({ startTime, onPhaseChange }) => {
+const EmergencyTimer: React.FC<EmergencyTimerProps> = ({
+  startTime,
+  onPhaseChange,
+}) => {
   const [timer, setTimer] = useState<TimerState>({
     minutes: 0,
     seconds: 0,
     totalSeconds: 0,
-    phase: '0-5min',
-    phaseProgress: 0
-  })
+    phase: "0-5min",
+    phaseProgress: 0,
+  });
 
   useEffect(() => {
-    const start = new Date(startTime).getTime()
-    
+    const start = new Date(startTime).getTime();
+
     const interval = setInterval(() => {
-      const now = Date.now()
-      const elapsed = Math.floor((now - start) / 1000)
-      const minutes = Math.floor(elapsed / 60)
-      const seconds = elapsed % 60
-      
-      const phase = calculatePhase(minutes)
-      const phaseConfig = PHASE_CONFIG[phase]
-      const phaseStartMinutes = phase === '0-5min' ? 0 : 
-                                phase === '5-20min' ? 5 : 
-                                phase === '20-45min' ? 20 : 45
-      const phaseElapsed = minutes - phaseStartMinutes
-      const phaseProgress = Math.min((phaseElapsed / (phaseConfig.maxMinutes - phaseStartMinutes)) * 100, 100)
-      
+      const now = Date.now();
+      const elapsed = Math.floor((now - start) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+
+      const phase = calculatePhase(minutes);
+      const phaseConfig = PHASE_CONFIG[phase];
+      const phaseStartMinutes =
+        phase === "0-5min"
+          ? 0
+          : phase === "5-20min"
+            ? 5
+            : phase === "20-45min"
+              ? 20
+              : 45;
+      const phaseElapsed = minutes - phaseStartMinutes;
+      const phaseProgress = Math.min(
+        (phaseElapsed / (phaseConfig.maxMinutes - phaseStartMinutes)) * 100,
+        100,
+      );
+
       setTimer({
         minutes,
         seconds,
         totalSeconds: elapsed,
         phase,
-        phaseProgress
-      })
-    }, 1000)
+        phaseProgress,
+      });
+    }, 1000);
 
-    return () => clearInterval(interval)
-  }, [startTime])
+    return () => clearInterval(interval);
+  }, [startTime]);
 
-  const phaseConfig = PHASE_CONFIG[timer.phase]
+  const phaseConfig = PHASE_CONFIG[timer.phase];
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 mb-4">
@@ -217,24 +247,32 @@ const EmergencyTimer: React.FC<EmergencyTimerProps> = ({ startTime, onPhaseChang
             {Math.round(timer.phaseProgress)}%
           </span>
         </div>
-        
+
         {/* Phase Progress Bar */}
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div 
-            className={cn("h-full transition-all duration-1000 ease-linear", phaseConfig.color)}
+          <div
+            className={cn(
+              "h-full transition-all duration-1000 ease-linear",
+              phaseConfig.color,
+            )}
             style={{ width: `${timer.phaseProgress}%` }}
           />
         </div>
 
         {/* All Phases Visual */}
         <div className="flex mt-2 gap-1">
-          {(['0-5min', '5-20min', '20-45min', '45-60min'] as EmergencyPhase[]).map((p) => (
-            <div 
+          {(
+            ["0-5min", "5-20min", "20-45min", "45-60min"] as EmergencyPhase[]
+          ).map((p) => (
+            <div
               key={p}
               className={cn(
                 "flex-1 h-1.5 rounded-full transition-colors",
-                p === timer.phase ? PHASE_CONFIG[p].color :
-                p < timer.phase ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                p === timer.phase
+                  ? PHASE_CONFIG[p].color
+                  : p < timer.phase
+                    ? "bg-green-500"
+                    : "bg-gray-200 dark:bg-gray-700",
               )}
             />
           ))}
@@ -248,63 +286,63 @@ const EmergencyTimer: React.FC<EmergencyTimerProps> = ({ startTime, onPhaseChang
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // SUB-COMPONENT: Team Status
 // =============================================================================
 
 interface TeamStatusProps {
-  team: TeamMember[]
+  team: TeamMember[];
 }
 
 const TeamStatus: React.FC<TeamStatusProps> = ({ team }) => {
-  const getStatusColor = (status: TeamMember['status']) => {
-    const colors: Record<TeamMember['status'], string> = {
-      'en_route': 'bg-yellow-500',
-      'on_scene': 'bg-green-500',
-      'active': 'bg-blue-500',
-      'standby': 'bg-gray-500',
-      'off_duty': 'bg-gray-300'
-    }
-    return colors[status]
-  }
+  const getStatusColor = (status: TeamMember["status"]) => {
+    const colors: Record<TeamMember["status"], string> = {
+      en_route: "bg-yellow-500",
+      on_scene: "bg-green-500",
+      active: "bg-blue-500",
+      standby: "bg-gray-500",
+      off_duty: "bg-gray-300",
+    };
+    return colors[status];
+  };
 
-  const getStatusLabel = (status: TeamMember['status']) => {
-    const labels: Record<TeamMember['status'], string> = {
-      'en_route': 'En camino',
-      'on_scene': 'En escena',
-      'active': 'Activo',
-      'standby': 'En espera',
-      'off_duty': 'Fuera de servicio'
-    }
-    return labels[status]
-  }
+  const getStatusLabel = (status: TeamMember["status"]) => {
+    const labels: Record<TeamMember["status"], string> = {
+      en_route: "En camino",
+      on_scene: "En escena",
+      active: "Activo",
+      standby: "En espera",
+      off_duty: "Fuera de servicio",
+    };
+    return labels[status];
+  };
 
   const getRoleIcon = (role: TeamRole) => {
     const icons: Record<TeamRole, React.ReactNode> = {
-      'leader': <Shield className="w-4 h-4" />,
-      'security': <Shield className="w-4 h-4" />,
-      'medical': <Activity className="w-4 h-4" />,
-      'legal': <FileText className="w-4 h-4" />,
-      'dispatch': <Phone className="w-4 h-4" />,
-      'logistics': <Navigation className="w-4 h-4" />
-    }
-    return icons[role]
-  }
+      leader: <Shield className="w-4 h-4" />,
+      security: <Shield className="w-4 h-4" />,
+      medical: <Activity className="w-4 h-4" />,
+      legal: <FileText className="w-4 h-4" />,
+      dispatch: <Phone className="w-4 h-4" />,
+      logistics: <Navigation className="w-4 h-4" />,
+    };
+    return icons[role];
+  };
 
   const getRoleLabel = (role: TeamRole) => {
     const labels: Record<TeamRole, string> = {
-      'leader': 'Líder',
-      'security': 'Seguridad',
-      'medical': 'Médico',
-      'legal': 'Legal',
-      'dispatch': 'Dispatch',
-      'logistics': 'Logística'
-    }
-    return labels[role]
-  }
+      leader: "Líder",
+      security: "Seguridad",
+      medical: "Médico",
+      legal: "Legal",
+      dispatch: "Dispatch",
+      logistics: "Logística",
+    };
+    return labels[role];
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 mb-4">
@@ -320,7 +358,7 @@ const TeamStatus: React.FC<TeamStatusProps> = ({ team }) => {
 
       <div className="space-y-2">
         {team.map((member, index) => (
-          <div 
+          <div
             key={index}
             className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
           >
@@ -333,16 +371,27 @@ const TeamStatus: React.FC<TeamStatusProps> = ({ team }) => {
                   {member.pseudonym}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {getRoleLabel(member.role)} • Nivel {member.certificationLevel}
+                  {getRoleLabel(member.role)} • Nivel{" "}
+                  {member.certificationLevel}
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-                getStatusColor(member.status).replace('bg-', 'bg-opacity-20 text-')
-              )}>
-                <div className={cn("w-2 h-2 rounded-full", getStatusColor(member.status))} />
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                  getStatusColor(member.status).replace(
+                    "bg-",
+                    "bg-opacity-20 text-",
+                  ),
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    getStatusColor(member.status),
+                  )}
+                />
                 {getStatusLabel(member.status)}
               </div>
               {member.eta && (
@@ -365,72 +414,79 @@ const TeamStatus: React.FC<TeamStatusProps> = ({ team }) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // SUB-COMPONENT: Checklist Section
 // =============================================================================
 
 interface ChecklistSectionProps {
-  incidentId: string
+  incidentId: string;
 }
 
 const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
-  const [expandedPhase, setExpandedPhase] = useState<EmergencyPhase | null>('0-5min')
-  const store = useProtocoloStore()
-  const currentUser = store.currentUser
+  const [expandedPhase, setExpandedPhase] = useState<EmergencyPhase | null>(
+    "0-5min",
+  );
+  const store = useProtocoloStore();
+  const currentUser = store.currentUser;
 
-  const checklist = store.checklists[incidentId] || []
-  const progress = store.getProgress(incidentId)
+  const checklist = store.checklists[incidentId] || [];
+  const progress = store.getProgress(incidentId);
 
   // Ensure the checklist exists in the store so this section and the standalone
   // EmergencyChecklist screen render the SAME canonical data (single source of
   // truth: checklistSlice). Initialize via the action, never mutate directly.
   useEffect(() => {
     if (incidentId && !(store.checklists[incidentId]?.length > 0)) {
-      store.initializeChecklist(incidentId)
+      store.initializeChecklist(incidentId);
     }
-  }, [incidentId, store])
+  }, [incidentId, store]);
 
   const handleToggleItem = (itemId: string) => {
     if (currentUser) {
-      store.toggleItem(incidentId, itemId, currentUser.pseudonym)
+      store.toggleItem(incidentId, itemId, currentUser.pseudonym);
 
       // Haptic feedback if available
       if (navigator.vibrate) {
-        navigator.vibrate(50)
+        navigator.vibrate(50);
       }
     }
-  }
+  };
 
-  const phases: EmergencyPhase[] = ['0-5min', '5-20min', '20-45min', '45-60min']
+  const phases: EmergencyPhase[] = [
+    "0-5min",
+    "5-20min",
+    "20-45min",
+    "45-60min",
+  ];
 
-  const getCategoryIcon = (category: ChecklistItem['category']) => {
-    const icons: Record<ChecklistItem['category'], React.ReactNode> = {
-      'safety': <Shield className="w-4 h-4" />,
-      'legal': <FileText className="w-4 h-4" />,
-      'documentation': <Camera className="w-4 h-4" />,
-      'medical': <Activity className="w-4 h-4" />,
-      'communication': <Phone className="w-4 h-4" />,
-      'logistics': <Navigation className="w-4 h-4" />,
-      'follow_up': <CheckCircle2 className="w-4 h-4" />
-    }
-    return icons[category]
-  }
+  const getCategoryIcon = (category: ChecklistItem["category"]) => {
+    const icons: Record<ChecklistItem["category"], React.ReactNode> = {
+      safety: <Shield className="w-4 h-4" />,
+      legal: <FileText className="w-4 h-4" />,
+      documentation: <Camera className="w-4 h-4" />,
+      medical: <Activity className="w-4 h-4" />,
+      communication: <Phone className="w-4 h-4" />,
+      logistics: <Navigation className="w-4 h-4" />,
+      follow_up: <CheckCircle2 className="w-4 h-4" />,
+    };
+    return icons[category];
+  };
 
-  const getCategoryLabel = (category: ChecklistItem['category']) => {
-    const labels: Record<ChecklistItem['category'], string> = {
-      'safety': 'Seguridad',
-      'legal': 'Legal',
-      'documentation': 'Documentación',
-      'medical': 'Médico',
-      'communication': 'Comunicación',
-      'logistics': 'Logística',
-      'follow_up': 'Seguimiento'
-    }
-    return labels[category]
-  }
+  const getCategoryLabel = (category: ChecklistItem["category"]) => {
+    const labels: Record<ChecklistItem["category"], string> = {
+      safety: "Seguridad",
+      legal: "Legal",
+      documentation: "Documentación",
+      medical: "Médico",
+      communication: "Comunicación",
+      logistics: "Logística",
+      follow_up: "Seguimiento",
+    };
+    return labels[category];
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 mb-4">
@@ -445,7 +501,7 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
             {Math.round(progress)}%
           </div>
           <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-green-500 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
@@ -455,17 +511,22 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
 
       {/* Phase Accordion */}
       <div className="space-y-2">
-        {phases.map(phase => {
-          const phaseItems = checklist.filter(item => item.timeWindow === phase)
-          const completedCount = phaseItems.filter(item => item.completed).length
-          const phaseProgress = phaseItems.length > 0 
-            ? Math.round((completedCount / phaseItems.length) * 100) 
-            : 0
-          const isExpanded = expandedPhase === phase
-          const phaseConfig = PHASE_CONFIG[phase]
+        {phases.map((phase) => {
+          const phaseItems = checklist.filter(
+            (item) => item.timeWindow === phase,
+          );
+          const completedCount = phaseItems.filter(
+            (item) => item.completed,
+          ).length;
+          const phaseProgress =
+            phaseItems.length > 0
+              ? Math.round((completedCount / phaseItems.length) * 100)
+              : 0;
+          const isExpanded = expandedPhase === phase;
+          const phaseConfig = PHASE_CONFIG[phase];
 
           return (
-            <div 
+            <div
               key={phase}
               className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
             >
@@ -475,7 +536,9 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
                 className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className={cn("w-3 h-3 rounded-full", phaseConfig.color)} />
+                  <div
+                    className={cn("w-3 h-3 rounded-full", phaseConfig.color)}
+                  />
                   <div className="text-left">
                     <div className="font-medium text-gray-900 dark:text-white">
                       {phaseConfig.label}
@@ -500,15 +563,15 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
               {/* Phase Items */}
               {isExpanded && (
                 <div className="p-2 space-y-1">
-                  {phaseItems.map(item => (
+                  {phaseItems.map((item) => (
                     <div
                       key={item.id}
                       onClick={() => handleToggleItem(item.id)}
                       className={cn(
                         "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all",
-                        item.completed 
-                          ? "bg-green-50 dark:bg-green-900/20" 
-                          : "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        item.completed
+                          ? "bg-green-50 dark:bg-green-900/20"
+                          : "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800",
                       )}
                     >
                       <div className="mt-0.5">
@@ -519,12 +582,14 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className={cn(
-                          "text-sm",
-                          item.completed 
-                            ? "text-gray-700 dark:text-gray-300 line-through" 
-                            : "text-gray-900 dark:text-white"
-                        )}>
+                        <div
+                          className={cn(
+                            "text-sm",
+                            item.completed
+                              ? "text-gray-700 dark:text-gray-300 line-through"
+                              : "text-gray-900 dark:text-white",
+                          )}
+                        >
                           {item.text}
                           {item.mandatory && (
                             <span className="ml-2 text-red-500">*</span>
@@ -537,10 +602,13 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
                           </span>
                           {item.completed && item.timestamp && (
                             <span className="text-xs text-gray-400 dark:text-gray-500">
-                              {new Date(item.timestamp).toLocaleTimeString('es-MX', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
+                              {new Date(item.timestamp).toLocaleTimeString(
+                                "es-MX",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
                             </span>
                           )}
                         </div>
@@ -550,25 +618,25 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
                 </div>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // SUB-COMPONENT: Role Specific Panel
 // =============================================================================
 
 interface RoleSpecificPanelProps {
-  role: TeamRole
-  incident: Incident
-  onNavigate: (path: string) => void
-  onDocument: () => void
-  onContact: () => void
-  onWithdrawal: (reason: string) => void
-  onShareLocation: () => void
+  role: TeamRole;
+  incident: Incident;
+  onNavigate: (path: string) => void;
+  onDocument: () => void;
+  onContact: () => void;
+  onWithdrawal: (reason: string) => void;
+  onShareLocation: () => void;
 }
 
 const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
@@ -578,9 +646,9 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
   onDocument,
   onContact,
   onWithdrawal,
-  onShareLocation
+  onShareLocation,
 }) => {
-  const store = useProtocoloStore()
+  const store = useProtocoloStore();
 
   const renderLeaderActions = () => (
     <div className="space-y-2">
@@ -595,7 +663,7 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => onNavigate('/legal/triage')}
+        onClick={() => onNavigate("/legal/triage")}
       >
         <Activity className="w-4 h-4" />
         Evaluar Escalación
@@ -609,14 +677,14 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
         Contactar Coalición
       </Button>
     </div>
-  )
+  );
 
   const renderSecurityActions = () => (
     <div className="space-y-2">
       <Button
         variant="outline"
         className="w-full justify-start gap-2 border-orange-200 dark:border-orange-800"
-        onClick={() => onNavigate('/emergency/checklist')}
+        onClick={() => onNavigate("/emergency/checklist")}
       >
         <Shield className="w-4 h-4 text-orange-600" />
         Evaluar Amenazas
@@ -632,20 +700,20 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       <Button
         variant="destructive"
         className="w-full justify-start gap-2"
-        onClick={() => onWithdrawal('Retirada activada por Seguridad')}
+        onClick={() => onWithdrawal("Retirada activada por Seguridad")}
       >
         <LogOut className="w-4 h-4" />
         Activar Retirada
       </Button>
     </div>
-  )
+  );
 
   const renderMedicalActions = () => (
     <div className="space-y-2">
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => onNavigate('/emergency/pas')}
+        onClick={() => onNavigate("/emergency/pas")}
       >
         <Activity className="w-4 h-4 text-red-600" />
         Iniciar P.A.S.
@@ -653,7 +721,7 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => onNavigate('/emergency/pas')}
+        onClick={() => onNavigate("/emergency/pas")}
       >
         <Users className="w-4 h-4" />
         Evaluar Heridos
@@ -661,20 +729,22 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => { window.location.href = 'tel:911' }}
+        onClick={() => {
+          window.location.href = "tel:911";
+        }}
       >
         <Phone className="w-4 h-4" />
         Llamar Ambulancia
       </Button>
     </div>
-  )
+  );
 
   const renderLegalActions = () => (
     <div className="space-y-2">
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => onNavigate('/emergency/evidence')}
+        onClick={() => onNavigate("/emergency/evidence")}
       >
         <FileText className="w-4 h-4" />
         Iniciar Cadena Custodia
@@ -690,13 +760,13 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => onNavigate('/legal/triage')}
+        onClick={() => onNavigate("/legal/triage")}
       >
         <UserCheck className="w-4 h-4" />
         Triage Legal
       </Button>
     </div>
-  )
+  );
 
   const renderDispatchActions = () => (
     <div className="space-y-2">
@@ -711,7 +781,7 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       <Button
         variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => onNavigate('/resources')}
+        onClick={() => onNavigate("/resources")}
       >
         <Navigation className="w-4 h-4" />
         Coordinar Recursos
@@ -725,25 +795,25 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
         Compartir Ubicación
       </Button>
     </div>
-  )
+  );
 
   const actions: Record<TeamRole, React.ReactNode> = {
-    'leader': renderLeaderActions(),
-    'security': renderSecurityActions(),
-    'medical': renderMedicalActions(),
-    'legal': renderLegalActions(),
-    'dispatch': renderDispatchActions(),
-    'logistics': renderDispatchActions()
-  }
+    leader: renderLeaderActions(),
+    security: renderSecurityActions(),
+    medical: renderMedicalActions(),
+    legal: renderLegalActions(),
+    dispatch: renderDispatchActions(),
+    logistics: renderDispatchActions(),
+  };
 
   const roleLabels: Record<TeamRole, string> = {
-    'leader': 'Acciones de Liderazgo',
-    'security': 'Acciones de Seguridad',
-    'medical': 'Acciones Médicas',
-    'legal': 'Acciones Legales',
-    'dispatch': 'Acciones de Dispatch',
-    'logistics': 'Acciones de Logística'
-  }
+    leader: "Acciones de Liderazgo",
+    security: "Acciones de Seguridad",
+    medical: "Acciones Médicas",
+    legal: "Acciones Legales",
+    dispatch: "Acciones de Dispatch",
+    logistics: "Acciones de Logística",
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 mb-4">
@@ -752,33 +822,35 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
       </h3>
       {actions[role]}
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // SUB-COMPONENT: Withdrawal Triggers
 // =============================================================================
 
 interface WithdrawalTriggersProps {
-  onTrigger: (reason: string) => void
+  onTrigger: (reason: string) => void;
 }
 
-const WithdrawalTriggers: React.FC<WithdrawalTriggersProps> = ({ onTrigger }) => {
-  const [showConfirm, setShowConfirm] = useState<string | null>(null)
+const WithdrawalTriggers: React.FC<WithdrawalTriggersProps> = ({
+  onTrigger,
+}) => {
+  const [showConfirm, setShowConfirm] = useState<string | null>(null);
 
   const handleTrigger = (trigger: WithdrawalTrigger) => {
     if (showConfirm === trigger.id) {
-      onTrigger(trigger.label)
-      setShowConfirm(null)
-      
+      onTrigger(trigger.label);
+      setShowConfirm(null);
+
       // Haptic feedback
       if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100, 50, 200])
+        navigator.vibrate([100, 50, 100, 50, 200]);
       }
     } else {
-      setShowConfirm(trigger.id)
+      setShowConfirm(trigger.id);
     }
-  }
+  };
 
   return (
     <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 mb-4">
@@ -788,13 +860,13 @@ const WithdrawalTriggers: React.FC<WithdrawalTriggersProps> = ({ onTrigger }) =>
           Desencadenantes de Retirada
         </h3>
       </div>
-      
+
       <p className="text-sm text-red-700 dark:text-red-300 mb-3">
         Presiona dos veces para activar retirada controlada
       </p>
 
       <div className="grid grid-cols-2 gap-2">
-        {WITHDRAWAL_TRIGGERS.map(trigger => (
+        {WITHDRAWAL_TRIGGERS.map((trigger) => (
           <button
             key={trigger.id}
             onClick={() => handleTrigger(trigger)}
@@ -802,20 +874,20 @@ const WithdrawalTriggers: React.FC<WithdrawalTriggersProps> = ({ onTrigger }) =>
               "p-3 rounded-lg text-left transition-all active:scale-95",
               showConfirm === trigger.id
                 ? "bg-red-600 text-white ring-2 ring-red-400 ring-offset-2"
-                : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-red-100 dark:hover:bg-red-900/30"
+                : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-red-100 dark:hover:bg-red-900/30",
             )}
           >
             <div className="flex items-start gap-2">
-              <div className={cn(
-                "mt-0.5",
-                showConfirm === trigger.id ? "text-white" : "text-red-600"
-              )}>
+              <div
+                className={cn(
+                  "mt-0.5",
+                  showConfirm === trigger.id ? "text-white" : "text-red-600",
+                )}
+              >
                 {trigger.icon}
               </div>
               <div>
-                <div className="text-sm font-medium">
-                  {trigger.label}
-                </div>
+                <div className="text-sm font-medium">{trigger.label}</div>
                 {showConfirm === trigger.id && (
                   <div className="text-xs mt-1 opacity-90">
                     Presiona nuevamente para confirmar
@@ -836,8 +908,8 @@ const WithdrawalTriggers: React.FC<WithdrawalTriggersProps> = ({ onTrigger }) =>
         </button>
       )}
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // MAIN COMPONENT: Emergency Dashboard
@@ -847,69 +919,74 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
   onWithdrawalTrigger,
   onDocumentPress,
   onContactPress,
-  onAlertActivated
+  onAlertActivated,
 }) => {
-  const navigate = useNavigate()
-  const store = useProtocoloStore()
-  const activeIncident = store.getActiveIncident()
-  const currentUser = store.currentUser
-  const [showIncidentDetails, setShowIncidentDetails] = useState(true)
-  const [alertNotice, setAlertNotice] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const store = useProtocoloStore();
+  const activeIncident = store.getActiveIncident();
+  const currentUser = store.currentUser;
+  const [showIncidentDetails, setShowIncidentDetails] = useState(true);
+  const [alertNotice, setAlertNotice] = useState<string | null>(null);
 
   // Get user's role in current incident
-  const userRole = activeIncident?.team.find(
-    member => member.pseudonym === currentUser?.pseudonym
-  )?.role || 'leader'
+  const userRole =
+    activeIncident?.team.find(
+      (member) => member.pseudonym === currentUser?.pseudonym,
+    )?.role || "leader";
 
   const showNotice = (message: string) => {
-    setAlertNotice(message)
-    setTimeout(() => setAlertNotice(null), 3000)
-  }
+    setAlertNotice(message);
+    setTimeout(() => setAlertNotice(null), 3000);
+  };
 
   const handleWithdrawalTrigger = (reason: string) => {
     if (activeIncident) {
-      store.triggerWithdrawal(activeIncident.id, reason)
-      onWithdrawalTrigger?.(reason)
+      store.triggerWithdrawal(activeIncident.id, reason);
+      onWithdrawalTrigger?.(reason);
     }
-  }
+  };
 
   const handleDocument = () => {
     if (onDocumentPress) {
-      onDocumentPress()
+      onDocumentPress();
     } else {
-      navigate('/emergency/evidence')
+      navigate("/emergency/evidence");
     }
-  }
+  };
 
   const handleContact = () => {
     if (onContactPress) {
-      onContactPress()
+      onContactPress();
     } else {
-      navigate('/resources/contacts')
+      navigate("/resources/contacts");
     }
-  }
+  };
 
   // Share the incident location via the Web Share API, falling back to opening
   // the coordinates in Google Maps. No-op placeholders are not allowed.
   const handleShareLocation = async () => {
-    const coords = activeIncident?.location.coordinates
+    const coords = activeIncident?.location.coordinates;
     const mapsUrl = coords
       ? `https://maps.google.com/?q=${coords.latitude},${coords.longitude}`
-      : window.location.href
+      : window.location.href;
     const text = activeIncident
       ? `Ubicación del incidente ${activeIncident.id}: ${activeIncident.location.address}, ${activeIncident.location.colonia}`
-      : 'Ubicación del incidente'
+      : "Ubicación del incidente";
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Ubicación del incidente', text, url: mapsUrl })
-        return
+        await navigator.share({
+          title: "Ubicación del incidente",
+          text,
+          url: mapsUrl,
+        });
+        return;
       } catch {
         // User cancelled; fall through to the maps fallback.
       }
     }
-    window.open(mapsUrl, '_blank', 'noopener,noreferrer')
-  }
+    window.open(mapsUrl, "_blank", "noopener,noreferrer");
+  };
 
   // Raise a real alert state on the active incident: escalate the threat level,
   // move the incident into "responding", record it on the incident, buzz the
@@ -917,23 +994,23 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
   const handleEmergencyAlert = () => {
     if (activeIncident) {
       const escalated: ThreatLevel =
-        activeIncident.threatLevel === 'extreme' ? 'extreme' : 'critical'
+        activeIncident.threatLevel === "extreme" ? "extreme" : "critical";
       store.updateIncident(activeIncident.id, {
         threatLevel: escalated,
-        status: 'responding'
-      })
-      store.setActiveIncident(activeIncident.id)
-      showNotice('Alerta general activada para el equipo')
+        status: "responding",
+      });
+      store.setActiveIncident(activeIncident.id);
+      showNotice("Alerta general activada para el equipo");
     } else {
-      showNotice('Alerta activada')
+      showNotice("Alerta activada");
     }
 
-    onAlertActivated?.()
+    onAlertActivated?.();
 
     if (navigator.vibrate) {
-      navigator.vibrate([200, 100, 200, 100, 500])
+      navigator.vibrate([200, 100, 200, 100, 500]);
     }
-  }
+  };
 
   // If no active incident, show emergency button only
   if (!activeIncident) {
@@ -952,13 +1029,13 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
         </div>
 
         <button
-          onClick={() => navigate('/emergency')}
+          onClick={() => navigate("/emergency")}
           className={cn(
             "w-full max-w-sm py-6 px-8 rounded-2xl font-bold text-xl",
             "bg-red-600 hover:bg-red-700 text-white",
             "shadow-lg shadow-red-600/30",
             "transform active:scale-95 transition-all",
-            "flex items-center justify-center gap-3"
+            "flex items-center justify-center gap-3",
           )}
         >
           <AlertTriangle className="w-8 h-8" />
@@ -967,14 +1044,14 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Usuario: {currentUser?.pseudonym || 'No autenticado'}
+            Usuario: {currentUser?.pseudonym || "No autenticado"}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Rol: {currentUser?.role || 'N/A'}
+            Rol: {currentUser?.role || "N/A"}
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -984,10 +1061,12 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-3 h-3 rounded-full animate-pulse",
-                getThreatLevelColor(activeIncident.threatLevel)
-              )} />
+              <div
+                className={cn(
+                  "w-3 h-3 rounded-full animate-pulse",
+                  getThreatLevelColor(activeIncident.threatLevel),
+                )}
+              />
               <div>
                 <h1 className="font-bold text-gray-900 dark:text-white">
                   Incidente Activo
@@ -1030,7 +1109,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
             "bg-red-600 hover:bg-red-700 text-white",
             "shadow-lg shadow-red-600/30",
             "transform active:scale-95 transition-all",
-            "flex items-center justify-center gap-2 mb-4"
+            "flex items-center justify-center gap-2 mb-4",
           )}
         >
           <AlertTriangle className="w-6 h-6" />
@@ -1044,10 +1123,12 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                 Detalles del Incidente
               </h2>
-              <div className={cn(
-                "px-3 py-1 rounded-full text-xs font-bold text-white",
-                getThreatLevelColor(activeIncident.threatLevel)
-              )}>
+              <div
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-bold text-white",
+                  getThreatLevelColor(activeIncident.threatLevel),
+                )}
+              >
                 {getThreatLevelLabel(activeIncident.threatLevel)}
               </div>
             </div>
@@ -1060,9 +1141,10 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
                     {activeIncident.location.address}
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {activeIncident.location.colonia}, {activeIncident.location.alcaldia}
+                    {activeIncident.location.colonia},{" "}
+                    {activeIncident.location.alcaldia}
                   </div>
-                  <a 
+                  <a
                     href={`https://maps.google.com/?q=${activeIncident.location.coordinates?.latitude},${activeIncident.location.coordinates?.longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1080,7 +1162,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
                     Alerta recibida
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(activeIncident.timestamp).toLocaleString('es-MX')}
+                    {new Date(activeIncident.timestamp).toLocaleString("es-MX")}
                   </div>
                 </div>
               </div>
@@ -1095,17 +1177,20 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-orange-600" />
                   <span className="text-gray-700 dark:text-gray-300">
-                    <strong>{activeIncident.occupantsAtRisk}</strong> ocupantes en riesgo
+                    <strong>{activeIncident.occupantsAtRisk}</strong> ocupantes
+                    en riesgo
                   </span>
                 </div>
               )}
 
-              {(activeIncident.minorsPresent || activeIncident.vulnerablePersons) && (
+              {(activeIncident.minorsPresent ||
+                activeIncident.vulnerablePersons) && (
                 <div className="flex items-center gap-2 text-sm">
                   <AlertTriangle className="w-4 h-4 text-red-600" />
                   <span className="text-red-700 dark:text-red-400">
-                    {activeIncident.minorsPresent && 'Menores presentes '}
-                    {activeIncident.vulnerablePersons && '• Personas vulnerables'}
+                    {activeIncident.minorsPresent && "Menores presentes "}
+                    {activeIncident.vulnerablePersons &&
+                      "• Personas vulnerables"}
                   </span>
                 </div>
               )}
@@ -1114,7 +1199,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
         )}
 
         {/* Timer */}
-        <EmergencyTimer 
+        <EmergencyTimer
           startTime={activeIncident.timestamp}
           onPhaseChange={(phase) => store.setCurrentPhase(phase)}
         />
@@ -1127,7 +1212,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2 border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20"
-            onClick={() => handleWithdrawalTrigger('Manual activation')}
+            onClick={() => handleWithdrawalTrigger("Manual activation")}
           >
             <LogOut className="w-6 h-6 text-orange-600" />
             <span className="text-sm font-medium">Activar Retirada</span>
@@ -1139,11 +1224,20 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
             onClick={() => {
               // Confirm own presence on scene if part of the team, otherwise
               // jump to the team-driven response checklist.
-              if (currentUser && activeIncident.team.some(m => m.pseudonym === currentUser.pseudonym)) {
-                store.updateTeamMemberStatus(activeIncident.id, currentUser.pseudonym, 'on_scene')
-                showNotice('Tu estado se actualizó a "En escena"')
+              if (
+                currentUser &&
+                activeIncident.team.some(
+                  (m) => m.pseudonym === currentUser.pseudonym,
+                )
+              ) {
+                store.updateTeamMemberStatus(
+                  activeIncident.id,
+                  currentUser.pseudonym,
+                  "on_scene",
+                );
+                showNotice('Tu estado se actualizó a "En escena"');
               } else {
-                navigate('/emergency/checklist')
+                navigate("/emergency/checklist");
               }
             }}
           >
@@ -1188,7 +1282,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
         <ChecklistSection incidentId={activeIncident.id} />
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default EmergencyDashboard
+export default EmergencyDashboard;

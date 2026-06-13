@@ -1,11 +1,11 @@
 /**
  * Contact Tree Component
  * Protocolo CDMX
- * 
+ *
  * Visual hierarchical tree for incident coordination
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback } from "react";
 import {
   Users,
   Phone,
@@ -20,8 +20,8 @@ import {
   Signal,
   SignalHigh,
   SignalLow,
-  X
-} from 'lucide-react'
+  X,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -44,25 +44,29 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { Contact, ContactTree as ContactTreeType, ContactTreeNode } from '@/types/contacts'
+  TooltipTrigger,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type {
+  Contact,
+  ContactTree as ContactTreeType,
+  ContactTreeNode,
+} from "@/types/contacts";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface ContactTreeProps {
-  contacts: Contact[]
-  tree?: ContactTreeType
-  onCall?: (contactId: string) => void
-  onMessage?: (contactId: string) => void
-  onUpdateNode?: (nodeId: string, updates: Partial<ContactTreeNode>) => void
-  onAddNode?: (parentId: string, contactId: string) => void
-  onRemoveNode?: (nodeId: string) => void
-  onSaveTree?: (tree: ContactTreeType) => void
-  className?: string
+  contacts: Contact[];
+  tree?: ContactTreeType;
+  onCall?: (contactId: string) => void;
+  onMessage?: (contactId: string) => void;
+  onUpdateNode?: (nodeId: string, updates: Partial<ContactTreeNode>) => void;
+  onAddNode?: (parentId: string, contactId: string) => void;
+  onRemoveNode?: (nodeId: string) => void;
+  onSaveTree?: (tree: ContactTreeType) => void;
+  className?: string;
 }
 
 // =============================================================================
@@ -70,70 +74,70 @@ interface ContactTreeProps {
 // =============================================================================
 
 const DEFAULT_TREE: ContactTreeType = {
-  id: 'tree-1',
-  name: 'Árbol de Contactos - Incidente #1',
+  id: "tree-1",
+  name: "Árbol de Contactos - Incidente #1",
   root: {
-    id: 'root',
-    contactId: '1',
+    id: "root",
+    contactId: "1",
     level: 1,
     parentId: null,
-    role: 'Incident Leader',
-    status: 'online',
+    role: "Incident Leader",
+    status: "online",
     children: [
       {
-        id: 'node-2',
-        contactId: '2',
+        id: "node-2",
+        contactId: "2",
         level: 2,
-        parentId: 'root',
-        role: 'Security Lead',
-        status: 'on_scene',
+        parentId: "root",
+        role: "Security Lead",
+        status: "on_scene",
         responseTime: 15,
         children: [
           {
-            id: 'node-5',
-            contactId: '5',
+            id: "node-5",
+            contactId: "5",
             level: 3,
-            parentId: 'node-2',
-            role: 'Perimeter Guard',
-            status: 'online',
-            children: []
-          }
-        ]
+            parentId: "node-2",
+            role: "Perimeter Guard",
+            status: "online",
+            children: [],
+          },
+        ],
       },
       {
-        id: 'node-3',
-        contactId: '3',
+        id: "node-3",
+        contactId: "3",
         level: 2,
-        parentId: 'root',
-        role: 'Medical Lead',
-        status: 'dispatched',
+        parentId: "root",
+        role: "Medical Lead",
+        status: "dispatched",
         responseTime: 8,
-        children: []
+        children: [],
       },
       {
-        id: 'node-4',
-        contactId: '4',
+        id: "node-4",
+        contactId: "4",
         level: 2,
-        parentId: 'root',
-        role: 'Legal Lead',
-        status: 'online',
+        parentId: "root",
+        role: "Legal Lead",
+        status: "online",
         children: [
           {
-            id: 'node-6',
-            contactId: '6',
+            id: "node-6",
+            contactId: "6",
             level: 3,
-            parentId: 'node-4',
-            role: 'Documentation',
-            status: 'standby',
-            children: []
-          }
-        ]
-      }
-    ]
+            parentId: "node-4",
+            role: "Documentation",
+            status: "standby",
+            children: [],
+          },
+        ],
+      },
+    ],
   },
   createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-}
+  updatedAt: new Date().toISOString(),
+};
 
 // =============================================================================
 // COMPONENT
@@ -148,152 +152,185 @@ export const ContactTree: React.FC<ContactTreeProps> = ({
   onAddNode,
   onRemoveNode,
   onSaveTree,
-  className
+  className,
 }) => {
-  const [tree, setTree] = useState<ContactTreeType>(propTree || DEFAULT_TREE)
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']))
-  const [showAddNode, setShowAddNode] = useState<string | null>(null)
-  const [selectedNode, setSelectedNode] = useState<string | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
+  const [tree, setTree] = useState<ContactTreeType>(propTree || DEFAULT_TREE);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
+    new Set(["root"]),
+  );
+  const [showAddNode, setShowAddNode] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Toggle node expansion
   const toggleNode = useCallback((nodeId: string) => {
-    setExpandedNodes(prev => {
-      const next = new Set(prev)
+    setExpandedNodes((prev) => {
+      const next = new Set(prev);
       if (next.has(nodeId)) {
-        next.delete(nodeId)
+        next.delete(nodeId);
       } else {
-        next.add(nodeId)
+        next.add(nodeId);
       }
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
   // Get contact by ID
-  const getContact = useCallback((contactId: string): Contact | undefined => {
-    return contacts.find(c => c.id === contactId)
-  }, [contacts])
+  const getContact = useCallback(
+    (contactId: string): Contact | undefined => {
+      return contacts.find((c) => c.id === contactId);
+    },
+    [contacts],
+  );
 
   // Update node
-  const handleUpdateNode = useCallback((nodeId: string, updates: Partial<ContactTreeNode>) => {
-    const updateNodeRecursive = (node: ContactTreeNode): ContactTreeNode => {
-      if (node.id === nodeId) {
-        return { ...node, ...updates }
-      }
-      return {
-        ...node,
-        children: node.children.map(updateNodeRecursive)
-      }
-    }
-
-    setTree(prev => ({
-      ...prev,
-      root: updateNodeRecursive(prev.root),
-      updatedAt: new Date().toISOString()
-    }))
-
-    onUpdateNode?.(nodeId, updates)
-  }, [onUpdateNode])
-
-  // Add node
-  const handleAddNode = useCallback((parentId: string, contactId: string) => {
-    const parent = findNode(tree.root, parentId)
-    if (!parent) return
-
-    const newNode: ContactTreeNode = {
-      id: `node-${Date.now()}`,
-      contactId,
-      level: parent.level + 1,
-      parentId,
-      role: 'Team Member',
-      status: 'standby',
-      children: []
-    }
-
-    const addNodeRecursive = (node: ContactTreeNode): ContactTreeNode => {
-      if (node.id === parentId) {
+  const handleUpdateNode = useCallback(
+    (nodeId: string, updates: Partial<ContactTreeNode>) => {
+      const updateNodeRecursive = (node: ContactTreeNode): ContactTreeNode => {
+        if (node.id === nodeId) {
+          return { ...node, ...updates };
+        }
         return {
           ...node,
-          children: [...node.children, newNode]
+          children: node.children.map(updateNodeRecursive),
+        };
+      };
+
+      setTree((prev) => ({
+        ...prev,
+        root: updateNodeRecursive(prev.root),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      onUpdateNode?.(nodeId, updates);
+    },
+    [onUpdateNode],
+  );
+
+  // Add node
+  const handleAddNode = useCallback(
+    (parentId: string, contactId: string) => {
+      const parent = findNode(tree.root, parentId);
+      if (!parent) return;
+
+      const newNode: ContactTreeNode = {
+        id: `node-${Date.now()}`,
+        contactId,
+        level: parent.level + 1,
+        parentId,
+        role: "Team Member",
+        status: "standby",
+        children: [],
+      };
+
+      const addNodeRecursive = (node: ContactTreeNode): ContactTreeNode => {
+        if (node.id === parentId) {
+          return {
+            ...node,
+            children: [...node.children, newNode],
+          };
         }
-      }
-      return {
-        ...node,
-        children: node.children.map(addNodeRecursive)
-      }
-    }
+        return {
+          ...node,
+          children: node.children.map(addNodeRecursive),
+        };
+      };
 
-    setTree(prev => ({
-      ...prev,
-      root: addNodeRecursive(prev.root),
-      updatedAt: new Date().toISOString()
-    }))
+      setTree((prev) => ({
+        ...prev,
+        root: addNodeRecursive(prev.root),
+        updatedAt: new Date().toISOString(),
+      }));
 
-    setExpandedNodes(prev => new Set(prev).add(parentId))
-    setShowAddNode(null)
-    onAddNode?.(parentId, contactId)
-  }, [tree, onAddNode])
+      setExpandedNodes((prev) => new Set(prev).add(parentId));
+      setShowAddNode(null);
+      onAddNode?.(parentId, contactId);
+    },
+    [tree, onAddNode],
+  );
 
   // Remove node
-  const handleRemoveNode = useCallback((nodeId: string) => {
-    const removeNodeRecursive = (node: ContactTreeNode): ContactTreeNode | null => {
-      if (node.id === nodeId) {
-        return null
-      }
-      return {
-        ...node,
-        children: node.children.map(removeNodeRecursive).filter(Boolean) as ContactTreeNode[]
-      }
-    }
+  const handleRemoveNode = useCallback(
+    (nodeId: string) => {
+      const removeNodeRecursive = (
+        node: ContactTreeNode,
+      ): ContactTreeNode | null => {
+        if (node.id === nodeId) {
+          return null;
+        }
+        return {
+          ...node,
+          children: node.children
+            .map(removeNodeRecursive)
+            .filter(Boolean) as ContactTreeNode[],
+        };
+      };
 
-    setTree(prev => ({
-      ...prev,
-      root: removeNodeRecursive(prev.root) || prev.root,
-      updatedAt: new Date().toISOString()
-    }))
+      setTree((prev) => ({
+        ...prev,
+        root: removeNodeRecursive(prev.root) || prev.root,
+        updatedAt: new Date().toISOString(),
+      }));
 
-    onRemoveNode?.(nodeId)
-  }, [onRemoveNode])
+      onRemoveNode?.(nodeId);
+    },
+    [onRemoveNode],
+  );
 
   // Save tree
   const handleSaveTree = useCallback(() => {
-    onSaveTree?.(tree)
-    setIsEditing(false)
-  }, [tree, onSaveTree])
+    onSaveTree?.(tree);
+    setIsEditing(false);
+  }, [tree, onSaveTree]);
 
   // Find node by ID
-  const findNode = (node: ContactTreeNode, id: string): ContactTreeNode | null => {
-    if (node.id === id) return node
+  const findNode = (
+    node: ContactTreeNode,
+    id: string,
+  ): ContactTreeNode | null => {
+    if (node.id === id) return node;
     for (const child of node.children) {
-      const found = findNode(child, id)
-      if (found) return found
+      const found = findNode(child, id);
+      if (found) return found;
     }
-    return null
-  }
+    return null;
+  };
 
   // Get status color
-  const getStatusColor = (status: ContactTreeNode['status']) => {
+  const getStatusColor = (status: ContactTreeNode["status"]) => {
     switch (status) {
-      case 'online': return 'bg-green-500'
-      case 'on_scene': return 'bg-blue-500'
-      case 'dispatched': return 'bg-yellow-500'
-      case 'standby': return 'bg-gray-400'
-      case 'offline': return 'bg-red-500'
-      default: return 'bg-gray-400'
+      case "online":
+        return "bg-green-500";
+      case "on_scene":
+        return "bg-blue-500";
+      case "dispatched":
+        return "bg-yellow-500";
+      case "standby":
+        return "bg-gray-400";
+      case "offline":
+        return "bg-red-500";
+      default:
+        return "bg-gray-400";
     }
-  }
+  };
 
   // Get status label
-  const getStatusLabel = (status: ContactTreeNode['status']) => {
+  const getStatusLabel = (status: ContactTreeNode["status"]) => {
     switch (status) {
-      case 'online': return 'En línea'
-      case 'on_scene': return 'En escena'
-      case 'dispatched': return 'En camino'
-      case 'standby': return 'En espera'
-      case 'offline': return 'Desconectado'
-      default: return status
+      case "online":
+        return "En línea";
+      case "on_scene":
+        return "En escena";
+      case "dispatched":
+        return "En camino";
+      case "standby":
+        return "En espera";
+      case "offline":
+        return "Desconectado";
+      default:
+        return status;
     }
-  }
+  };
 
   return (
     <TooltipProvider>
@@ -310,11 +347,11 @@ export const ContactTree: React.FC<ContactTreeProps> = ({
             </div>
             <div className="flex gap-2">
               <Button
-                variant={isEditing ? 'default' : 'outline'}
+                variant={isEditing ? "default" : "outline"}
                 size="sm"
                 onClick={() => setIsEditing(!isEditing)}
               >
-                {isEditing ? 'Listo' : 'Editar'}
+                {isEditing ? "Listo" : "Editar"}
               </Button>
               <Button variant="outline" size="sm" onClick={handleSaveTree}>
                 <Save className="w-4 h-4 mr-2" />
@@ -325,12 +362,19 @@ export const ContactTree: React.FC<ContactTreeProps> = ({
 
           {/* Legend */}
           <div className="flex flex-wrap gap-3 mt-4 text-xs">
-            {['online', 'on_scene', 'dispatched', 'standby', 'offline'].map(status => (
-              <div key={status} className="flex items-center gap-1">
-                <div className={cn("w-3 h-3 rounded-full", getStatusColor(status as any))} />
-                <span>{getStatusLabel(status as any)}</span>
-              </div>
-            ))}
+            {["online", "on_scene", "dispatched", "standby", "offline"].map(
+              (status) => (
+                <div key={status} className="flex items-center gap-1">
+                  <div
+                    className={cn(
+                      "w-3 h-3 rounded-full",
+                      getStatusColor(status as any),
+                    )}
+                  />
+                  <span>{getStatusLabel(status as any)}</span>
+                </div>
+              ),
+            )}
           </div>
         </div>
 
@@ -360,33 +404,35 @@ export const ContactTree: React.FC<ContactTreeProps> = ({
             </DialogHeader>
             <AddNodeForm
               contacts={contacts}
-              onAdd={(contactId) => showAddNode && handleAddNode(showAddNode, contactId)}
+              onAdd={(contactId) =>
+                showAddNode && handleAddNode(showAddNode, contactId)
+              }
               onCancel={() => setShowAddNode(null)}
             />
           </DialogContent>
         </Dialog>
       </div>
     </TooltipProvider>
-  )
-}
+  );
+};
 
 // =============================================================================
 // TREE NODE COMPONENT
 // =============================================================================
 
 interface TreeNodeProps {
-  node: ContactTreeNode
-  contacts: Contact[]
-  getContact: (id: string) => Contact | undefined
-  expandedNodes: Set<string>
-  toggleNode: (id: string) => void
-  onCall?: (contactId: string) => void
-  onMessage?: (contactId: string) => void
-  onUpdateNode: (nodeId: string, updates: Partial<ContactTreeNode>) => void
-  onAddNode: (parentId: string) => void
-  onRemoveNode: (nodeId: string) => void
-  isEditing: boolean
-  level: number
+  node: ContactTreeNode;
+  contacts: Contact[];
+  getContact: (id: string) => Contact | undefined;
+  expandedNodes: Set<string>;
+  toggleNode: (id: string) => void;
+  onCall?: (contactId: string) => void;
+  onMessage?: (contactId: string) => void;
+  onUpdateNode: (nodeId: string, updates: Partial<ContactTreeNode>) => void;
+  onAddNode: (parentId: string) => void;
+  onRemoveNode: (nodeId: string) => void;
+  isEditing: boolean;
+  level: number;
 }
 
 const TreeNode: React.FC<TreeNodeProps> = ({
@@ -401,31 +447,34 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onAddNode,
   onRemoveNode,
   isEditing,
-  level
+  level,
 }) => {
-  const contact = getContact(node.contactId)
-  const isExpanded = expandedNodes.has(node.id)
-  const hasChildren = node.children.length > 0
-  const primaryPhone = contact?.phones.find(p => p.primary)?.number
+  const contact = getContact(node.contactId);
+  const isExpanded = expandedNodes.has(node.id);
+  const hasChildren = node.children.length > 0;
+  const primaryPhone = contact?.phones.find((p) => p.primary)?.number;
 
-  const getStatusColor = (status: ContactTreeNode['status']) => {
+  const getStatusColor = (status: ContactTreeNode["status"]) => {
     switch (status) {
-      case 'online': return 'bg-green-500'
-      case 'on_scene': return 'bg-blue-500'
-      case 'dispatched': return 'bg-yellow-500'
-      case 'standby': return 'bg-gray-400'
-      case 'offline': return 'bg-red-500'
-      default: return 'bg-gray-400'
+      case "online":
+        return "bg-green-500";
+      case "on_scene":
+        return "bg-blue-500";
+      case "dispatched":
+        return "bg-yellow-500";
+      case "standby":
+        return "bg-gray-400";
+      case "offline":
+        return "bg-red-500";
+      default:
+        return "bg-gray-400";
     }
-  }
+  };
 
   return (
     <div className="select-none">
-      <Card 
-        className={cn(
-          "mb-2 transition-all",
-          level > 0 && "ml-6 border-l-2"
-        )}
+      <Card
+        className={cn("mb-2 transition-all", level > 0 && "ml-6 border-l-2")}
         style={{ marginLeft: `${level * 24}px` }}
       >
         <CardContent className="p-3">
@@ -449,23 +498,28 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             {/* Status Indicator */}
             <Tooltip>
               <TooltipTrigger>
-                <div className={cn("w-3 h-3 rounded-full", getStatusColor(node.status))} />
+                <div
+                  className={cn(
+                    "w-3 h-3 rounded-full",
+                    getStatusColor(node.status),
+                  )}
+                />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="capitalize">{node.status.replace('_', ' ')}</p>
+                <p className="capitalize">{node.status.replace("_", " ")}</p>
               </TooltipContent>
             </Tooltip>
 
             {/* Avatar */}
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              {contact?.name.charAt(0).toUpperCase() || '?'}
+              {contact?.name.charAt(0).toUpperCase() || "?"}
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-semibold truncate">
-                  {contact?.name || 'Unknown'}
+                  {contact?.name || "Unknown"}
                 </span>
                 {contact?.pseudonym && (
                   <span className="text-xs text-muted-foreground">
@@ -476,9 +530,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               <div className="text-sm text-muted-foreground">
                 {node.role}
                 {node.responseTime && (
-                  <span className="ml-2 text-xs">
-                    · {node.responseTime}min
-                  </span>
+                  <span className="ml-2 text-xs">· {node.responseTime}min</span>
                 )}
               </div>
             </div>
@@ -523,35 +575,49 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onUpdateNode(node.id, { status: 'online' })}>
+                  <DropdownMenuItem
+                    onClick={() => onUpdateNode(node.id, { status: "online" })}
+                  >
                     <Signal className="w-4 h-4 mr-2 text-green-500" />
                     En línea
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onUpdateNode(node.id, { status: 'dispatched' })}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      onUpdateNode(node.id, { status: "dispatched" })
+                    }
+                  >
                     <SignalHigh className="w-4 h-4 mr-2 text-yellow-500" />
                     En camino
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onUpdateNode(node.id, { status: 'on_scene' })}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      onUpdateNode(node.id, { status: "on_scene" })
+                    }
+                  >
                     <MapPin className="w-4 h-4 mr-2 text-blue-500" />
                     En escena
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onUpdateNode(node.id, { status: 'standby' })}>
+                  <DropdownMenuItem
+                    onClick={() => onUpdateNode(node.id, { status: "standby" })}
+                  >
                     <SignalLow className="w-4 h-4 mr-2 text-gray-500" />
                     En espera
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onUpdateNode(node.id, { status: 'offline' })}>
+                  <DropdownMenuItem
+                    onClick={() => onUpdateNode(node.id, { status: "offline" })}
+                  >
                     <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
                     Desconectado
                   </DropdownMenuItem>
-                  
+
                   {isEditing && (
                     <>
                       <DropdownMenuItem onClick={() => onAddNode(node.id)}>
                         <Plus className="w-4 h-4 mr-2" />
                         Agregar subordinado
                       </DropdownMenuItem>
-                      {node.id !== 'root' && (
-                        <DropdownMenuItem 
+                      {node.id !== "root" && (
+                        <DropdownMenuItem
                           onClick={() => onRemoveNode(node.id)}
                           className="text-destructive"
                         >
@@ -571,7 +637,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       {/* Children */}
       {hasChildren && isExpanded && (
         <div className="mt-2">
-          {node.children.map(child => (
+          {node.children.map((child) => (
             <TreeNode
               key={child.id}
               node={child}
@@ -591,25 +657,29 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // ADD NODE FORM
 // =============================================================================
 
 interface AddNodeFormProps {
-  contacts: Contact[]
-  onAdd: (contactId: string) => void
-  onCancel: () => void
+  contacts: Contact[];
+  onAdd: (contactId: string) => void;
+  onCancel: () => void;
 }
 
-const AddNodeForm: React.FC<AddNodeFormProps> = ({ contacts, onAdd, onCancel }) => {
-  const [selectedContact, setSelectedContact] = useState('')
+const AddNodeForm: React.FC<AddNodeFormProps> = ({
+  contacts,
+  onAdd,
+  onCancel,
+}) => {
+  const [selectedContact, setSelectedContact] = useState("");
 
-  const availableContacts = contacts.filter(c => 
-    c.category === 'brigada' || c.priority <= 2
-  )
+  const availableContacts = contacts.filter(
+    (c) => c.category === "brigada" || c.priority <= 2,
+  );
 
   return (
     <div className="space-y-4">
@@ -620,9 +690,10 @@ const AddNodeForm: React.FC<AddNodeFormProps> = ({ contacts, onAdd, onCancel }) 
             <SelectValue placeholder="Elegir contacto..." />
           </SelectTrigger>
           <SelectContent>
-            {availableContacts.map(contact => (
+            {availableContacts.map((contact) => (
               <SelectItem key={contact.id} value={contact.id}>
-                {contact.name} {contact.pseudonym && `(${contact.pseudonym})`} - {contact.role}
+                {contact.name} {contact.pseudonym && `(${contact.pseudonym})`} -{" "}
+                {contact.role}
               </SelectItem>
             ))}
           </SelectContent>
@@ -633,7 +704,7 @@ const AddNodeForm: React.FC<AddNodeFormProps> = ({ contacts, onAdd, onCancel }) 
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button 
+        <Button
           onClick={() => selectedContact && onAdd(selectedContact)}
           disabled={!selectedContact}
         >
@@ -641,7 +712,7 @@ const AddNodeForm: React.FC<AddNodeFormProps> = ({ contacts, onAdd, onCancel }) 
         </Button>
       </DialogFooter>
     </div>
-  )
-}
+  );
+};
 
-export default ContactTree
+export default ContactTree;

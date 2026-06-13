@@ -1,13 +1,13 @@
 /**
  * DrawerMenu Component
  * Protocolo CDMX
- * 
+ *
  * Side navigation drawer with user profile, navigation links,
  * quick actions, and app information. Supports both drawer and sidebar variants.
  */
 
-import React from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   AlertTriangle,
@@ -25,8 +25,8 @@ import {
   Clock,
   Info,
   ChevronRight,
-  LogOut
-} from 'lucide-react'
+  LogOut,
+} from "lucide-react";
 import {
   Button,
   Badge,
@@ -34,172 +34,196 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-  ScrollArea
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useProtocoloStore } from '@/store'
-import type { UserRole } from '@/types'
+  ScrollArea,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import { useProtocoloStore } from "@/store";
+import type { UserRole } from "@/types";
 
 interface DrawerMenuProps {
-  isOpen: boolean
-  onClose: () => void
-  variant?: 'drawer' | 'sidebar'
+  isOpen: boolean;
+  onClose: () => void;
+  variant?: "drawer" | "sidebar";
 }
 
 interface NavLink {
-  id: string
-  label: string
-  path: string
-  icon: React.ElementType
-  badge?: number
-  requiresRole?: UserRole[]
-  requiresCertification?: number
+  id: string;
+  label: string;
+  path: string;
+  icon: React.ElementType;
+  badge?: number;
+  requiresRole?: UserRole[];
+  requiresCertification?: number;
 }
 
 interface QuickAction {
-  id: string
-  label: string
-  icon: React.ElementType
-  variant: 'default' | 'destructive' | 'outline'
-  onClick: () => void
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  variant: "default" | "destructive" | "outline";
+  onClick: () => void;
 }
 
 export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   isOpen,
   onClose,
-  variant = 'drawer'
+  variant = "drawer",
 }) => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const currentUser = useProtocoloStore((state) => state.currentUser)
-  const activeIncident = useProtocoloStore((state) => state.getActiveIncident?.())
-  const isDuressMode = useProtocoloStore((state) => state.isDuressMode)
-  const appVersion = '1.0.0'
-  const lastUpdate = null as string | null
-  
-  const isSidebar = variant === 'sidebar'
-  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentUser = useProtocoloStore((state) => state.currentUser);
+  const activeIncident = useProtocoloStore((state) =>
+    state.getActiveIncident?.(),
+  );
+  const isDuressMode = useProtocoloStore((state) => state.isDuressMode);
+  const appVersion = "1.0.0";
+  const lastUpdate = null as string | null;
+
+  const isSidebar = variant === "sidebar";
+
   // Navigation links
   const navLinks: NavLink[] = [
-    { id: 'home', label: 'Inicio', path: '/', icon: Home },
-    { 
-      id: 'emergency', 
-      label: 'Respuesta de Emergencia', 
-      path: '/emergency', 
+    { id: "home", label: "Inicio", path: "/", icon: Home },
+    {
+      id: "emergency",
+      label: "Respuesta de Emergencia",
+      path: "/emergency",
       icon: AlertTriangle,
       badge: activeIncident ? 1 : undefined,
-      requiresRole: ['leader', 'security', 'medical', 'legal', 'dispatch', 'logistics', 'admin']
+      requiresRole: [
+        "leader",
+        "security",
+        "medical",
+        "legal",
+        "dispatch",
+        "logistics",
+        "admin",
+      ],
     },
-    { id: 'protocols', label: 'Protocolos', path: '/protocols', icon: BookOpen },
-    { 
-      id: 'legal', 
-      label: 'Legal', 
-      path: '/legal', 
+    {
+      id: "protocols",
+      label: "Protocolos",
+      path: "/protocols",
+      icon: BookOpen,
+    },
+    {
+      id: "legal",
+      label: "Legal",
+      path: "/legal",
       icon: Scale,
-      requiresRole: ['legal', 'leader', 'admin']
+      requiresRole: ["legal", "leader", "admin"],
     },
-    { id: 'resources', label: 'Recursos', path: '/resources', icon: Map },
-    { 
-      id: 'training', 
-      label: 'Capacitación', 
-      path: '/training', 
-      icon: GraduationCap 
+    { id: "resources", label: "Recursos", path: "/resources", icon: Map },
+    {
+      id: "training",
+      label: "Capacitación",
+      path: "/training",
+      icon: GraduationCap,
     },
-    { 
-      id: 'documentation', 
-      label: 'Documentación', 
-      path: '/documentation', 
+    {
+      id: "documentation",
+      label: "Documentación",
+      path: "/documentation",
       icon: FileText,
-      requiresCertification: 1
+      requiresCertification: 1,
     },
-    { id: 'settings', label: 'Configuración', path: '/settings', icon: Settings }
-  ]
-  
+    {
+      id: "settings",
+      label: "Configuración",
+      path: "/settings",
+      icon: Settings,
+    },
+  ];
+
   // Quick actions
   const quickActions: QuickAction[] = [
     {
-      id: 'alert',
-      label: 'Activar Alerta',
+      id: "alert",
+      label: "Activar Alerta",
       icon: AlertTriangle,
-      variant: 'destructive',
+      variant: "destructive",
       onClick: () => {
-        navigate('/emergency')
-        onClose()
-      }
+        navigate("/emergency");
+        onClose();
+      },
     },
     {
-      id: 'coalition',
-      label: 'Contactar Coalición',
+      id: "coalition",
+      label: "Contactar Coalición",
       icon: Users,
-      variant: 'outline',
+      variant: "outline",
       onClick: () => {
-        navigate('/resources/contacts')
-        onClose()
-      }
+        navigate("/resources/contacts");
+        onClose();
+      },
     },
     {
-      id: 'duress',
-      label: isDuressMode ? 'Desactivar Modo Dureza' : 'Modo Dureza',
+      id: "duress",
+      label: isDuressMode ? "Desactivar Modo Dureza" : "Modo Dureza",
       icon: Shield,
-      variant: isDuressMode ? 'default' : 'outline',
+      variant: isDuressMode ? "default" : "outline",
       onClick: () => {
         // Toggle duress mode
-        onClose()
-      }
-    }
-  ]
-  
+        onClose();
+      },
+    },
+  ];
+
   // Filter links based on user role and certification
-  const filteredLinks = navLinks.filter(link => {
+  const filteredLinks = navLinks.filter((link) => {
     if (link.requiresRole && currentUser) {
-      return link.requiresRole.includes(currentUser.role)
+      return link.requiresRole.includes(currentUser.role);
     }
     if (link.requiresCertification && currentUser) {
-      return currentUser.certificationLevel >= link.requiresCertification
+      return currentUser.certificationLevel >= link.requiresCertification;
     }
-    return true
-  })
-  
+    return true;
+  });
+
   // Handle navigation
   const handleNavigate = (path: string) => {
-    navigate(path)
+    navigate(path);
     if (!isSidebar) {
-      onClose()
+      onClose();
     }
-  }
-  
+  };
+
   // Get certification level label
   const getCertLabel = (level: number) => {
     switch (level) {
-      case 1: return 'Nivel 1 - Básico'
-      case 2: return 'Nivel 2 - Intermedio'
-      case 3: return 'Nivel 3 - Avanzado'
-      default: return 'Sin certificación'
+      case 1:
+        return "Nivel 1 - Básico";
+      case 2:
+        return "Nivel 2 - Intermedio";
+      case 3:
+        return "Nivel 3 - Avanzado";
+      default:
+        return "Sin certificación";
     }
-  }
-  
+  };
+
   // Get role label
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
-      leader: 'Coordinador',
-      security: 'Seguridad',
-      medical: 'Médico',
-      legal: 'Legal',
-      dispatch: 'Dispatch',
-      logistics: 'Logística',
-      observer: 'Observador',
-      admin: 'Administrador'
-    }
-    return labels[role] || role
-  }
-  
+      leader: "Coordinador",
+      security: "Seguridad",
+      medical: "Médico",
+      legal: "Legal",
+      dispatch: "Dispatch",
+      logistics: "Logística",
+      observer: "Observador",
+      admin: "Administrador",
+    };
+    return labels[role] || role;
+  };
+
   // Determine if a link is active
   const isLinkActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/' || location.pathname === '/home'
+    if (path === "/") {
+      return location.pathname === "/" || location.pathname === "/home";
     }
-    return location.pathname.startsWith(path)
-  }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <>
@@ -210,7 +234,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
           onClick={onClose}
         />
       )}
-      
+
       {/* Drawer/Sidebar Content */}
       <div
         className={cn(
@@ -220,8 +244,8 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
             : cn(
                 "fixed top-0 left-0 bottom-0 w-[280px] z-50 lg:hidden",
                 "transform transition-transform duration-300 ease-in-out",
-                isOpen ? "translate-x-0" : "-translate-x-full"
-              )
+                isOpen ? "translate-x-0" : "-translate-x-full",
+              ),
         )}
       >
         <ScrollArea className="h-full">
@@ -237,7 +261,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </Button>
             )}
           </div>
-          
+
           {/* User Profile Section */}
           {currentUser && (
             <div className="p-4 border-b bg-muted/30">
@@ -245,11 +269,13 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={undefined} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {currentUser.pseudonym?.charAt(0).toUpperCase() || 'U'}
+                    {currentUser.pseudonym?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{currentUser.pseudonym || 'Usuario'}</p>
+                  <p className="font-semibold truncate">
+                    {currentUser.pseudonym || "Usuario"}
+                  </p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{getRoleLabel(currentUser.role)}</span>
                     <span>·</span>
@@ -265,7 +291,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </div>
             </div>
           )}
-          
+
           {/* Active Incident Warning */}
           {activeIncident && (
             <div className="p-3 m-3 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -276,9 +302,9 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               <p className="text-xs text-muted-foreground mt-1">
                 Nivel: {activeIncident.threatLevel}
               </p>
-              <Button 
-                size="sm" 
-                variant="destructive" 
+              <Button
+                size="sm"
+                variant="destructive"
                 className="w-full mt-2"
                 onClick={() => handleNavigate(`/incident/${activeIncident.id}`)}
               >
@@ -286,13 +312,13 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </Button>
             </div>
           )}
-          
+
           {/* Quick Actions */}
           <div className="p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Acciones Rápidas
             </h3>
-            {quickActions.map(action => (
+            {quickActions.map((action) => (
               <Button
                 key={action.id}
                 variant={action.variant}
@@ -305,15 +331,15 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </Button>
             ))}
           </div>
-          
+
           <Separator />
-          
+
           {/* Navigation Links */}
           <nav className="p-2">
-            {filteredLinks.map(link => {
-              const Icon = link.icon
-              const isActive = isLinkActive(link.path)
-              
+            {filteredLinks.map((link) => {
+              const Icon = link.icon;
+              const isActive = isLinkActive(link.path);
+
               return (
                 <button
                   key={link.id}
@@ -323,24 +349,27 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                     "transition-colors duration-200",
                     isActive
                       ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                      : "text-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
                   <span className="flex-1 text-left">{link.label}</span>
                   {link.badge && (
-                    <Badge variant={isActive ? "secondary" : "destructive"} className="text-xs">
+                    <Badge
+                      variant={isActive ? "secondary" : "destructive"}
+                      className="text-xs"
+                    >
                       {link.badge}
                     </Badge>
                   )}
                   {isActive && <ChevronRight className="w-4 h-4 opacity-50" />}
                 </button>
-              )
+              );
             })}
           </nav>
-          
+
           <Separator />
-          
+
           {/* Contact Section */}
           <div className="p-4">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -355,9 +384,9 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               Disponible 24/7
             </p>
           </div>
-          
+
           <Separator />
-          
+
           {/* App Info */}
           <div className="p-4 space-y-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -368,7 +397,8 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />
                 <span>
-                  Última actualización: {new Date(lastUpdate).toLocaleDateString('es-MX')}
+                  Última actualización:{" "}
+                  {new Date(lastUpdate).toLocaleDateString("es-MX")}
                 </span>
               </div>
             )}
@@ -376,14 +406,16 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               Protocolo CDMX © 2025
             </div>
           </div>
-          
+
           {/* Logout Button */}
           <div className="p-4 pt-0">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="w-full justify-start gap-2 text-muted-foreground"
-              onClick={() => {/* Handle logout */}}
+              onClick={() => {
+                /* Handle logout */
+              }}
             >
               <LogOut className="w-4 h-4" />
               Cerrar Sesión
@@ -392,7 +424,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
         </ScrollArea>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default DrawerMenu
+export default DrawerMenu;

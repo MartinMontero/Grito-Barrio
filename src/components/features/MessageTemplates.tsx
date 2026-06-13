@@ -1,11 +1,11 @@
 /**
  * Message Templates Component
  * Protocolo CDMX
- * 
+ *
  * Pre-written message templates for rapid communication
  */
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from "react";
 import {
   MessageSquare,
   Copy,
@@ -20,8 +20,8 @@ import {
   X,
   Download,
   Upload,
-  Search
-} from 'lucide-react'
+  Search,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -46,28 +46,28 @@ import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { MessageTemplate } from '@/types/contacts'
+  TooltipTrigger,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type { MessageTemplate } from "@/types/contacts";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface MessageTemplatesProps {
-  templates?: MessageTemplate[]
-  brigadeName?: string
-  onSend?: (content: string, platform: 'whatsapp' | 'sms' | 'copy') => void
-  onSaveTemplate?: (template: MessageTemplate) => void
-  onDeleteTemplate?: (templateId: string) => void
-  className?: string
+  templates?: MessageTemplate[];
+  brigadeName?: string;
+  onSend?: (content: string, platform: "whatsapp" | "sms" | "copy") => void;
+  onSaveTemplate?: (template: MessageTemplate) => void;
+  onDeleteTemplate?: (templateId: string) => void;
+  className?: string;
 }
 
 interface TemplateVariable {
-  name: string
-  placeholder: string
-  value: string
+  name: string;
+  placeholder: string;
+  value: string;
 }
 
 // =============================================================================
@@ -76,100 +76,107 @@ interface TemplateVariable {
 
 const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
-    id: 'alert-1',
-    name: 'Alerta de Desalojo',
-    category: 'alert',
-    content: 'Alerta de la Brigada [brigada]. Posible desalojo en [direccion]. Solicitamos apoyo urgente. Amenaza: [nivel]. Personas en riesgo: [numero]. Contacto: [contacto].',
-    variables: ['brigada', 'direccion', 'nivel', 'numero', 'contacto'],
+    id: "alert-1",
+    name: "Alerta de Desalojo",
+    category: "alert",
+    content:
+      "Alerta de la Brigada [brigada]. Posible desalojo en [direccion]. Solicitamos apoyo urgente. Amenaza: [nivel]. Personas en riesgo: [numero]. Contacto: [contacto].",
+    variables: ["brigada", "direccion", "nivel", "numero", "contacto"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
-    id: 'request-1',
-    name: 'Solicitud de Punto Seguro',
-    category: 'request',
-    content: 'Solicitamos activación de punto seguro [albergue] para [numero] personas afectadas por desalojo en [direccion]. ETA: [tiempo]. Contacto: [contacto].',
-    variables: ['albergue', 'numero', 'direccion', 'tiempo', 'contacto'],
+    id: "request-1",
+    name: "Solicitud de Punto Seguro",
+    category: "request",
+    content:
+      "Solicitamos activación de punto seguro [albergue] para [numero] personas afectadas por desalojo en [direccion]. ETA: [tiempo]. Contacto: [contacto].",
+    variables: ["albergue", "numero", "direccion", "tiempo", "contacto"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
-    id: 'request-2',
-    name: 'Solicitud Legal Urgente',
-    category: 'request',
-    content: 'Urgente: Se requiere presencia legal inmediata en [direccion]. Desalojo en progreso. Juez/actuario presente: [detalles]. Tiempo estimado: [tiempo].',
-    variables: ['direccion', 'detalles', 'tiempo'],
+    id: "request-2",
+    name: "Solicitud Legal Urgente",
+    category: "request",
+    content:
+      "Urgente: Se requiere presencia legal inmediata en [direccion]. Desalojo en progreso. Juez/actuario presente: [detalles]. Tiempo estimado: [tiempo].",
+    variables: ["direccion", "detalles", "tiempo"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
-    id: 'response-1',
-    name: 'Respuesta a Prensa',
-    category: 'response',
-    content: 'Gracias por su interés. La Brigada [brigada] puede ofrecer información verificada sobre el caso en [direccion]. Solicitamos respeto a la privacidad de las personas afectadas. Contacto prensa: [contacto].',
-    variables: ['brigada', 'direccion', 'contacto'],
+    id: "response-1",
+    name: "Respuesta a Prensa",
+    category: "response",
+    content:
+      "Gracias por su interés. La Brigada [brigada] puede ofrecer información verificada sobre el caso en [direccion]. Solicitamos respeto a la privacidad de las personas afectadas. Contacto prensa: [contacto].",
+    variables: ["brigada", "direccion", "contacto"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
-    id: 'doc-1',
-    name: 'Documentación Amenaza',
-    category: 'documentation',
-    content: 'Documentando amenaza de represalia: Fecha/hora: [fecha]. Ubicación: [direccion]. Agresores: [descripcion]. Testigos: [testigos]. Evidencia adjunta.',
-    variables: ['fecha', 'direccion', 'descripcion', 'testigos'],
+    id: "doc-1",
+    name: "Documentación Amenaza",
+    category: "documentation",
+    content:
+      "Documentando amenaza de represalia: Fecha/hora: [fecha]. Ubicación: [direccion]. Agresores: [descripcion]. Testigos: [testigos]. Evidencia adjunta.",
+    variables: ["fecha", "direccion", "descripcion", "testigos"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
-    id: 'alert-2',
-    name: 'Activación Brigada',
-    category: 'alert',
-    content: 'ATENCIÓN BRIGADISTAS: Activación inmediata. Incidente en [direccion]. Punto de encuentro: [punto]. Hora: [hora]. Traer: [equipo]. Coordinador: [coordinador].',
-    variables: ['direccion', 'punto', 'hora', 'equipo', 'coordinador'],
+    id: "alert-2",
+    name: "Activación Brigada",
+    category: "alert",
+    content:
+      "ATENCIÓN BRIGADISTAS: Activación inmediata. Incidente en [direccion]. Punto de encuentro: [punto]. Hora: [hora]. Traer: [equipo]. Coordinador: [coordinador].",
+    variables: ["direccion", "punto", "hora", "equipo", "coordinador"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
-    id: 'request-3',
-    name: 'Solicitud Médica',
-    category: 'request',
-    content: 'Se solicita apoyo médico urgente en [direccion]. [numero] personas lesionadas. Tipo de lesiones: [lesiones]. Ambulancia requerida: [si/no].',
-    variables: ['direccion', 'numero', 'lesiones'],
+    id: "request-3",
+    name: "Solicitud Médica",
+    category: "request",
+    content:
+      "Se solicita apoyo médico urgente en [direccion]. [numero] personas lesionadas. Tipo de lesiones: [lesiones]. Ambulancia requerida: [si/no].",
+    variables: ["direccion", "numero", "lesiones"],
     isDefault: true,
     usageCount: 0,
-    createdAt: new Date().toISOString()
-  }
-]
+    createdAt: new Date().toISOString(),
+  },
+];
 
 const CATEGORY_ICONS = {
   alert: AlertTriangle,
   request: Shield,
   response: MessageSquare,
   documentation: FileText,
-  custom: Edit3
-}
+  custom: Edit3,
+};
 
 const CATEGORY_COLORS = {
-  alert: 'bg-red-100 text-red-800 border-red-200',
-  request: 'bg-blue-100 text-blue-800 border-blue-200',
-  response: 'bg-green-100 text-green-800 border-green-200',
-  documentation: 'bg-purple-100 text-purple-800 border-purple-200',
-  custom: 'bg-gray-100 text-gray-800 border-gray-200'
-}
+  alert: "bg-red-100 text-red-800 border-red-200",
+  request: "bg-blue-100 text-blue-800 border-blue-200",
+  response: "bg-green-100 text-green-800 border-green-200",
+  documentation: "bg-purple-100 text-purple-800 border-purple-200",
+  custom: "bg-gray-100 text-gray-800 border-gray-200",
+};
 
 const CATEGORY_LABELS = {
-  alert: 'Alertas',
-  request: 'Solicitudes',
-  response: 'Respuestas',
-  documentation: 'Documentación',
-  custom: 'Personalizadas'
-}
+  alert: "Alertas",
+  request: "Solicitudes",
+  response: "Respuestas",
+  documentation: "Documentación",
+  custom: "Personalizadas",
+};
 
 // =============================================================================
 // COMPONENT
@@ -177,137 +184,158 @@ const CATEGORY_LABELS = {
 
 export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
   templates: propTemplates,
-  brigadeName = 'CDMX',
+  brigadeName = "CDMX",
   onSend,
   onSaveTemplate,
   onDeleteTemplate,
-  className
+  className,
 }) => {
-  const [templates, setTemplates] = useState<MessageTemplate[]>(propTemplates || DEFAULT_TEMPLATES)
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null)
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({})
-  const [showEditor, setShowEditor] = useState(false)
-  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [copied, setCopied] = useState(false)
-  const [activeTab, setActiveTab] = useState('all')
+  const [templates, setTemplates] = useState<MessageTemplate[]>(
+    propTemplates || DEFAULT_TEMPLATES,
+  );
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<MessageTemplate | null>(null);
+  const [variableValues, setVariableValues] = useState<Record<string, string>>(
+    {},
+  );
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingTemplate, setEditingTemplate] =
+    useState<MessageTemplate | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
   // Filter templates
   const filteredTemplates = useMemo(() => {
-    return templates.filter(template => {
-      const matchesSearch = 
-        template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        template.content.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesTab = 
-        activeTab === 'all' || 
-        template.category === activeTab ||
-        (activeTab === 'favorites' && template.usageCount > 5)
+    return templates
+      .filter((template) => {
+        const matchesSearch =
+          template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          template.content.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesSearch && matchesTab
-    }).sort((a, b) => b.usageCount - a.usageCount)
-  }, [templates, searchQuery, activeTab])
+        const matchesTab =
+          activeTab === "all" ||
+          template.category === activeTab ||
+          (activeTab === "favorites" && template.usageCount > 5);
+
+        return matchesSearch && matchesTab;
+      })
+      .sort((a, b) => b.usageCount - a.usageCount);
+  }, [templates, searchQuery, activeTab]);
 
   // Get processed message with variables replaced
   const getProcessedMessage = useCallback(() => {
-    if (!selectedTemplate) return ''
-    
-    let message = selectedTemplate.content
-    
+    if (!selectedTemplate) return "";
+
+    let message = selectedTemplate.content;
+
     // Replace variables
-    selectedTemplate.variables.forEach(variable => {
-      const value = variableValues[variable] || `[${variable}]`
-      message = message.replace(new RegExp(`\\[${variable}\\]`, 'g'), value)
-    })
+    selectedTemplate.variables.forEach((variable) => {
+      const value = variableValues[variable] || `[${variable}]`;
+      message = message.replace(new RegExp(`\\[${variable}\\]`, "g"), value);
+    });
 
     // Replace brigade name if not in variables
-    if (!selectedTemplate.variables.includes('brigada')) {
-      message = message.replace(/\[brigada\]/g, brigadeName)
+    if (!selectedTemplate.variables.includes("brigada")) {
+      message = message.replace(/\[brigada\]/g, brigadeName);
     }
 
-    return message
-  }, [selectedTemplate, variableValues, brigadeName])
+    return message;
+  }, [selectedTemplate, variableValues, brigadeName]);
 
   // Handle variable change
-  const handleVariableChange = useCallback((variable: string, value: string) => {
-    setVariableValues(prev => ({ ...prev, [variable]: value }))
-  }, [])
+  const handleVariableChange = useCallback(
+    (variable: string, value: string) => {
+      setVariableValues((prev) => ({ ...prev, [variable]: value }));
+    },
+    [],
+  );
 
   // Copy to clipboard
   const handleCopy = useCallback(async () => {
-    const message = getProcessedMessage()
-    await navigator.clipboard.writeText(message)
-    setCopied(true)
-    onSend?.(message, 'copy')
-    setTimeout(() => setCopied(false), 2000)
-  }, [getProcessedMessage, onSend])
+    const message = getProcessedMessage();
+    await navigator.clipboard.writeText(message);
+    setCopied(true);
+    onSend?.(message, "copy");
+    setTimeout(() => setCopied(false), 2000);
+  }, [getProcessedMessage, onSend]);
 
   // Share to WhatsApp
   const handleShareWhatsApp = useCallback(() => {
-    const message = getProcessedMessage()
-    const encoded = encodeURIComponent(message)
-    window.open(`https://wa.me/?text=${encoded}`, '_blank')
-    onSend?.(message, 'whatsapp')
-  }, [getProcessedMessage, onSend])
+    const message = getProcessedMessage();
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+    onSend?.(message, "whatsapp");
+  }, [getProcessedMessage, onSend]);
 
   // Share to SMS
   const handleShareSMS = useCallback(() => {
-    const message = getProcessedMessage()
-    window.location.href = `sms:?body=${encodeURIComponent(message)}`
-    onSend?.(message, 'sms')
-  }, [getProcessedMessage, onSend])
+    const message = getProcessedMessage();
+    window.location.href = `sms:?body=${encodeURIComponent(message)}`;
+    onSend?.(message, "sms");
+  }, [getProcessedMessage, onSend]);
 
   // Save custom template
-  const handleSaveTemplate = useCallback((templateData: Omit<MessageTemplate, 'id' | 'usageCount' | 'createdAt'>) => {
-    const newTemplate: MessageTemplate = {
-      ...templateData,
-      id: `custom-${Date.now()}`,
-      usageCount: 0,
-      createdAt: new Date().toISOString(),
-      isDefault: false
-    }
+  const handleSaveTemplate = useCallback(
+    (
+      templateData: Omit<MessageTemplate, "id" | "usageCount" | "createdAt">,
+    ) => {
+      const newTemplate: MessageTemplate = {
+        ...templateData,
+        id: `custom-${Date.now()}`,
+        usageCount: 0,
+        createdAt: new Date().toISOString(),
+        isDefault: false,
+      };
 
-    setTemplates(prev => [...prev, newTemplate])
-    onSaveTemplate?.(newTemplate)
-    setShowEditor(false)
-  }, [onSaveTemplate])
+      setTemplates((prev) => [...prev, newTemplate]);
+      onSaveTemplate?.(newTemplate);
+      setShowEditor(false);
+    },
+    [onSaveTemplate],
+  );
 
   // Delete template
-  const handleDeleteTemplate = useCallback((templateId: string) => {
-    if (confirm('¿Eliminar esta plantilla?')) {
-      setTemplates(prev => prev.filter(t => t.id !== templateId))
-      onDeleteTemplate?.(templateId)
-      if (selectedTemplate?.id === templateId) {
-        setSelectedTemplate(null)
+  const handleDeleteTemplate = useCallback(
+    (templateId: string) => {
+      if (confirm("¿Eliminar esta plantilla?")) {
+        setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+        onDeleteTemplate?.(templateId);
+        if (selectedTemplate?.id === templateId) {
+          setSelectedTemplate(null);
+        }
       }
-    }
-  }, [onDeleteTemplate, selectedTemplate])
+    },
+    [onDeleteTemplate, selectedTemplate],
+  );
 
   // Export templates
   const handleExport = useCallback(() => {
-    const data = JSON.stringify(templates, null, 2)
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `protocolo_plantillas_${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [templates])
+    const data = JSON.stringify(templates, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `protocolo_plantillas_${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [templates]);
 
   // Import templates
   const handleImport = useCallback((file: File) => {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const imported = JSON.parse(e.target?.result as string) as MessageTemplate[]
-        setTemplates(prev => [...prev, ...imported])
+        const imported = JSON.parse(
+          e.target?.result as string,
+        ) as MessageTemplate[];
+        setTemplates((prev) => [...prev, ...imported]);
       } catch (error) {
-        alert('Error al importar plantillas')
+        alert("Error al importar plantillas");
       }
-    }
-    reader.readAsText(file)
-  }, [])
+    };
+    reader.readAsText(file);
+  }, []);
 
   return (
     <TooltipProvider>
@@ -333,16 +361,22 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
                   type="file"
                   accept=".json"
                   className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleImport(e.target.files[0])}
+                  onChange={(e) =>
+                    e.target.files?.[0] && handleImport(e.target.files[0])
+                  }
                 />
                 <Button variant="outline" size="icon" asChild>
-                  <span><Upload className="w-4 h-4" /></span>
+                  <span>
+                    <Upload className="w-4 h-4" />
+                  </span>
                 </Button>
               </label>
-              <Button onClick={() => {
-                setEditingTemplate(null)
-                setShowEditor(true)
-              }}>
+              <Button
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setShowEditor(true);
+                }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Nueva
               </Button>
@@ -377,30 +411,41 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
 
               <ScrollArea className="h-[calc(100vh-280px)]">
                 <div className="p-4 space-y-2">
-                  {filteredTemplates.map(template => {
-                    const Icon = CATEGORY_ICONS[template.category]
+                  {filteredTemplates.map((template) => {
+                    const Icon = CATEGORY_ICONS[template.category];
                     return (
                       <Card
                         key={template.id}
                         className={cn(
                           "cursor-pointer transition-all hover:shadow-md",
-                          selectedTemplate?.id === template.id && "border-primary ring-1 ring-primary"
+                          selectedTemplate?.id === template.id &&
+                            "border-primary ring-1 ring-primary",
                         )}
                         onClick={() => {
-                          setSelectedTemplate(template)
-                          setVariableValues({})
+                          setSelectedTemplate(template);
+                          setVariableValues({});
                         }}
                       >
                         <CardContent className="p-3">
                           <div className="flex items-start gap-3">
-                            <div className={cn("p-2 rounded-lg", CATEGORY_COLORS[template.category])}>
+                            <div
+                              className={cn(
+                                "p-2 rounded-lg",
+                                CATEGORY_COLORS[template.category],
+                              )}
+                            >
                               <Icon className="w-4 h-4" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
-                                <h3 className="font-medium truncate">{template.name}</h3>
+                                <h3 className="font-medium truncate">
+                                  {template.name}
+                                </h3>
                                 {template.usageCount > 0 && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
                                     {template.usageCount} usos
                                   </Badge>
                                 )}
@@ -422,7 +467,7 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
                           </div>
                         </CardContent>
                       </Card>
-                    )
+                    );
                   })}
                 </div>
               </ScrollArea>
@@ -442,8 +487,8 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            setEditingTemplate(selectedTemplate)
-                            setShowEditor(true)
+                            setEditingTemplate(selectedTemplate);
+                            setShowEditor(true);
                           }}
                         >
                           <Edit3 className="w-4 h-4" />
@@ -451,7 +496,9 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteTemplate(selectedTemplate.id)}
+                          onClick={() =>
+                            handleDeleteTemplate(selectedTemplate.id)
+                          }
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -467,15 +514,17 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
                       Variables
                     </h3>
                     <div className="grid gap-2">
-                      {selectedTemplate.variables.map(variable => (
+                      {selectedTemplate.variables.map((variable) => (
                         <div key={variable} className="space-y-1">
                           <Label className="text-xs capitalize">
-                            {variable.replace(/_/g, ' ')}
+                            {variable.replace(/_/g, " ")}
                           </Label>
                           <Input
                             placeholder={`Ingrese ${variable}...`}
-                            value={variableValues[variable] || ''}
-                            onChange={(e) => handleVariableChange(variable, e.target.value)}
+                            value={variableValues[variable] || ""}
+                            onChange={(e) =>
+                              handleVariableChange(variable, e.target.value)
+                            }
                             className="text-sm"
                           />
                         </div>
@@ -500,8 +549,16 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
                 <div className="grid grid-cols-3 gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={handleCopy} variant="outline" className="w-full">
-                        {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                      <Button
+                        onClick={handleCopy}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        {copied ? (
+                          <Check className="w-4 h-4 mr-2" />
+                        ) : (
+                          <Copy className="w-4 h-4 mr-2" />
+                        )}
                         Copiar
                       </Button>
                     </TooltipTrigger>
@@ -510,7 +567,10 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={handleShareWhatsApp} className="w-full bg-green-600 hover:bg-green-700">
+                      <Button
+                        onClick={handleShareWhatsApp}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
                         <MessageSquare className="w-4 h-4 mr-2" />
                         WhatsApp
                       </Button>
@@ -520,7 +580,11 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={handleShareSMS} variant="secondary" className="w-full">
+                      <Button
+                        onClick={handleShareSMS}
+                        variant="secondary"
+                        className="w-full"
+                      >
                         <Send className="w-4 h-4 mr-2" />
                         SMS
                       </Button>
@@ -544,64 +608,75 @@ export const MessageTemplates: React.FC<MessageTemplatesProps> = ({
         <TemplateEditor
           open={showEditor}
           onClose={() => {
-            setShowEditor(false)
-            setEditingTemplate(null)
+            setShowEditor(false);
+            setEditingTemplate(null);
           }}
           onSave={handleSaveTemplate}
           template={editingTemplate}
         />
       </div>
     </TooltipProvider>
-  )
-}
+  );
+};
 
 // =============================================================================
 // TEMPLATE EDITOR
 // =============================================================================
 
 interface TemplateEditorProps {
-  open: boolean
-  onClose: () => void
-  onSave: (template: Omit<MessageTemplate, 'id' | 'usageCount' | 'createdAt'>) => void
-  template: MessageTemplate | null
+  open: boolean;
+  onClose: () => void;
+  onSave: (
+    template: Omit<MessageTemplate, "id" | "usageCount" | "createdAt">,
+  ) => void;
+  template: MessageTemplate | null;
 }
 
-const TemplateEditor: React.FC<TemplateEditorProps> = ({ open, onClose, onSave, template }) => {
-  const [name, setName] = useState(template?.name || '')
-  const [category, setCategory] = useState<MessageTemplate['category']>(template?.category || 'custom')
-  const [content, setContent] = useState(template?.content || '')
-  const [variables, setVariables] = useState<string[]>(template?.variables || [])
-  const [newVariable, setNewVariable] = useState('')
+const TemplateEditor: React.FC<TemplateEditorProps> = ({
+  open,
+  onClose,
+  onSave,
+  template,
+}) => {
+  const [name, setName] = useState(template?.name || "");
+  const [category, setCategory] = useState<MessageTemplate["category"]>(
+    template?.category || "custom",
+  );
+  const [content, setContent] = useState(template?.content || "");
+  const [variables, setVariables] = useState<string[]>(
+    template?.variables || [],
+  );
+  const [newVariable, setNewVariable] = useState("");
 
   const handleAddVariable = () => {
     if (newVariable && !variables.includes(newVariable)) {
-      setVariables([...variables, newVariable])
-      setNewVariable('')
+      setVariables([...variables, newVariable]);
+      setNewVariable("");
     }
-  }
+  };
 
   const handleRemoveVariable = (v: string) => {
-    setVariables(variables.filter(varName => varName !== v))
-  }
+    setVariables(variables.filter((varName) => varName !== v));
+  };
 
   const handleSave = () => {
     if (!name || !content) {
-      alert('Nombre y contenido son requeridos')
-      return
+      alert("Nombre y contenido son requeridos");
+      return;
     }
-    onSave({ name, category, content, variables, isDefault: false })
-  }
+    onSave({ name, category, content, variables, isDefault: false });
+  };
 
   const insertVariable = (variable: string) => {
-    setContent(content + `[${variable}]`)
-  }
+    setContent(content + `[${variable}]`);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {template ? 'Editar Plantilla' : 'Nueva Plantilla'}
+            {template ? "Editar Plantilla" : "Nueva Plantilla"}
           </DialogTitle>
         </DialogHeader>
 
@@ -617,13 +692,18 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ open, onClose, onSave, 
 
           <div className="space-y-2">
             <Label>Categoría</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as any)}>
+            <Select
+              value={category}
+              onValueChange={(v) => setCategory(v as any)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -649,22 +729,27 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ open, onClose, onSave, 
                 value={newVariable}
                 onChange={(e) => setNewVariable(e.target.value)}
                 placeholder="Nueva variable"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddVariable()}
+                onKeyPress={(e) => e.key === "Enter" && handleAddVariable()}
               />
               <Button type="button" onClick={handleAddVariable}>
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap gap-2 mt-2">
-              {variables.map(v => (
-                <Badge key={v} variant="secondary" className="cursor-pointer" onClick={() => insertVariable(v)}>
+              {variables.map((v) => (
+                <Badge
+                  key={v}
+                  variant="secondary"
+                  className="cursor-pointer"
+                  onClick={() => insertVariable(v)}
+                >
                   [{v}]
-                  <X 
-                    className="w-3 h-3 ml-1 hover:text-destructive" 
+                  <X
+                    className="w-3 h-3 ml-1 hover:text-destructive"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveVariable(v)
+                      e.stopPropagation();
+                      handleRemoveVariable(v);
                     }}
                   />
                 </Badge>
@@ -678,17 +763,20 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ open, onClose, onSave, 
             Cancelar
           </Button>
           <Button onClick={handleSave}>
-            {template ? 'Guardar Cambios' : 'Crear Plantilla'}
+            {template ? "Guardar Cambios" : "Crear Plantilla"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
 // Label component
-const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className,
+}) => (
   <label className={cn("text-sm font-medium", className)}>{children}</label>
-)
+);
 
-export default MessageTemplates
+export default MessageTemplates;

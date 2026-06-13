@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Check,
   ChevronDown,
@@ -21,44 +21,50 @@ import {
   Lock,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2
-} from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useProtocoloStore } from '@/store'
-import type { EmergencyPhase, TeamRole, ChecklistItem } from '@/types'
+  CheckCircle2,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import { useProtocoloStore } from "@/store";
+import type { EmergencyPhase, TeamRole, ChecklistItem } from "@/types";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface ChecklistItemData extends ChecklistItem {
-  isCritical?: boolean
-  role?: TeamRole[]
-  description?: string
+  isCritical?: boolean;
+  role?: TeamRole[];
+  description?: string;
 }
 
 interface PhaseData {
-  id: EmergencyPhase
-  label: string
-  timeRange: string
-  color: string
-  bgColor: string
-  borderColor: string
-  items: ChecklistItemData[]
+  id: EmergencyPhase;
+  label: string;
+  timeRange: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  items: ChecklistItemData[];
 }
 
 interface EmergencyChecklistProps {
-  incidentId: string
-  onItemComplete?: (itemId: string, completed: boolean) => void
-  onPhaseChange?: (phase: EmergencyPhase) => void
-  onExport?: () => void
+  incidentId: string;
+  onItemComplete?: (itemId: string, completed: boolean) => void;
+  onPhaseChange?: (phase: EmergencyPhase) => void;
+  onExport?: () => void;
 }
 
 interface FilterState {
-  byRole: TeamRole | null
-  showCompleted: boolean
-  showCriticalOnly: boolean
+  byRole: TeamRole | null;
+  showCompleted: boolean;
+  showCriticalOnly: boolean;
 }
 
 // =============================================================================
@@ -67,354 +73,356 @@ interface FilterState {
 
 const PHASES_DATA: PhaseData[] = [
   {
-    id: '0-5min',
-    label: 'Activación Inmediata',
-    timeRange: '0-5 minutos',
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    id: "0-5min",
+    label: "Activación Inmediata",
+    timeRange: "0-5 minutos",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
     items: [
       {
-        id: 'f1-1',
-        text: 'Alerta recibida (ubicación, hora, naturaleza de la amenaza)',
+        id: "f1-1",
+        text: "Alerta recibida (ubicación, hora, naturaleza de la amenaza)",
         completed: false,
-        category: 'communication',
-        timeWindow: '0-5min',
+        category: "communication",
+        timeWindow: "0-5min",
         mandatory: true,
         isCritical: true,
-        role: ['leader', 'dispatch'],
-        description: 'Verificar detalles completos de la alerta inicial'
+        role: ["leader", "dispatch"],
+        description: "Verificar detalles completos de la alerta inicial",
       },
       {
-        id: 'f1-2',
-        text: 'Verificación de dos claves completada (alerta + confirmación)',
+        id: "f1-2",
+        text: "Verificación de dos claves completada (alerta + confirmación)",
         completed: false,
-        category: 'safety',
-        timeWindow: '0-5min',
+        category: "safety",
+        timeWindow: "0-5min",
         mandatory: true,
         isCritical: true,
-        role: ['leader', 'security'],
-        description: 'Confirmar autenticidad de la alerta mediante protocolo de dos claves'
+        role: ["leader", "security"],
+        description:
+          "Confirmar autenticidad de la alerta mediante protocolo de dos claves",
       },
       {
-        id: 'f1-3',
-        text: 'Líder de incidente designado y notificado',
+        id: "f1-3",
+        text: "Líder de incidente designado y notificado",
         completed: false,
-        category: 'communication',
-        timeWindow: '0-5min',
+        category: "communication",
+        timeWindow: "0-5min",
         mandatory: true,
         isCritical: true,
-        role: ['leader'],
-        description: 'Designar líder y comunicar al equipo'
+        role: ["leader"],
+        description: "Designar líder y comunicar al equipo",
       },
       {
-        id: 'f1-4',
-        text: 'Equipo de seguridad/desescalada enviado (ETA confirmada)',
+        id: "f1-4",
+        text: "Equipo de seguridad/desescalada enviado (ETA confirmada)",
         completed: false,
-        category: 'safety',
-        timeWindow: '0-5min',
+        category: "safety",
+        timeWindow: "0-5min",
         mandatory: true,
         isCritical: false,
-        role: ['security', 'leader'],
-        description: 'Enviar equipo de seguridad y confirmar tiempo de llegada'
+        role: ["security", "leader"],
+        description: "Enviar equipo de seguridad y confirmar tiempo de llegada",
       },
       {
-        id: 'f1-5',
-        text: 'Capacidad médica de primeros auxilios confirmada',
+        id: "f1-5",
+        text: "Capacidad médica de primeros auxilios confirmada",
         completed: false,
-        category: 'medical',
-        timeWindow: '0-5min',
+        category: "medical",
+        timeWindow: "0-5min",
         mandatory: false,
         isCritical: false,
-        role: ['medical', 'leader'],
-        description: 'Confirmar disponibilidad de personal médico'
+        role: ["medical", "leader"],
+        description: "Confirmar disponibilidad de personal médico",
       },
       {
-        id: 'f1-6',
-        text: 'Ubicación del kit de primeros auxilios verificada',
+        id: "f1-6",
+        text: "Ubicación del kit de primeros auxilios verificada",
         completed: false,
-        category: 'medical',
-        timeWindow: '0-5min',
+        category: "medical",
+        timeWindow: "0-5min",
         mandatory: false,
         isCritical: false,
-        role: ['medical', 'logistics'],
-        description: 'Verificar ubicación y accesibilidad del kit médico'
-      }
-    ]
+        role: ["medical", "logistics"],
+        description: "Verificar ubicación y accesibilidad del kit médico",
+      },
+    ],
   },
   {
-    id: '5-20min',
-    label: 'Evaluación en Escena',
-    timeRange: '5-20 minutos',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    id: "5-20min",
+    label: "Evaluación en Escena",
+    timeRange: "5-20 minutos",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
+    borderColor: "border-orange-200",
     items: [
       {
-        id: 'f2-1',
-        text: 'Protocolo P.A.S. iniciado (Proteger, Avisar, Socorrer)',
+        id: "f2-1",
+        text: "Protocolo P.A.S. iniciado (Proteger, Avisar, Socorrer)",
         completed: false,
-        category: 'safety',
-        timeWindow: '5-20min',
+        category: "safety",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: true,
-        role: ['medical', 'leader', 'security'],
-        description: 'Iniciar Protocolo de Primeros Auxilios de Socorrismo'
+        role: ["medical", "leader", "security"],
+        description: "Iniciar Protocolo de Primeros Auxilios de Socorrismo",
       },
       {
-        id: 'f2-2',
-        text: 'Actores armados evaluados',
+        id: "f2-2",
+        text: "Actores armados evaluados",
         completed: false,
-        category: 'safety',
-        timeWindow: '5-20min',
+        category: "safety",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: true,
-        role: ['security', 'leader'],
-        description: 'Evaluar presencia y comportamiento de actores armados'
+        role: ["security", "leader"],
+        description: "Evaluar presencia y comportamiento de actores armados",
       },
       {
-        id: 'f2-3',
-        text: 'Desencadenante de retirada evaluado',
+        id: "f2-3",
+        text: "Desencadenante de retirada evaluado",
         completed: false,
-        category: 'safety',
-        timeWindow: '5-20min',
+        category: "safety",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: true,
-        role: ['security', 'leader'],
-        description: 'Determinar si se cumplen condiciones para retirada'
+        role: ["security", "leader"],
+        description: "Determinar si se cumplen condiciones para retirada",
       },
       {
-        id: 'f2-4',
-        text: 'Menores presentes identificados',
+        id: "f2-4",
+        text: "Menores presentes identificados",
         completed: false,
-        category: 'safety',
-        timeWindow: '5-20min',
+        category: "safety",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: false,
-        role: ['leader', 'medical', 'security'],
-        description: 'Identificar y contar menores en el lugar'
+        role: ["leader", "medical", "security"],
+        description: "Identificar y contar menores en el lugar",
       },
       {
-        id: 'f2-5',
-        text: 'Seguridad infantil activada',
+        id: "f2-5",
+        text: "Seguridad infantil activada",
         completed: false,
-        category: 'safety',
-        timeWindow: '5-20min',
+        category: "safety",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: false,
-        role: ['leader', 'medical'],
-        description: 'Implementar medidas especiales de protección para menores'
+        role: ["leader", "medical"],
+        description:
+          "Implementar medidas especiales de protección para menores",
       },
       {
-        id: 'f2-6',
-        text: 'Presencia de policía/autoridades documentada',
+        id: "f2-6",
+        text: "Presencia de policía/autoridades documentada",
         completed: false,
-        category: 'documentation',
-        timeWindow: '5-20min',
+        category: "documentation",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: false,
-        role: ['legal', 'leader'],
-        description: 'Documentar tipo y número de autoridades presentes'
+        role: ["legal", "leader"],
+        description: "Documentar tipo y número de autoridades presentes",
       },
       {
-        id: 'f2-7',
-        text: 'Identificación solicitada si es seguro',
+        id: "f2-7",
+        text: "Identificación solicitada si es seguro",
         completed: false,
-        category: 'legal',
-        timeWindow: '5-20min',
+        category: "legal",
+        timeWindow: "5-20min",
         mandatory: false,
         isCritical: false,
-        role: ['legal', 'leader'],
-        description: 'Solicitar identificación de autoridades si no hay riesgo'
+        role: ["legal", "leader"],
+        description: "Solicitar identificación de autoridades si no hay riesgo",
       },
       {
-        id: 'f2-8',
-        text: 'Testigos localizados (mínimo 2 identificados)',
+        id: "f2-8",
+        text: "Testigos localizados (mínimo 2 identificados)",
         completed: false,
-        category: 'documentation',
-        timeWindow: '5-20min',
+        category: "documentation",
+        timeWindow: "5-20min",
         mandatory: true,
         isCritical: false,
-        role: ['legal', 'leader'],
-        description: 'Identificar y localizar al menos 2 testigos'
-      }
-    ]
+        role: ["legal", "leader"],
+        description: "Identificar y localizar al menos 2 testigos",
+      },
+    ],
   },
   {
-    id: '20-45min',
-    label: 'Documentación y Escalación',
-    timeRange: '20-45 minutos',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
+    id: "20-45min",
+    label: "Documentación y Escalación",
+    timeRange: "20-45 minutos",
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-50",
+    borderColor: "border-yellow-200",
     items: [
       {
-        id: 'f3-1',
-        text: 'Registro de incidente completo (entradas con marca de tiempo)',
+        id: "f3-1",
+        text: "Registro de incidente completo (entradas con marca de tiempo)",
         completed: false,
-        category: 'documentation',
-        timeWindow: '20-45min',
+        category: "documentation",
+        timeWindow: "20-45min",
         mandatory: true,
         isCritical: true,
-        role: ['leader', 'legal', 'dispatch'],
-        description: 'Completar registro detallado con todas las timestamps'
+        role: ["leader", "legal", "dispatch"],
+        description: "Completar registro detallado con todas las timestamps",
       },
       {
-        id: 'f3-2',
-        text: 'Enrutamiento de quejas de DH determinado (CDHCM/CNDH seleccionado)',
+        id: "f3-2",
+        text: "Enrutamiento de quejas de DH determinado (CDHCM/CNDH seleccionado)",
         completed: false,
-        category: 'legal',
-        timeWindow: '20-45min',
+        category: "legal",
+        timeWindow: "20-45min",
         mandatory: true,
         isCritical: false,
-        role: ['legal', 'leader'],
-        description: 'Determinar a qué instancia de DH se dirigirá la queja'
+        role: ["legal", "leader"],
+        description: "Determinar a qué instancia de DH se dirigirá la queja",
       },
       {
-        id: 'f3-3',
-        text: 'Nivel de alerta de coalición evaluado',
+        id: "f3-3",
+        text: "Nivel de alerta de coalición evaluado",
         completed: false,
-        category: 'communication',
-        timeWindow: '20-45min',
+        category: "communication",
+        timeWindow: "20-45min",
         mandatory: true,
         isCritical: false,
-        role: ['leader', 'dispatch'],
-        description: 'Evaluar si es necesario activar alerta a la coalición'
+        role: ["leader", "dispatch"],
+        description: "Evaluar si es necesario activar alerta a la coalición",
       },
       {
-        id: 'f3-4',
-        text: 'Consentimiento del sobreviviente verificado',
+        id: "f3-4",
+        text: "Consentimiento del sobreviviente verificado",
         completed: false,
-        category: 'legal',
-        timeWindow: '20-45min',
+        category: "legal",
+        timeWindow: "20-45min",
         mandatory: true,
         isCritical: true,
-        role: ['legal', 'leader'],
-        description: 'Obtener y documentar consentimiento informado'
+        role: ["legal", "leader"],
+        description: "Obtener y documentar consentimiento informado",
       },
       {
-        id: 'f3-5',
-        text: 'Activación de albergue/punto seguro (capacidad confirmada)',
+        id: "f3-5",
+        text: "Activación de albergue/punto seguro (capacidad confirmada)",
         completed: false,
-        category: 'logistics',
-        timeWindow: '20-45min',
+        category: "logistics",
+        timeWindow: "20-45min",
         mandatory: false,
         isCritical: false,
-        role: ['logistics', 'leader'],
-        description: 'Confirmar punto seguro con capacidad suficiente'
+        role: ["logistics", "leader"],
+        description: "Confirmar punto seguro con capacidad suficiente",
       },
       {
-        id: 'f3-6',
-        text: 'Riesgo de represalia evaluado',
+        id: "f3-6",
+        text: "Riesgo de represalia evaluado",
         completed: false,
-        category: 'safety',
-        timeWindow: '20-45min',
+        category: "safety",
+        timeWindow: "20-45min",
         mandatory: true,
         isCritical: true,
-        role: ['security', 'leader'],
-        description: 'Evaluar riesgo de represalias contra sobrevivientes'
+        role: ["security", "leader"],
+        description: "Evaluar riesgo de represalias contra sobrevivientes",
       },
       {
-        id: 'f3-7',
-        text: 'Sistema de acompañamiento asignado',
+        id: "f3-7",
+        text: "Sistema de acompañamiento asignado",
         completed: false,
-        category: 'follow_up',
-        timeWindow: '20-45min',
+        category: "follow_up",
+        timeWindow: "20-45min",
         mandatory: false,
         isCritical: false,
-        role: ['leader', 'dispatch'],
-        description: 'Asignar persona de acompañamiento a sobrevivientes'
-      }
-    ]
+        role: ["leader", "dispatch"],
+        description: "Asignar persona de acompañamiento a sobrevivientes",
+      },
+    ],
   },
   {
-    id: '45-60min',
-    label: 'Estabilización y Seguimiento',
-    timeRange: '45-60 minutos',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
+    id: "45-60min",
+    label: "Estabilización y Seguimiento",
+    timeRange: "45-60 minutos",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+    borderColor: "border-green-200",
     items: [
       {
-        id: 'f4-1',
-        text: 'Documentación fotográfica/video completada',
+        id: "f4-1",
+        text: "Documentación fotográfica/video completada",
         completed: false,
-        category: 'documentation',
-        timeWindow: '45-60min',
+        category: "documentation",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: false,
-        role: ['legal', 'leader'],
-        description: 'Completar documentación visual de la evidencia'
+        role: ["legal", "leader"],
+        description: "Completar documentación visual de la evidencia",
       },
       {
-        id: 'f4-2',
-        text: 'Información de contacto de testigos asegurada',
+        id: "f4-2",
+        text: "Información de contacto de testigos asegurada",
         completed: false,
-        category: 'documentation',
-        timeWindow: '45-60min',
+        category: "documentation",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: false,
-        role: ['legal', 'leader'],
-        description: 'Obtener y verificar datos de contacto de testigos'
+        role: ["legal", "leader"],
+        description: "Obtener y verificar datos de contacto de testigos",
       },
       {
-        id: 'f4-3',
-        text: 'Declaración del sobreviviente registrada',
+        id: "f4-3",
+        text: "Declaración del sobreviviente registrada",
         completed: false,
-        category: 'documentation',
-        timeWindow: '45-60min',
+        category: "documentation",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: true,
-        role: ['legal', 'leader'],
-        description: 'Registrar declaración completa del sobreviviente'
+        role: ["legal", "leader"],
+        description: "Registrar declaración completa del sobreviviente",
       },
       {
-        id: 'f4-4',
-        text: 'Documentación de lesiones completada',
+        id: "f4-4",
+        text: "Documentación de lesiones completada",
         completed: false,
-        category: 'medical',
-        timeWindow: '45-60min',
+        category: "medical",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: false,
-        role: ['medical', 'leader'],
-        description: 'Documentar todas las lesiones observadas'
+        role: ["medical", "leader"],
+        description: "Documentar todas las lesiones observadas",
       },
       {
-        id: 'f4-5',
-        text: 'Cadena de custodia iniciada',
+        id: "f4-5",
+        text: "Cadena de custodia iniciada",
         completed: false,
-        category: 'legal',
-        timeWindow: '45-60min',
+        category: "legal",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: true,
-        role: ['legal', 'leader'],
-        description: 'Iniciar cadena de custodia para evidencia'
+        role: ["legal", "leader"],
+        description: "Iniciar cadena de custodia para evidencia",
       },
       {
-        id: 'f4-6',
-        text: 'Comunicación con coalición establecida',
+        id: "f4-6",
+        text: "Comunicación con coalición establecida",
         completed: false,
-        category: 'communication',
-        timeWindow: '45-60min',
+        category: "communication",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: false,
-        role: ['leader', 'dispatch'],
-        description: 'Establecer comunicación formal con coalición de apoyo'
+        role: ["leader", "dispatch"],
+        description: "Establecer comunicación formal con coalición de apoyo",
       },
       {
-        id: 'f4-7',
-        text: 'Plan de seguimiento definido',
+        id: "f4-7",
+        text: "Plan de seguimiento definido",
         completed: false,
-        category: 'follow_up',
-        timeWindow: '45-60min',
+        category: "follow_up",
+        timeWindow: "45-60min",
         mandatory: true,
         isCritical: false,
-        role: ['leader', 'dispatch'],
-        description: 'Definir próximos pasos y plan de seguimiento'
-      }
-    ]
-  }
-]
+        role: ["leader", "dispatch"],
+        description: "Definir próximos pasos y plan de seguimiento",
+      },
+    ],
+  },
+];
 
 // =============================================================================
 // CANONICAL ITEM-ID SCHEME
@@ -431,66 +439,66 @@ const PHASES_DATA: PhaseData[] = [
 // it is no longer used to seed/mutate the store.
 
 interface ItemMeta {
-  isCritical?: boolean
-  role?: TeamRole[]
-  description?: string
+  isCritical?: boolean;
+  role?: TeamRole[];
+  description?: string;
 }
 
-const ITEM_META_BY_TEXT: Record<string, ItemMeta> = PHASES_DATA
-  .flatMap(phase => phase.items)
-  .reduce<Record<string, ItemMeta>>((acc, item) => {
-    acc[item.text] = {
-      isCritical: item.isCritical,
-      role: item.role,
-      description: item.description
-    }
-    return acc
-  }, {})
+const ITEM_META_BY_TEXT: Record<string, ItemMeta> = PHASES_DATA.flatMap(
+  (phase) => phase.items,
+).reduce<Record<string, ItemMeta>>((acc, item) => {
+  acc[item.text] = {
+    isCritical: item.isCritical,
+    role: item.role,
+    description: item.description,
+  };
+  return acc;
+}, {});
 
 function getItemMeta(item: ChecklistItem): ItemMeta {
-  return ITEM_META_BY_TEXT[item.text] ?? {}
+  return ITEM_META_BY_TEXT[item.text] ?? {};
 }
 
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
 
-function getCategoryIcon(category: ChecklistItem['category']) {
-  const icons: Record<ChecklistItem['category'], React.ReactNode> = {
-    'safety': <Shield className="w-4 h-4" />,
-    'legal': <FileText className="w-4 h-4" />,
-    'documentation': <Camera className="w-4 h-4" />,
-    'medical': <Activity className="w-4 h-4" />,
-    'communication': <Phone className="w-4 h-4" />,
-    'logistics': <MapPin className="w-4 h-4" />,
-    'follow_up': <CheckCircle2 className="w-4 h-4" />
-  }
-  return icons[category]
+function getCategoryIcon(category: ChecklistItem["category"]) {
+  const icons: Record<ChecklistItem["category"], React.ReactNode> = {
+    safety: <Shield className="w-4 h-4" />,
+    legal: <FileText className="w-4 h-4" />,
+    documentation: <Camera className="w-4 h-4" />,
+    medical: <Activity className="w-4 h-4" />,
+    communication: <Phone className="w-4 h-4" />,
+    logistics: <MapPin className="w-4 h-4" />,
+    follow_up: <CheckCircle2 className="w-4 h-4" />,
+  };
+  return icons[category];
 }
 
-function getCategoryLabel(category: ChecklistItem['category']) {
-  const labels: Record<ChecklistItem['category'], string> = {
-    'safety': 'Seguridad',
-    'legal': 'Legal',
-    'documentation': 'Documentación',
-    'medical': 'Médico',
-    'communication': 'Comunicación',
-    'logistics': 'Logística',
-    'follow_up': 'Seguimiento'
-  }
-  return labels[category]
+function getCategoryLabel(category: ChecklistItem["category"]) {
+  const labels: Record<ChecklistItem["category"], string> = {
+    safety: "Seguridad",
+    legal: "Legal",
+    documentation: "Documentación",
+    medical: "Médico",
+    communication: "Comunicación",
+    logistics: "Logística",
+    follow_up: "Seguimiento",
+  };
+  return labels[category];
 }
 
 function getRoleLabel(role: TeamRole) {
   const labels: Record<TeamRole, string> = {
-    'leader': 'Líder',
-    'security': 'Seguridad',
-    'medical': 'Médico',
-    'legal': 'Legal',
-    'dispatch': 'Dispatch',
-    'logistics': 'Logística'
-  }
-  return labels[role]
+    leader: "Líder",
+    security: "Seguridad",
+    medical: "Médico",
+    legal: "Legal",
+    dispatch: "Dispatch",
+    logistics: "Logística",
+  };
+  return labels[role];
 }
 
 // =============================================================================
@@ -501,182 +509,204 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
   incidentId,
   onItemComplete,
   onPhaseChange,
-  onExport
+  onExport,
 }) => {
-  const store = useProtocoloStore()
-  const currentUser = store.currentUser
-  const [expandedPhases, setExpandedPhases] = useState<Set<EmergencyPhase>>(new Set(['0-5min']))
-  const [currentPhase, setCurrentPhase] = useState<EmergencyPhase>('0-5min')
+  const store = useProtocoloStore();
+  const currentUser = store.currentUser;
+  const [expandedPhases, setExpandedPhases] = useState<Set<EmergencyPhase>>(
+    new Set(["0-5min"]),
+  );
+  const [currentPhase, setCurrentPhase] = useState<EmergencyPhase>("0-5min");
   const [filter, setFilter] = useState<FilterState>({
     byRole: null,
     showCompleted: true,
-    showCriticalOnly: false
-  })
-  const [showFilterPanel, setShowFilterPanel] = useState(false)
-  const [uncheckingItem, setUncheckingItem] = useState<string | null>(null)
-  const [uncheckReason, setUncheckReason] = useState('')
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'pending'>('synced')
-  const [shareNotice, setShareNotice] = useState<string | null>(null)
+    showCriticalOnly: false,
+  });
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [uncheckingItem, setUncheckingItem] = useState<string | null>(null);
+  const [uncheckReason, setUncheckReason] = useState("");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [syncStatus, setSyncStatus] = useState<
+    "synced" | "syncing" | "pending"
+  >("synced");
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
 
   // Checklist state from store (single source of truth: checklistSlice)
-  const checklist = store.checklists[incidentId] || []
-  const progress = store.getProgress(incidentId)
+  const checklist = store.checklists[incidentId] || [];
+  const progress = store.getProgress(incidentId);
 
   // Initialize checklist via the store action (never mutate store directly).
   useEffect(() => {
     if (incidentId && !(store.checklists[incidentId]?.length > 0)) {
-      store.initializeChecklist(incidentId)
+      store.initializeChecklist(incidentId);
     }
-  }, [incidentId, store])
+  }, [incidentId, store]);
 
   // Online status listener
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Get items for a specific phase. The store's checklist is the source of
   // truth; we only overlay presentation metadata (critical/role/description).
-  const getPhaseItems = useCallback((phaseId: EmergencyPhase): ChecklistItemData[] => {
-    return checklist
-      .filter(item => item.timeWindow === phaseId)
-      .map(item => ({
-        ...item,
-        ...getItemMeta(item)
-      }))
-  }, [checklist])
+  const getPhaseItems = useCallback(
+    (phaseId: EmergencyPhase): ChecklistItemData[] => {
+      return checklist
+        .filter((item) => item.timeWindow === phaseId)
+        .map((item) => ({
+          ...item,
+          ...getItemMeta(item),
+        }));
+    },
+    [checklist],
+  );
 
   // Filter items
-  const getFilteredItems = useCallback((items: ChecklistItemData[]) => {
-    return items.filter(item => {
-      if (!filter.showCompleted && item.completed) return false
-      if (filter.showCriticalOnly && !item.isCritical) return false
-      if (filter.byRole && item.role && !item.role.includes(filter.byRole)) return false
-      return true
-    })
-  }, [filter])
+  const getFilteredItems = useCallback(
+    (items: ChecklistItemData[]) => {
+      return items.filter((item) => {
+        if (!filter.showCompleted && item.completed) return false;
+        if (filter.showCriticalOnly && !item.isCritical) return false;
+        if (filter.byRole && item.role && !item.role.includes(filter.byRole))
+          return false;
+        return true;
+      });
+    },
+    [filter],
+  );
 
   // Toggle phase expansion
   const togglePhase = (phaseId: EmergencyPhase) => {
-    setExpandedPhases(prev => {
-      const newSet = new Set(prev)
+    setExpandedPhases((prev) => {
+      const newSet = new Set(prev);
       if (newSet.has(phaseId)) {
-        newSet.delete(phaseId)
+        newSet.delete(phaseId);
       } else {
-        newSet.add(phaseId)
+        newSet.add(phaseId);
       }
-      return newSet
-    })
-    setCurrentPhase(phaseId)
-    onPhaseChange?.(phaseId)
-  }
+      return newSet;
+    });
+    setCurrentPhase(phaseId);
+    onPhaseChange?.(phaseId);
+  };
 
   // Handle item check/uncheck
   const handleToggleItem = (itemId: string, currentCompleted: boolean) => {
-    if (!currentUser) return
+    if (!currentUser) return;
 
     if (currentCompleted) {
       // Show confirmation dialog for unchecking
-      setUncheckingItem(itemId)
+      setUncheckingItem(itemId);
     } else {
       // Complete item
-      store.toggleItem(incidentId, itemId, currentUser.pseudonym)
-      onItemComplete?.(itemId, true)
-      
+      store.toggleItem(incidentId, itemId, currentUser.pseudonym);
+      onItemComplete?.(itemId, true);
+
       // Haptic feedback
       if (navigator.vibrate) {
-        navigator.vibrate(50)
+        navigator.vibrate(50);
       }
 
       // Simulate sync
-      setSyncStatus('syncing')
-      setTimeout(() => setSyncStatus('synced'), 500)
+      setSyncStatus("syncing");
+      setTimeout(() => setSyncStatus("synced"), 500);
     }
-  }
+  };
 
   // Confirm uncheck
   const confirmUncheck = () => {
     if (uncheckingItem && currentUser) {
-      store.toggleItem(incidentId, uncheckingItem, currentUser.pseudonym)
-      onItemComplete?.(uncheckingItem, false)
-      setUncheckingItem(null)
-      setUncheckReason('')
+      store.toggleItem(incidentId, uncheckingItem, currentUser.pseudonym);
+      onItemComplete?.(uncheckingItem, false);
+      setUncheckingItem(null);
+      setUncheckReason("");
     }
-  }
+  };
 
   // Calculate phase progress
   const getPhaseProgress = (phaseId: EmergencyPhase): number => {
-    return store.getPhaseProgress(incidentId, phaseId)
-  }
+    return store.getPhaseProgress(incidentId, phaseId);
+  };
 
   // Calculate total stats
   const stats = useMemo(() => {
-    const total = checklist.length
-    const completed = checklist.filter(i => i.completed).length
-    const critical = checklist.filter(i => getItemMeta(i).isCritical && !i.completed).length
-    const mandatory = checklist.filter(i => i.mandatory && !i.completed).length
+    const total = checklist.length;
+    const completed = checklist.filter((i) => i.completed).length;
+    const critical = checklist.filter(
+      (i) => getItemMeta(i).isCritical && !i.completed,
+    ).length;
+    const mandatory = checklist.filter(
+      (i) => i.mandatory && !i.completed,
+    ).length;
 
-    return { total, completed, critical, mandatory, progress: progress }
-  }, [checklist, progress])
+    return { total, completed, critical, mandatory, progress: progress };
+  }, [checklist, progress]);
 
   // Navigate to next/prev phase
-  const navigatePhase = (direction: 'next' | 'prev') => {
-    const phases: EmergencyPhase[] = ['0-5min', '5-20min', '20-45min', '45-60min']
-    const currentIndex = phases.indexOf(currentPhase)
-    
-    let newIndex: number
-    if (direction === 'next') {
-      newIndex = Math.min(currentIndex + 1, phases.length - 1)
+  const navigatePhase = (direction: "next" | "prev") => {
+    const phases: EmergencyPhase[] = [
+      "0-5min",
+      "5-20min",
+      "20-45min",
+      "45-60min",
+    ];
+    const currentIndex = phases.indexOf(currentPhase);
+
+    let newIndex: number;
+    if (direction === "next") {
+      newIndex = Math.min(currentIndex + 1, phases.length - 1);
     } else {
-      newIndex = Math.max(currentIndex - 1, 0)
+      newIndex = Math.max(currentIndex - 1, 0);
     }
-    
-    const newPhase = phases[newIndex]
-    setCurrentPhase(newPhase)
-    setExpandedPhases(prev => new Set([...prev, newPhase]))
-    onPhaseChange?.(newPhase)
-  }
+
+    const newPhase = phases[newIndex];
+    setCurrentPhase(newPhase);
+    setExpandedPhases((prev) => new Set([...prev, newPhase]));
+    onPhaseChange?.(newPhase);
+  };
 
   // Export to PDF/Print
   const handleExport = () => {
-    window.print()
-    onExport?.()
-  }
+    window.print();
+    onExport?.();
+  };
 
   // Share checklist
   const handleShare = async () => {
     const shareData = {
       title: `Checklist - Incidente ${incidentId}`,
       text: `Progreso: ${stats.progress}% completado`,
-      url: window.location.href
-    }
+      url: window.location.href,
+    };
 
     if (navigator.share) {
       try {
-        await navigator.share(shareData)
+        await navigator.share(shareData);
       } catch {
         // User cancelled the native share sheet; nothing else to do.
       }
     } else {
       // Fallback: copy to clipboard and show an inline confirmation.
       try {
-        await navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`)
-        setShareNotice('Enlace copiado al portapapeles')
+        await navigator.clipboard.writeText(
+          `${shareData.title}\n${shareData.text}\n${shareData.url}`,
+        );
+        setShareNotice("Enlace copiado al portapapeles");
       } catch {
-        setShareNotice('No se pudo copiar el enlace')
+        setShareNotice("No se pudo copiar el enlace");
       }
-      setTimeout(() => setShareNotice(null), 2500)
+      setTimeout(() => setShareNotice(null), 2500);
     }
-  }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen">
@@ -708,9 +738,9 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
                 className={cn(
                   "p-2 rounded-lg transition-colors",
-                  showFilterPanel 
-                    ? "bg-blue-100 text-blue-600" 
-                    : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                  showFilterPanel
+                    ? "bg-blue-100 text-blue-600"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-800",
                 )}
               >
                 <Filter className="w-5 h-5" />
@@ -747,7 +777,9 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
               />
             </div>
             <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>{stats.completed}/{stats.total} items</span>
+              <span>
+                {stats.completed}/{stats.total} items
+              </span>
               {stats.critical > 0 && (
                 <span className="text-red-600 font-medium">
                   {stats.critical} críticos pendientes
@@ -776,16 +808,24 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                 </>
               )}
               <span className="text-gray-400">•</span>
-              <span className={cn(
-                syncStatus === 'synced' ? 'text-green-600' :
-                syncStatus === 'syncing' ? 'text-blue-600' : 'text-orange-600'
-              )}>
-                {syncStatus === 'synced' ? 'Sincronizado' :
-                 syncStatus === 'syncing' ? 'Sincronizando...' : 'Pendiente'}
+              <span
+                className={cn(
+                  syncStatus === "synced"
+                    ? "text-green-600"
+                    : syncStatus === "syncing"
+                      ? "text-blue-600"
+                      : "text-orange-600",
+                )}
+              >
+                {syncStatus === "synced"
+                  ? "Sincronizado"
+                  : syncStatus === "syncing"
+                    ? "Sincronizando..."
+                    : "Pendiente"}
               </span>
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Usuario: {currentUser?.pseudonym || 'No autenticado'}
+              Usuario: {currentUser?.pseudonym || "No autenticado"}
             </div>
           </div>
         </div>
@@ -800,13 +840,29 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                   Filtrar por rol
                 </label>
                 <select
-                  value={filter.byRole || ''}
-                  onChange={(e) => setFilter({ ...filter, byRole: e.target.value as TeamRole || null })}
+                  value={filter.byRole || ""}
+                  onChange={(e) =>
+                    setFilter({
+                      ...filter,
+                      byRole: (e.target.value as TeamRole) || null,
+                    })
+                  }
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
                 >
                   <option value="">Todos los roles</option>
-                  {(['leader', 'security', 'medical', 'legal', 'dispatch', 'logistics'] as TeamRole[]).map(role => (
-                    <option key={role} value={role}>{getRoleLabel(role)}</option>
+                  {(
+                    [
+                      "leader",
+                      "security",
+                      "medical",
+                      "legal",
+                      "dispatch",
+                      "logistics",
+                    ] as TeamRole[]
+                  ).map((role) => (
+                    <option key={role} value={role}>
+                      {getRoleLabel(role)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -817,7 +873,9 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                   <input
                     type="checkbox"
                     checked={filter.showCompleted}
-                    onChange={(e) => setFilter({ ...filter, showCompleted: e.target.checked })}
+                    onChange={(e) =>
+                      setFilter({ ...filter, showCompleted: e.target.checked })
+                    }
                     className="rounded border-gray-300"
                   />
                   Mostrar completados
@@ -826,7 +884,12 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                   <input
                     type="checkbox"
                     checked={filter.showCriticalOnly}
-                    onChange={(e) => setFilter({ ...filter, showCriticalOnly: e.target.checked })}
+                    onChange={(e) =>
+                      setFilter({
+                        ...filter,
+                        showCriticalOnly: e.target.checked,
+                      })
+                    }
                     className="rounded border-gray-300"
                   />
                   Solo críticos
@@ -841,20 +904,20 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
           <div className="max-w-lg mx-auto px-4 py-2">
             <div className="flex items-center justify-between">
               <button
-                onClick={() => navigatePhase('prev')}
-                disabled={currentPhase === '0-5min'}
+                onClick={() => navigatePhase("prev")}
+                disabled={currentPhase === "0-5min"}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-30"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              
+
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {PHASES_DATA.find(p => p.id === currentPhase)?.label}
+                {PHASES_DATA.find((p) => p.id === currentPhase)?.label}
               </div>
-              
+
               <button
-                onClick={() => navigatePhase('next')}
-                disabled={currentPhase === '45-60min'}
+                onClick={() => navigatePhase("next")}
+                disabled={currentPhase === "45-60min"}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-30"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -867,32 +930,37 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {PHASES_DATA.map((phase) => {
-          const isExpanded = expandedPhases.has(phase.id)
-          const phaseItems = getPhaseItems(phase.id)
-          const filteredItems = getFilteredItems(phaseItems)
-          const phaseProgress = getPhaseProgress(phase.id)
-          const completedCount = phaseItems.filter(i => i.completed).length
+          const isExpanded = expandedPhases.has(phase.id);
+          const phaseItems = getPhaseItems(phase.id);
+          const filteredItems = getFilteredItems(phaseItems);
+          const phaseProgress = getPhaseProgress(phase.id);
+          const completedCount = phaseItems.filter((i) => i.completed).length;
 
           return (
-            <Card 
+            <Card
               key={phase.id}
               className={cn(
                 "overflow-hidden transition-all duration-300",
-                phase.borderColor
+                phase.borderColor,
               )}
             >
               {/* Phase Header */}
-              <CardHeader 
+              <CardHeader
                 className={cn(
                   "p-4 cursor-pointer transition-colors",
                   phase.bgColor,
-                  "hover:opacity-90"
+                  "hover:opacity-90",
                 )}
                 onClick={() => togglePhase(phase.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={cn("w-4 h-4 rounded-full", phase.color.replace('text-', 'bg-'))} />
+                    <div
+                      className={cn(
+                        "w-4 h-4 rounded-full",
+                        phase.color.replace("text-", "bg-"),
+                      )}
+                    />
                     <div>
                       <CardTitle className={cn("text-lg", phase.color)}>
                         {phase.label}
@@ -922,7 +990,10 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                 {/* Phase Progress Bar */}
                 <div className="mt-3 h-2 bg-white/50 dark:bg-black/20 rounded-full overflow-hidden">
                   <div
-                    className={cn("h-full transition-all duration-500", phase.color.replace('text-', 'bg-'))}
+                    className={cn(
+                      "h-full transition-all duration-500",
+                      phase.color.replace("text-", "bg-"),
+                    )}
                     style={{ width: `${phaseProgress}%` }}
                   />
                 </div>
@@ -943,20 +1014,22 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                           key={item.id}
                           className={cn(
                             "p-4 transition-all",
-                            item.completed 
-                              ? "bg-green-50/50 dark:bg-green-900/10" 
-                              : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            item.completed
+                              ? "bg-green-50/50 dark:bg-green-900/10"
+                              : "hover:bg-gray-50 dark:hover:bg-gray-800/50",
                           )}
                         >
                           <div className="flex items-start gap-3">
                             {/* Checkbox */}
                             <button
-                              onClick={() => handleToggleItem(item.id, item.completed)}
+                              onClick={() =>
+                                handleToggleItem(item.id, item.completed)
+                              }
                               className={cn(
                                 "mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all",
                                 item.completed
                                   ? "bg-green-500 text-white"
-                                  : "border-2 border-gray-300 dark:border-gray-600 hover:border-green-500"
+                                  : "border-2 border-gray-300 dark:border-gray-600 hover:border-green-500",
                               )}
                             >
                               {item.completed && <Check className="w-4 h-4" />}
@@ -964,12 +1037,14 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
 
                             {/* Content */}
                             <div className="flex-1 min-w-0">
-                              <div className={cn(
-                                "text-sm leading-relaxed",
-                                item.completed
-                                  ? "text-gray-600 dark:text-gray-400 line-through"
-                                  : "text-gray-900 dark:text-white font-medium"
-                              )}>
+                              <div
+                                className={cn(
+                                  "text-sm leading-relaxed",
+                                  item.completed
+                                    ? "text-gray-600 dark:text-gray-400 line-through"
+                                    : "text-gray-900 dark:text-white font-medium",
+                                )}
+                              >
                                 {item.text}
                               </div>
 
@@ -1001,7 +1076,7 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                                 {item.role && item.role.length > 0 && (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded">
                                     <User className="w-3 h-3" />
-                                    {item.role.map(getRoleLabel).join(', ')}
+                                    {item.role.map(getRoleLabel).join(", ")}
                                   </span>
                                 )}
                               </div>
@@ -1011,10 +1086,13 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
                                   <Clock className="w-3 h-3" />
                                   <span>
-                                    Completado: {new Date(item.timestamp).toLocaleTimeString('es-MX', { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit',
-                                      second: '2-digit'
+                                    Completado:{" "}
+                                    {new Date(
+                                      item.timestamp,
+                                    ).toLocaleTimeString("es-MX", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      second: "2-digit",
                                     })}
                                   </span>
                                   {item.completedBy && (
@@ -1041,7 +1119,7 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                 </CardContent>
               )}
             </Card>
-          )
+          );
         })}
       </main>
 
@@ -1055,11 +1133,12 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
                 ¿Desmarcar item?
               </h3>
             </div>
-            
+
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Esto eliminará el registro de completado. Por favor, indica la razón:
+              Esto eliminará el registro de completado. Por favor, indica la
+              razón:
             </p>
-            
+
             <textarea
               value={uncheckReason}
               onChange={(e) => setUncheckReason(e.target.value)}
@@ -1067,14 +1146,14 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-4"
               rows={3}
             />
-            
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 className="flex-1"
                 onClick={() => {
-                  setUncheckingItem(null)
-                  setUncheckReason('')
+                  setUncheckingItem(null);
+                  setUncheckReason("");
                 }}
               >
                 Cancelar
@@ -1116,7 +1195,7 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
         }
       `}</style>
     </div>
-  )
-}
+  );
+};
 
-export default EmergencyChecklist
+export default EmergencyChecklist;

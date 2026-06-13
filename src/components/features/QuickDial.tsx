@@ -1,11 +1,11 @@
 /**
  * Quick Dial Component
  * Protocolo CDMX
- * 
+ *
  * Large emergency buttons for one-tap calling
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Phone,
   PhoneCall,
@@ -19,8 +19,8 @@ import {
   AlertCircle,
   Siren,
   Stethoscope,
-  Trash2
-} from 'lucide-react'
+  Trash2,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -35,40 +35,40 @@ import {
   ScrollArea,
   Alert,
   AlertTitle,
-  AlertDescription
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { Contact, ContactCategory } from '@/types/contacts'
+  AlertDescription,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type { Contact, ContactCategory } from "@/types/contacts";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface QuickDialProps {
-  contacts?: Contact[]
-  onCall?: (number: string, contactName: string) => void
-  className?: string
+  contacts?: Contact[];
+  onCall?: (number: string, contactName: string) => void;
+  className?: string;
 }
 
 interface CallLog {
-  id: string
-  timestamp: string
-  number: string
-  contactName: string
-  category: ContactCategory
-  duration?: number
-  status: 'completed' | 'failed' | 'no_answer'
+  id: string;
+  timestamp: string;
+  number: string;
+  contactName: string;
+  category: ContactCategory;
+  duration?: number;
+  status: "completed" | "failed" | "no_answer";
 }
 
 interface EmergencyButton {
-  id: string
-  name: string
-  number: string
-  icon: React.ReactNode
-  color: string
-  category: ContactCategory
-  description: string
-  requiresConfirmation: boolean
+  id: string;
+  name: string;
+  number: string;
+  icon: React.ReactNode;
+  color: string;
+  category: ContactCategory;
+  description: string;
+  requiresConfirmation: boolean;
 }
 
 // =============================================================================
@@ -77,66 +77,66 @@ interface EmergencyButton {
 
 const EMERGENCY_BUTTONS: EmergencyButton[] = [
   {
-    id: 'c5',
-    name: 'C5 CDMX',
-    number: '55-5533-5533',
+    id: "c5",
+    name: "C5 CDMX",
+    number: "55-5533-5533",
     icon: <Siren className="w-8 h-8" />,
-    color: 'bg-red-600 hover:bg-red-700',
-    category: 'emergencias',
-    description: 'Centro de Comando y Control CDMX',
-    requiresConfirmation: true
+    color: "bg-red-600 hover:bg-red-700",
+    category: "emergencias",
+    description: "Centro de Comando y Control CDMX",
+    requiresConfirmation: true,
   },
   {
-    id: 'erum',
-    name: 'ERUM',
-    number: '55-5271-3000',
+    id: "erum",
+    name: "ERUM",
+    number: "55-5271-3000",
     icon: <Stethoscope className="w-8 h-8" />,
-    color: 'bg-orange-600 hover:bg-orange-700',
-    category: 'emergencias',
-    description: 'Escuadrón de Rescate y Urgencias Médicas',
-    requiresConfirmation: true
+    color: "bg-orange-600 hover:bg-orange-700",
+    category: "emergencias",
+    description: "Escuadrón de Rescate y Urgencias Médicas",
+    requiresConfirmation: true,
   },
   {
-    id: 'cruz-roja',
-    name: 'Cruz Roja',
-    number: '55-5557-5757',
+    id: "cruz-roja",
+    name: "Cruz Roja",
+    number: "55-5557-5757",
     icon: <Heart className="w-8 h-8" />,
-    color: 'bg-red-500 hover:bg-red-600',
-    category: 'emergencias',
-    description: 'Emergencias médicas 24/7',
-    requiresConfirmation: true
+    color: "bg-red-500 hover:bg-red-600",
+    category: "emergencias",
+    description: "Emergencias médicas 24/7",
+    requiresConfirmation: true,
   },
   {
-    id: 'cdhcm',
-    name: 'CDHCM',
-    number: '55-5029-9300',
+    id: "cdhcm",
+    name: "CDHCM",
+    number: "55-5029-9300",
     icon: <Shield className="w-8 h-8" />,
-    color: 'bg-purple-600 hover:bg-purple-700',
-    category: 'ddhh',
-    description: 'Comisión de Derechos Humanos CDMX',
-    requiresConfirmation: false
+    color: "bg-purple-600 hover:bg-purple-700",
+    category: "ddhh",
+    description: "Comisión de Derechos Humanos CDMX",
+    requiresConfirmation: false,
   },
   {
-    id: 'coalition',
-    name: 'Coalición',
-    number: '',  // Will be set dynamically
+    id: "coalition",
+    name: "Coalición",
+    number: "", // Will be set dynamically
     icon: <Users className="w-8 h-8" />,
-    color: 'bg-green-600 hover:bg-green-700',
-    category: 'coalicion',
-    description: 'Alerta masiva a coalición',
-    requiresConfirmation: true
+    color: "bg-green-600 hover:bg-green-700",
+    category: "coalicion",
+    description: "Alerta masiva a coalición",
+    requiresConfirmation: true,
   },
   {
-    id: 'legal',
-    name: 'Legal Urgente',
-    number: '',  // Will be set dynamically
+    id: "legal",
+    name: "Legal Urgente",
+    number: "", // Will be set dynamically
     icon: <Scale className="w-8 h-8" />,
-    color: 'bg-indigo-600 hover:bg-indigo-700',
-    category: 'legal',
-    description: 'Abogado de guardia',
-    requiresConfirmation: false
-  }
-]
+    color: "bg-indigo-600 hover:bg-indigo-700",
+    category: "legal",
+    description: "Abogado de guardia",
+    requiresConfirmation: false,
+  },
+];
 
 // =============================================================================
 // COMPONENT
@@ -145,96 +145,108 @@ const EMERGENCY_BUTTONS: EmergencyButton[] = [
 export const QuickDial: React.FC<QuickDialProps> = ({
   contacts = [],
   onCall,
-  className
+  className,
 }) => {
-  const [callLog, setCallLog] = useState<CallLog[]>([])
-  const [showLog, setShowLog] = useState(false)
-  const [confirmDialog, setConfirmDialog] = useState<EmergencyButton | null>(null)
-  const [recentCalls, setRecentCalls] = useState<CallLog[]>([])
-  const [isCalling, setIsCalling] = useState(false)
+  const [callLog, setCallLog] = useState<CallLog[]>([]);
+  const [showLog, setShowLog] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<EmergencyButton | null>(
+    null,
+  );
+  const [recentCalls, setRecentCalls] = useState<CallLog[]>([]);
+  const [isCalling, setIsCalling] = useState(false);
 
   // Load recent calls from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('protocolo_call_log')
+    const stored = localStorage.getItem("protocolo_call_log");
     if (stored) {
-      const parsed = JSON.parse(stored)
-      setCallLog(parsed)
-      setRecentCalls(parsed.slice(-5).reverse())
+      const parsed = JSON.parse(stored);
+      setCallLog(parsed);
+      setRecentCalls(parsed.slice(-5).reverse());
     }
-  }, [])
+  }, []);
 
   // Save call to log
   const saveCall = useCallback((log: CallLog) => {
-    setCallLog(prev => {
-      const updated = [...prev, log]
-      localStorage.setItem('protocolo_call_log', JSON.stringify(updated))
-      return updated
-    })
-    setRecentCalls(prev => [log, ...prev].slice(0, 5))
-  }, [])
+    setCallLog((prev) => {
+      const updated = [...prev, log];
+      localStorage.setItem("protocolo_call_log", JSON.stringify(updated));
+      return updated;
+    });
+    setRecentCalls((prev) => [log, ...prev].slice(0, 5));
+  }, []);
 
   // Handle call button press
   const handleCall = useCallback((button: EmergencyButton) => {
     if (button.requiresConfirmation) {
-      setConfirmDialog(button)
+      setConfirmDialog(button);
     } else {
-      executeCall(button)
+      executeCall(button);
     }
-  }, [])
+  }, []);
 
   // Execute the actual call
-  const executeCall = useCallback((button: EmergencyButton) => {
-    setIsCalling(true)
-    setConfirmDialog(null)
+  const executeCall = useCallback(
+    (button: EmergencyButton) => {
+      setIsCalling(true);
+      setConfirmDialog(null);
 
-    // Find contact if available
-    const contact = contacts.find(c => 
-      c.phones.some(p => p.number.replace(/-/g, '') === button.number.replace(/-/g, ''))
-    )
+      // Find contact if available
+      const contact = contacts.find((c) =>
+        c.phones.some(
+          (p) => p.number.replace(/-/g, "") === button.number.replace(/-/g, ""),
+        ),
+      );
 
-    // Log the call
-    const callLog: CallLog = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      number: button.number,
-      contactName: contact?.name || button.name,
-      category: button.category,
-      status: 'completed'
-    }
-    saveCall(callLog)
+      // Log the call
+      const callLog: CallLog = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        number: button.number,
+        contactName: contact?.name || button.name,
+        category: button.category,
+        status: "completed",
+      };
+      saveCall(callLog);
 
-    // Trigger the call
-    onCall?.(button.number, button.name)
-    window.location.href = `tel:${button.number.replace(/-/g, '')}`
+      // Trigger the call
+      onCall?.(button.number, button.name);
+      window.location.href = `tel:${button.number.replace(/-/g, "")}`;
 
-    setTimeout(() => setIsCalling(false), 1000)
-  }, [contacts, onCall, saveCall])
+      setTimeout(() => setIsCalling(false), 1000);
+    },
+    [contacts, onCall, saveCall],
+  );
 
   // Format time ago
   const formatTimeAgo = (timestamp: string): string => {
-    const now = new Date()
-    const then = new Date(timestamp)
-    const diff = now.getTime() - then.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diff = now.getTime() - then.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Ahora'
-    if (minutes < 60) return `Hace ${minutes} min`
-    if (hours < 24) return `Hace ${hours} h`
-    return `Hace ${days} d`
-  }
+    if (minutes < 1) return "Ahora";
+    if (minutes < 60) return `Hace ${minutes} min`;
+    if (hours < 24) return `Hace ${hours} h`;
+    return `Hace ${days} d`;
+  };
 
   // Get category icon
   const getCategoryIcon = (category: ContactCategory) => {
     switch (category) {
-      case 'emergencias': return <Siren className="w-4 h-4" />
-      case 'ddhh': return <Shield className="w-4 h-4" />
-      case 'legal': return <Scale className="w-4 h-4" />
-      case 'coalicion': return <Users className="w-4 h-4" />
-      default: return <Phone className="w-4 h-4" />
+      case "emergencias":
+        return <Siren className="w-4 h-4" />;
+      case "ddhh":
+        return <Shield className="w-4 h-4" />;
+      case "legal":
+        return <Scale className="w-4 h-4" />;
+      case "coalicion":
+        return <Users className="w-4 h-4" />;
+      default:
+        return <Phone className="w-4 h-4" />;
     }
-  }
+  };
 
   return (
     <div className={cn("flex flex-col h-full bg-background", className)}>
@@ -250,11 +262,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
               Toque para llamar emergencias
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowLog(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowLog(true)}>
             <History className="w-4 h-4 mr-2" />
             Historial
           </Button>
@@ -275,7 +283,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
       {/* Emergency Buttons Grid */}
       <div className="flex-1 p-4">
         <div className="grid grid-cols-2 gap-4">
-          {EMERGENCY_BUTTONS.map(button => (
+          {EMERGENCY_BUTTONS.map((button) => (
             <button
               key={button.id}
               onClick={() => handleCall(button)}
@@ -286,7 +294,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
                 "active:scale-95 active:shadow-inner",
                 "min-h-[140px]",
                 button.color,
-                isCalling && "opacity-50 cursor-not-allowed"
+                isCalling && "opacity-50 cursor-not-allowed",
               )}
             >
               {button.icon}
@@ -294,7 +302,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
                 <div className="text-lg">{button.name}</div>
                 <div className="text-sm opacity-90">{button.number}</div>
               </div>
-              
+
               {button.requiresConfirmation && (
                 <div className="absolute top-2 right-2">
                   <AlertCircle className="w-5 h-5 opacity-70" />
@@ -312,8 +320,11 @@ export const QuickDial: React.FC<QuickDialProps> = ({
               Llamadas Recientes
             </h2>
             <div className="space-y-2">
-              {recentCalls.map(call => (
-                <Card key={call.id} className="hover:shadow-sm transition-shadow">
+              {recentCalls.map((call) => (
+                <Card
+                  key={call.id}
+                  className="hover:shadow-sm transition-shadow"
+                >
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -322,7 +333,9 @@ export const QuickDial: React.FC<QuickDialProps> = ({
                         </div>
                         <div>
                           <p className="font-medium">{call.contactName}</p>
-                          <p className="text-sm text-muted-foreground">{call.number}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {call.number}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -332,7 +345,9 @@ export const QuickDial: React.FC<QuickDialProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.location.href = `tel:${call.number.replace(/-/g, '')}`}
+                          onClick={() =>
+                            (window.location.href = `tel:${call.number.replace(/-/g, "")}`)
+                          }
                         >
                           <Phone className="w-4 h-4" />
                         </Button>
@@ -347,7 +362,10 @@ export const QuickDial: React.FC<QuickDialProps> = ({
       </div>
 
       {/* Confirmation Dialog */}
-      <Dialog open={!!confirmDialog} onOpenChange={() => setConfirmDialog(null)}>
+      <Dialog
+        open={!!confirmDialog}
+        onOpenChange={() => setConfirmDialog(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -370,7 +388,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
             <Button variant="outline" onClick={() => setConfirmDialog(null)}>
               Cancelar
             </Button>
-            <Button 
+            <Button
               className="bg-red-600 hover:bg-red-700"
               onClick={() => confirmDialog && executeCall(confirmDialog)}
             >
@@ -395,7 +413,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
                   <p>No hay llamadas registradas</p>
                 </div>
               ) : (
-                [...callLog].reverse().map(call => (
+                [...callLog].reverse().map((call) => (
                   <Card key={call.id}>
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
@@ -405,15 +423,25 @@ export const QuickDial: React.FC<QuickDialProps> = ({
                           </div>
                           <div>
                             <p className="font-medium">{call.contactName}</p>
-                            <p className="text-sm text-muted-foreground">{call.number}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {call.number}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-muted-foreground">
-                            {new Date(call.timestamp).toLocaleString('es-MX')}
+                            {new Date(call.timestamp).toLocaleString("es-MX")}
                           </p>
-                          <Badge variant={call.status === 'completed' ? 'default' : 'secondary'}>
-                            {call.status === 'completed' ? 'Completada' : call.status}
+                          <Badge
+                            variant={
+                              call.status === "completed"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {call.status === "completed"
+                              ? "Completada"
+                              : call.status}
                           </Badge>
                         </div>
                       </div>
@@ -424,13 +452,16 @@ export const QuickDial: React.FC<QuickDialProps> = ({
             </div>
           </ScrollArea>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              if (confirm('¿Borrar todo el historial?')) {
-                localStorage.removeItem('protocolo_call_log')
-                setCallLog([])
-                setRecentCalls([])
-              }
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (confirm("¿Borrar todo el historial?")) {
+                  localStorage.removeItem("protocolo_call_log");
+                  setCallLog([]);
+                  setRecentCalls([]);
+                }
+              }}
+            >
               <Trash2 className="w-4 h-4 mr-2" />
               Borrar Historial
             </Button>
@@ -438,7 +469,7 @@ export const QuickDial: React.FC<QuickDialProps> = ({
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default QuickDial
+export default QuickDial;

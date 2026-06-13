@@ -1,12 +1,12 @@
 /**
  * Duress Mode Component
  * Protocolo CDMX
- * 
+ *
  * UI for duress mode - displays fake data and provides hidden access
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Shield,
@@ -17,13 +17,13 @@ import {
   Trash2,
   AlertOctagon,
   ChevronRight,
-  X
-} from 'lucide-react'
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  CardHeader, 
+  X,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   Alert,
   AlertTitle,
@@ -35,10 +35,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { securityManager } from '@/lib/security'
+  DialogFooter,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import { securityManager } from "@/lib/security";
 
 // =============================================================================
 // TYPES
@@ -46,16 +46,16 @@ import { securityManager } from '@/lib/security'
 
 interface DuressModeProps {
   /** Optional exit callback. When omitted, react-router navigates home. */
-  onExit?: () => void
-  className?: string
+  onExit?: () => void;
+  className?: string;
 }
 
 interface FakeIncident {
-  id: string
-  title: string
-  location: string
-  status: string
-  timestamp: string
+  id: string;
+  title: string;
+  location: string;
+  status: string;
+  timestamp: string;
 }
 
 // =============================================================================
@@ -64,145 +64,157 @@ interface FakeIncident {
 
 const FAKE_INCIDENTS: FakeIncident[] = [
   {
-    id: 'CDMX-2024-01-15-1430-001',
-    title: 'Desalojo en Colonia Roma',
-    location: 'Calle Durango 123, Roma Norte',
-    status: 'resolved',
-    timestamp: '2024-01-15T14:30:00Z'
+    id: "CDMX-2024-01-15-1430-001",
+    title: "Desalojo en Colonia Roma",
+    location: "Calle Durango 123, Roma Norte",
+    status: "resolved",
+    timestamp: "2024-01-15T14:30:00Z",
   },
   {
-    id: 'CDMX-2024-01-14-0900-002',
-    title: 'Amenaza de desalojo - Condesa',
-    location: 'Avenida Ámsterdam 456, Condesa',
-    status: 'resolved',
-    timestamp: '2024-01-14T09:00:00Z'
+    id: "CDMX-2024-01-14-0900-002",
+    title: "Amenaza de desalojo - Condesa",
+    location: "Avenida Ámsterdam 456, Condesa",
+    status: "resolved",
+    timestamp: "2024-01-14T09:00:00Z",
   },
   {
-    id: 'CDMX-2024-01-10-1600-003',
-    title: 'Consulta legal - Centro',
-    location: 'Calle Francisco I. Madero 100, Centro',
-    status: 'resolved',
-    timestamp: '2024-01-10T16:00:00Z'
-  }
-]
+    id: "CDMX-2024-01-10-1600-003",
+    title: "Consulta legal - Centro",
+    location: "Calle Francisco I. Madero 100, Centro",
+    status: "resolved",
+    timestamp: "2024-01-10T16:00:00Z",
+  },
+];
 
 const FAKE_CONTACTS = [
-  { name: 'Protección Civil', phone: '55-5683-2222', priority: 3 },
-  { name: 'Policía Ciudadana', phone: '55-5207-4155', priority: 3 },
-  { name: 'Centro de Atención', phone: '55-5128-0000', priority: 2 }
-]
+  { name: "Protección Civil", phone: "55-5683-2222", priority: 3 },
+  { name: "Policía Ciudadana", phone: "55-5207-4155", priority: 3 },
+  { name: "Centro de Atención", phone: "55-5128-0000", priority: 2 },
+];
 
 const FAKE_PROTOCOLS = [
-  { title: 'Prevención de Desalojos', description: 'Conozca sus derechos básicos' },
-  { title: 'Documentación Requerida', description: 'Documentos necesarios para defensa' },
-  { title: 'Líneas de Emergencia', description: 'Números de contacto importantes' }
-]
+  {
+    title: "Prevención de Desalojos",
+    description: "Conozca sus derechos básicos",
+  },
+  {
+    title: "Documentación Requerida",
+    description: "Documentos necesarios para defensa",
+  },
+  {
+    title: "Líneas de Emergencia",
+    description: "Números de contacto importantes",
+  },
+];
 
 // =============================================================================
 // COMPONENT
 // =============================================================================
 
-export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => {
-  const navigate = useNavigate()
-  const [hiddenAccessEnabled, setHiddenAccessEnabled] = useState(false)
-  const [showHiddenData, setShowHiddenData] = useState(false)
-  const [wipeScheduled, setWipeScheduled] = useState(false)
-  const [wipeCountdown, setWipeCountdown] = useState(0)
-  const [tapCount, setTapCount] = useState(0)
-  const [lastTapTime, setLastTapTime] = useState(0)
-  const [confirmExit, setConfirmExit] = useState(false)
-  const [secretGestureProgress, setSecretGestureProgress] = useState(0)
+export const DuressMode: React.FC<DuressModeProps> = ({
+  onExit,
+  className,
+}) => {
+  const navigate = useNavigate();
+  const [hiddenAccessEnabled, setHiddenAccessEnabled] = useState(false);
+  const [showHiddenData, setShowHiddenData] = useState(false);
+  const [wipeScheduled, setWipeScheduled] = useState(false);
+  const [wipeCountdown, setWipeCountdown] = useState(0);
+  const [tapCount, setTapCount] = useState(0);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [secretGestureProgress, setSecretGestureProgress] = useState(0);
 
   // Check initial state
   useEffect(() => {
-    const state = securityManager.getDuressState()
-    setHiddenAccessEnabled(state.hiddenAccessEnabled)
-    
-    const wipeState = securityManager.getWipeState()
-    setWipeScheduled(wipeState.scheduled)
-    
+    const state = securityManager.getDuressState();
+    setHiddenAccessEnabled(state.hiddenAccessEnabled);
+
+    const wipeState = securityManager.getWipeState();
+    setWipeScheduled(wipeState.scheduled);
+
     if (wipeState.scheduled && wipeState.executeAt) {
-      const executeTime = new Date(wipeState.executeAt).getTime()
-      const now = Date.now()
-      const remaining = Math.max(0, Math.ceil((executeTime - now) / 1000))
-      setWipeCountdown(remaining)
+      const executeTime = new Date(wipeState.executeAt).getTime();
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((executeTime - now) / 1000));
+      setWipeCountdown(remaining);
     }
-  }, [])
+  }, []);
 
   // Wipe countdown timer
   useEffect(() => {
-    if (!wipeScheduled || wipeCountdown <= 0) return
+    if (!wipeScheduled || wipeCountdown <= 0) return;
 
     const timer = setInterval(() => {
-      setWipeCountdown(prev => {
+      setWipeCountdown((prev) => {
         if (prev <= 1) {
           // Execute wipe when countdown reaches 0
-          void securityManager.executeWipe()
-          return 0
+          void securityManager.executeWipe();
+          return 0;
         }
-        return prev - 1
-      })
-    }, 1000)
+        return prev - 1;
+      });
+    }, 1000);
 
-    return () => clearInterval(timer)
-  }, [wipeScheduled, wipeCountdown])
+    return () => clearInterval(timer);
+  }, [wipeScheduled, wipeCountdown]);
 
   // Secret gesture handler (5 rapid taps to enable hidden access)
   const handleSecretGesture = useCallback(() => {
-    const now = Date.now()
-    
+    const now = Date.now();
+
     if (now - lastTapTime > 500) {
       // Reset if more than 500ms between taps
-      setTapCount(1)
-      setSecretGestureProgress(20)
+      setTapCount(1);
+      setSecretGestureProgress(20);
     } else {
-      const newCount = tapCount + 1
-      setTapCount(newCount)
-      setSecretGestureProgress(Math.min(100, newCount * 20))
-      
+      const newCount = tapCount + 1;
+      setTapCount(newCount);
+      setSecretGestureProgress(Math.min(100, newCount * 20));
+
       if (newCount >= 5) {
         // Enable hidden access
-        securityManager.enableHiddenAccess()
-        setHiddenAccessEnabled(true)
-        setTapCount(0)
-        setSecretGestureProgress(0)
+        securityManager.enableHiddenAccess();
+        setHiddenAccessEnabled(true);
+        setTapCount(0);
+        setSecretGestureProgress(0);
       }
     }
-    
-    setLastTapTime(now)
-  }, [tapCount, lastTapTime])
+
+    setLastTapTime(now);
+  }, [tapCount, lastTapTime]);
 
   // Toggle hidden data view
   const toggleHiddenData = () => {
     if (hiddenAccessEnabled) {
-      setShowHiddenData(!showHiddenData)
+      setShowHiddenData(!showHiddenData);
     }
-  }
+  };
 
   // Cancel wipe
   const handleCancelWipe = () => {
-    securityManager.cancelWipe()
-    setWipeScheduled(false)
-    setWipeCountdown(0)
-  }
+    securityManager.cancelWipe();
+    setWipeScheduled(false);
+    setWipeCountdown(0);
+  };
 
   // Exit duress mode (requires confirmation)
   const handleExit = () => {
-    setConfirmExit(true)
-  }
+    setConfirmExit(true);
+  };
 
   const confirmExitDuress = () => {
-    securityManager.deactivateDuressMode()
-    if (onExit) onExit()
-    else navigate('/')
-  }
+    securityManager.deactivateDuressMode();
+    if (onExit) onExit();
+    else navigate("/");
+  };
 
   // Format countdown
   const formatCountdown = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className={cn("min-h-screen bg-gray-50 dark:bg-gray-950", className)}>
@@ -259,8 +271,8 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
                   Cancelar
                 </Button>
               </div>
-              <Progress 
-                value={(wipeCountdown / (10 * 60)) * 100} 
+              <Progress
+                value={(wipeCountdown / (10 * 60)) * 100}
                 className="mt-3 h-2"
               />
             </CardContent>
@@ -269,7 +281,7 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
 
         {/* Secret Gesture Area */}
         {!hiddenAccessEnabled && (
-          <Card 
+          <Card
             className="cursor-pointer select-none"
             onClick={handleSecretGesture}
           >
@@ -290,10 +302,7 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
                 </div>
               </div>
               {secretGestureProgress > 0 && (
-                <Progress 
-                  value={secretGestureProgress} 
-                  className="mt-3 h-1"
-                />
+                <Progress value={secretGestureProgress} className="mt-3 h-1" />
               )}
             </CardContent>
           </Card>
@@ -327,15 +336,17 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
               <AlertTriangle className="w-5 h-5" />
               Incidentes Recientes
             </h2>
-            
+
             <div className="space-y-2">
-              {FAKE_INCIDENTS.map(incident => (
+              {FAKE_INCIDENTS.map((incident) => (
                 <Card key={incident.id} className="opacity-75">
                   <CardContent className="p-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-medium text-sm">{incident.title}</p>
-                        <p className="text-xs text-gray-500">{incident.location}</p>
+                        <p className="text-xs text-gray-500">
+                          {incident.location}
+                        </p>
                       </div>
                       <Badge variant="secondary">Resuelto</Badge>
                     </div>
@@ -356,7 +367,7 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
                 Mostrando datos reales. Esta información es confidencial.
               </AlertDescription>
             </Alert>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Incidentes Reales</CardTitle>
@@ -377,12 +388,12 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
               <Shield className="w-5 h-5" />
               Contactos
             </h2>
-            
+
             <div className="space-y-2">
               {FAKE_CONTACTS.map((contact, i) => (
                 <a
                   key={i}
-                  href={`tel:${contact.phone.replace(/-/g, '')}`}
+                  href={`tel:${contact.phone.replace(/-/g, "")}`}
                   className="block p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-amber-300 transition-colors"
                 >
                   <div className="flex justify-between items-center">
@@ -405,13 +416,18 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
               <AlertOctagon className="w-5 h-5" />
               Protocolos
             </h2>
-            
+
             <div className="space-y-2">
               {FAKE_PROTOCOLS.map((protocol, i) => (
-                <Card key={i} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Card
+                  key={i}
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
                   <CardContent className="p-3">
                     <p className="font-medium text-sm">{protocol.title}</p>
-                    <p className="text-xs text-gray-500">{protocol.description}</p>
+                    <p className="text-xs text-gray-500">
+                      {protocol.description}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -423,7 +439,9 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
         <Button
           variant="destructive"
           className="w-full"
-          onClick={() => { void securityManager.executeWipe() }}
+          onClick={() => {
+            void securityManager.executeWipe();
+          }}
         >
           <Trash2 className="w-4 h-4 mr-2" />
           Eliminar Datos Inmediatamente
@@ -436,8 +454,8 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
           <DialogHeader>
             <DialogTitle>¿Salir del Modo de Emergencia?</DialogTitle>
             <DialogDescription>
-              Esto desactivará el modo de emergencia y restaurará el acceso normal a los datos.
-              Asegúrese de que está seguro para hacer esto.
+              Esto desactivará el modo de emergencia y restaurará el acceso
+              normal a los datos. Asegúrese de que está seguro para hacer esto.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2">
@@ -451,7 +469,7 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default DuressMode
+export default DuressMode;

@@ -1,11 +1,11 @@
 /**
  * Role Dashboard Component
  * Protocolo CDMX
- * 
+ *
  * Role-specific home screen with widgets and quick actions
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo } from "react";
 import {
   AlertTriangle,
   Users,
@@ -23,38 +23,45 @@ import {
   HeartPulse as FirstAid,
   TrendingUp,
   TrendingDown,
-  Minus
-} from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { TeamRole, Incident } from '@/types'
-import { 
-  getRoleDefinition, 
+  Minus,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type { TeamRole, Incident } from "@/types";
+import {
+  getRoleDefinition,
   filterActionsByCertification,
-  type CertificationLevel 
-} from '@/lib/roles'
+  type CertificationLevel,
+} from "@/lib/roles";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface RoleDashboardProps {
-  role: TeamRole
-  userCertificationLevel: CertificationLevel
-  userPseudonym: string
-  activeIncident?: Incident | null
-  teamMembers?: { pseudonym: string; role: TeamRole; status: string }[]
-  recentActivity?: ActivityItem[]
-  onActionClick?: (actionId: string) => void
-  onQuickAccessClick?: (itemId: string) => void
+  role: TeamRole;
+  userCertificationLevel: CertificationLevel;
+  userPseudonym: string;
+  activeIncident?: Incident | null;
+  teamMembers?: { pseudonym: string; role: TeamRole; status: string }[];
+  recentActivity?: ActivityItem[];
+  onActionClick?: (actionId: string) => void;
+  onQuickAccessClick?: (itemId: string) => void;
 }
 
 interface ActivityItem {
-  id: string
-  type: 'incident' | 'action' | 'alert' | 'update'
-  description: string
-  timestamp: string
-  actor?: string
+  id: string;
+  type: "incident" | "action" | "alert" | "update";
+  description: string;
+  timestamp: string;
+  actor?: string;
 }
 
 // =============================================================================
@@ -62,12 +69,12 @@ interface ActivityItem {
 // =============================================================================
 
 const StatCard: React.FC<{
-  title: string
-  value: string | number
-  icon: React.ReactNode
-  trend?: 'up' | 'down' | 'neutral'
-  trendValue?: string
-  color: string
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  trend?: "up" | "down" | "neutral";
+  trendValue?: string;
+  color: string;
 }> = ({ title, value, icon, trend, trendValue, color }) => (
   <Card className="overflow-hidden">
     <CardContent className="p-4">
@@ -80,44 +87,56 @@ const StatCard: React.FC<{
             {value}
           </p>
           {trend && trendValue && (
-            <div className={cn(
-              "flex items-center gap-1 text-xs mt-1",
-              trend === 'up' ? "text-green-600" : 
-              trend === 'down' ? "text-red-600" : "text-gray-600"
-            )}>
-              {trend === 'up' && <TrendingUp className="w-3 h-3" />}
-              {trend === 'down' && <TrendingDown className="w-3 h-3" />}
-              {trend === 'neutral' && <Minus className="w-3 h-3" />}
+            <div
+              className={cn(
+                "flex items-center gap-1 text-xs mt-1",
+                trend === "up"
+                  ? "text-green-600"
+                  : trend === "down"
+                    ? "text-red-600"
+                    : "text-gray-600",
+              )}
+            >
+              {trend === "up" && <TrendingUp className="w-3 h-3" />}
+              {trend === "down" && <TrendingDown className="w-3 h-3" />}
+              {trend === "neutral" && <Minus className="w-3 h-3" />}
               {trendValue}
             </div>
           )}
         </div>
-        <div className={cn("p-2 rounded-lg", color.replace('bg-', 'bg-opacity-10'))}>
+        <div
+          className={cn(
+            "p-2 rounded-lg",
+            color.replace("bg-", "bg-opacity-10"),
+          )}
+        >
           {icon}
         </div>
       </div>
     </CardContent>
   </Card>
-)
+);
 
-const ActivityItemCard: React.FC<{ item: ActivityItem; roleColor: string }> = ({ 
-  item, 
-  roleColor 
+const ActivityItemCard: React.FC<{ item: ActivityItem; roleColor: string }> = ({
+  item,
+  roleColor,
 }) => {
   const icons = {
     incident: <AlertTriangle className="w-4 h-4" />,
     action: <CheckCircle2 className="w-4 h-4" />,
     alert: <Bell className="w-4 h-4" />,
-    update: <Activity className="w-4 h-4" />
-  }
+    update: <Activity className="w-4 h-4" />,
+  };
 
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-      <div className={cn(
-        "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-        roleColor.replace('600', '100'),
-        roleColor.replace('bg-', 'text-')
-      )}>
+      <div
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+          roleColor.replace("600", "100"),
+          roleColor.replace("bg-", "text-"),
+        )}
+      >
         {icons[item.type]}
       </div>
       <div className="flex-1 min-w-0">
@@ -126,9 +145,9 @@ const ActivityItemCard: React.FC<{ item: ActivityItem; roleColor: string }> = ({
         </p>
         <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
           <Clock className="w-3 h-3" />
-          {new Date(item.timestamp).toLocaleTimeString('es-MX', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          {new Date(item.timestamp).toLocaleTimeString("es-MX", {
+            hour: "2-digit",
+            minute: "2-digit",
           })}
           {item.actor && (
             <>
@@ -139,36 +158,38 @@ const ActivityItemCard: React.FC<{ item: ActivityItem; roleColor: string }> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const TeamMemberCard: React.FC<{
-  member: { pseudonym: string; role: TeamRole; status: string }
-  roleColor: string
+  member: { pseudonym: string; role: TeamRole; status: string };
+  roleColor: string;
 }> = ({ member, roleColor }) => {
   const statusColors: Record<string, string> = {
-    'active': 'bg-green-500',
-    'en_route': 'bg-yellow-500',
-    'on_scene': 'bg-blue-500',
-    'standby': 'bg-gray-500',
-    'off_duty': 'bg-gray-300'
-  }
+    active: "bg-green-500",
+    en_route: "bg-yellow-500",
+    on_scene: "bg-blue-500",
+    standby: "bg-gray-500",
+    off_duty: "bg-gray-300",
+  };
 
   const statusLabels: Record<string, string> = {
-    'active': 'Activo',
-    'en_route': 'En camino',
-    'on_scene': 'En escena',
-    'standby': 'En espera',
-    'off_duty': 'Fuera de servicio'
-  }
+    active: "Activo",
+    en_route: "En camino",
+    on_scene: "En escena",
+    standby: "En espera",
+    off_duty: "Fuera de servicio",
+  };
 
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
       <div className="flex items-center gap-3">
-        <div className={cn(
-          "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold",
-          roleColor
-        )}>
+        <div
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold",
+            roleColor,
+          )}
+        >
           {member.pseudonym.charAt(0).toUpperCase()}
         </div>
         <div>
@@ -181,14 +202,19 @@ const TeamMemberCard: React.FC<{
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <div className={cn("w-2 h-2 rounded-full", statusColors[member.status] || 'bg-gray-400')} />
+        <div
+          className={cn(
+            "w-2 h-2 rounded-full",
+            statusColors[member.status] || "bg-gray-400",
+          )}
+        />
         <span className="text-xs text-gray-600 dark:text-gray-400">
           {statusLabels[member.status] || member.status}
         </span>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // =============================================================================
 // MAIN COMPONENT
@@ -202,46 +228,54 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
   teamMembers = [],
   recentActivity = [],
   onActionClick,
-  onQuickAccessClick
+  onQuickAccessClick,
 }) => {
-  const definition = getRoleDefinition(role)
-  const [showAllActivity, setShowAllActivity] = useState(false)
+  const definition = getRoleDefinition(role);
+  const [showAllActivity, setShowAllActivity] = useState(false);
 
   // Filter actions by certification
-  const availableActions = useMemo(() => 
-    filterActionsByCertification(definition.primaryActions, userCertificationLevel),
-    [definition.primaryActions, userCertificationLevel]
-  )
+  const availableActions = useMemo(
+    () =>
+      filterActionsByCertification(
+        definition.primaryActions,
+        userCertificationLevel,
+      ),
+    [definition.primaryActions, userCertificationLevel],
+  );
 
   // Get high priority actions
-  const highPriorityActions = availableActions.filter(a => a.priority === 'high')
-  const otherActions = availableActions.filter(a => a.priority !== 'high')
+  const highPriorityActions = availableActions.filter(
+    (a) => a.priority === "high",
+  );
+  const otherActions = availableActions.filter((a) => a.priority !== "high");
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24">
       {/* Header */}
-      <header className={cn(
-        "sticky top-0 z-50 border-b",
-        definition.bgColor.replace('bg-', 'bg-opacity-95'),
-        "backdrop-blur supports-[backdrop-filter]:bg-opacity-80",
-        "border-gray-200 dark:border-gray-800"
-      )}>
+      <header
+        className={cn(
+          "sticky top-0 z-50 border-b",
+          definition.bgColor.replace("bg-", "bg-opacity-95"),
+          "backdrop-blur supports-[backdrop-filter]:bg-opacity-80",
+          "border-gray-200 dark:border-gray-800",
+        )}
+      >
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
-                "bg-white/20 backdrop-blur"
-              )}>
+              <div
+                className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  "bg-white/20 backdrop-blur",
+                )}
+              >
                 <definition.icon className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="font-bold text-white text-lg">
                   {definition.name}
                 </h1>
-                <p className="text-white/80 text-sm">
-                  {userPseudonym}
-                </p>
+                <p className="text-white/80 text-sm">{userPseudonym}</p>
               </div>
             </div>
             <Badge className="bg-white/20 text-white border-0">
@@ -277,7 +311,9 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {new Date(activeIncident.timestamp).toLocaleTimeString('es-MX')}
+                      {new Date(activeIncident.timestamp).toLocaleTimeString(
+                        "es-MX",
+                      )}
                     </span>
                   </div>
                 </div>
@@ -308,10 +344,10 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
             <Shield className="w-5 h-5" />
             Acciones Principales
           </h2>
-          
+
           <div className="grid grid-cols-2 gap-3">
-            {highPriorityActions.map(action => {
-              const ActionIcon = action.icon
+            {highPriorityActions.map((action) => {
+              const ActionIcon = action.icon;
               return (
                 <button
                   key={action.id}
@@ -321,35 +357,40 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                     "hover:shadow-lg active:scale-95",
                     definition.borderColor,
                     "bg-white dark:bg-gray-900",
-                    "hover:" + definition.bgColor.replace('bg-', 'bg-opacity-5')
+                    "hover:" +
+                      definition.bgColor.replace("bg-", "bg-opacity-5"),
                   )}
                 >
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center mb-2",
-                    definition.bgColor.replace('600', '100')
-                  )}>
-                    <ActionIcon className={cn("w-5 h-5", definition.textColor)} />
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center mb-2",
+                      definition.bgColor.replace("600", "100"),
+                    )}
+                  >
+                    <ActionIcon
+                      className={cn("w-5 h-5", definition.textColor)}
+                    />
                   </div>
                   <p className="font-medium text-gray-900 dark:text-white text-sm">
                     {action.label}
                   </p>
-                  {action.priority === 'high' && (
-                    <Badge 
-                      variant="destructive" 
+                  {action.priority === "high" && (
+                    <Badge
+                      variant="destructive"
                       className="mt-2 text-[10px] px-1.5 py-0"
                     >
                       Prioritario
                     </Badge>
                   )}
                 </button>
-              )
+              );
             })}
           </div>
 
           {otherActions.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-3">
-              {otherActions.map(action => {
-                const ActionIcon = action.icon
+              {otherActions.map((action) => {
+                const ActionIcon = action.icon;
                 return (
                   <button
                     key={action.id}
@@ -363,14 +404,14 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                       </span>
                     </div>
                   </button>
-                )
+                );
               })}
             </div>
           )}
         </div>
 
         {/* Role-Specific Content */}
-        {role === 'leader' && (
+        {role === "leader" && (
           <>
             {/* Team Status */}
             <div>
@@ -379,17 +420,15 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                   <Users className="w-5 h-5" />
                   Estado del Equipo
                 </h2>
-                <Badge variant="secondary">
-                  {teamMembers.length} miembros
-                </Badge>
+                <Badge variant="secondary">{teamMembers.length} miembros</Badge>
               </div>
-              
+
               <div className="space-y-2">
                 {teamMembers.slice(0, 3).map((member, i) => (
-                  <TeamMemberCard 
-                    key={i} 
-                    member={member} 
-                    roleColor={definition.bgColor} 
+                  <TeamMemberCard
+                    key={i}
+                    member={member}
+                    roleColor={definition.bgColor}
                   />
                 ))}
                 {teamMembers.length > 3 && (
@@ -402,7 +441,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
           </>
         )}
 
-        {role === 'security' && (
+        {role === "security" && (
           <>
             {/* Threat Assessment */}
             <Card>
@@ -415,17 +454,22 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
               <CardContent className="pt-0">
                 <div className="space-y-2">
                   {[
-                    'Armas de fuego presentes',
-                    'Grupos armados',
-                    'Amenazas directas',
-                    'Violencia en progreso'
+                    "Armas de fuego presentes",
+                    "Grupos armados",
+                    "Amenazas directas",
+                    "Violencia en progreso",
                   ].map((threat, i) => (
-                    <label 
+                    <label
                       key={i}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                     >
-                      <input type="checkbox" className="rounded border-gray-300" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{threat}</span>
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {threat}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -434,11 +478,13 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
           </>
         )}
 
-        {role === 'medical' && (
+        {role === "medical" && (
           <>
             {/* P.A.S. Quick Access */}
             <Card className={cn(definition.borderColor)}>
-              <CardHeader className={cn(definition.bgColor.replace('600', '50'))}>
+              <CardHeader
+                className={cn(definition.bgColor.replace("600", "50"))}
+              >
                 <CardTitle className="text-base flex items-center gap-2">
                   <FirstAid className={cn("w-5 h-5", definition.textColor)} />
                   Protocolo P.A.S.
@@ -459,10 +505,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                     <p className="text-xs font-medium">Socorrer</p>
                   </div>
                 </div>
-                <Button 
-                  className="w-full mt-3"
-                  variant="outline"
-                >
+                <Button className="w-full mt-3" variant="outline">
                   Abrir Guía Completa
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -471,7 +514,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
           </>
         )}
 
-        {role === 'legal' && (
+        {role === "legal" && (
           <>
             {/* Evidence Stats */}
             <div className="grid grid-cols-2 gap-3">
@@ -493,7 +536,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
           </>
         )}
 
-        {role === 'dispatch' && (
+        {role === "dispatch" && (
           <>
             {/* Contact Tree Preview */}
             <Card>
@@ -505,13 +548,13 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
               </CardHeader>
               <CardContent className="pt-0 space-y-2">
                 {[
-                  { name: 'CDHCM', phone: '55-5029-9300', priority: 1 },
-                  { name: 'C5', phone: '55-5533-5533', priority: 1 },
-                  { name: 'Cruz Roja', phone: '55-5557-5757', priority: 2 }
+                  { name: "CDHCM", phone: "55-5029-9300", priority: 1 },
+                  { name: "C5", phone: "55-5533-5533", priority: 1 },
+                  { name: "Cruz Roja", phone: "55-5557-5757", priority: 2 },
                 ].map((contact, i) => (
                   <a
                     key={i}
-                    href={`tel:${contact.phone.replace(/-/g, '')}`}
+                    href={`tel:${contact.phone.replace(/-/g, "")}`}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div>
@@ -520,7 +563,11 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                       </p>
                       <p className="text-sm text-gray-500">{contact.phone}</p>
                     </div>
-                    <Badge variant={contact.priority === 1 ? "destructive" : "secondary"}>
+                    <Badge
+                      variant={
+                        contact.priority === 1 ? "destructive" : "secondary"
+                      }
+                    >
                       P{contact.priority}
                     </Badge>
                   </a>
@@ -530,7 +577,7 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
           </>
         )}
 
-        {role === 'logistics' && (
+        {role === "logistics" && (
           <>
             {/* Supply Status */}
             <div className="grid grid-cols-2 gap-3">
@@ -562,17 +609,20 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                 onClick={() => setShowAllActivity(!showAllActivity)}
                 className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
-                {showAllActivity ? 'Ver menos' : 'Ver todo'}
+                {showAllActivity ? "Ver menos" : "Ver todo"}
               </button>
             </div>
-            
+
             <Card>
               <CardContent className="p-2">
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {(showAllActivity ? recentActivity : recentActivity.slice(0, 3)).map(item => (
-                    <ActivityItemCard 
-                      key={item.id} 
-                      item={item} 
+                  {(showAllActivity
+                    ? recentActivity
+                    : recentActivity.slice(0, 3)
+                  ).map((item) => (
+                    <ActivityItemCard
+                      key={item.id}
+                      item={item}
                       roleColor={definition.bgColor}
                     />
                   ))}
@@ -588,18 +638,20 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
             Acceso Rápido
           </h2>
           <div className="grid grid-cols-4 gap-2">
-            {definition.quickAccess.slice(0, 4).map(item => {
-              const ItemIcon = item.icon
+            {definition.quickAccess.slice(0, 4).map((item) => {
+              const ItemIcon = item.icon;
               return (
                 <button
                   key={item.id}
                   onClick={() => onQuickAccessClick?.(item.id)}
                   className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                 >
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center",
-                    definition.bgColor.replace('600', '100')
-                  )}>
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center",
+                      definition.bgColor.replace("600", "100"),
+                    )}
+                  >
                     <ItemIcon className={cn("w-5 h-5", definition.textColor)} />
                   </div>
                   <span className="text-xs text-gray-700 dark:text-gray-300 text-center">
@@ -611,13 +663,13 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
                     </Badge>
                   )}
                 </button>
-              )
+              );
             })}
           </div>
         </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default RoleDashboard
+export default RoleDashboard;

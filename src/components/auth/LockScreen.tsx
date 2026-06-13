@@ -8,41 +8,41 @@
  * configured lockout / data-wipe policy via the security manager.
  */
 
-import React, { useState } from 'react'
-import { Shield, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react'
-import { securityManager } from '@/lib/security'
+import React, { useState } from "react";
+import { Shield, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
+import { securityManager } from "@/lib/security";
 
 interface LockScreenProps {
-  onUnlocked: () => void | Promise<void>
+  onUnlocked: () => void | Promise<void>;
 }
 
 export const LockScreen: React.FC<LockScreenProps> = ({ onUnlocked }) => {
-  const [passphrase, setPassphrase] = useState('')
-  const [show, setShow] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [passphrase, setPassphrase] = useState("");
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!passphrase || busy) return
-    setBusy(true)
-    setError(null)
+    e.preventDefault();
+    if (!passphrase || busy) return;
+    setBusy(true);
+    setError(null);
     try {
-      const { valid } = await securityManager.verifyPassword(passphrase)
+      const { valid } = await securityManager.verifyPassword(passphrase);
       if (valid) {
         // Whether real or duress, the vault is now unlocked with the
         // appropriate key; hydrate and continue.
-        setPassphrase('')
-        await onUnlocked()
+        setPassphrase("");
+        await onUnlocked();
       } else {
-        setError('Contraseña incorrecta.')
+        setError("Contraseña incorrecta.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo desbloquear.')
+      setError(err instanceof Error ? err.message : "No se pudo desbloquear.");
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 safe-area-top safe-area-bottom">
@@ -60,7 +60,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlocked }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <input
-              type={show ? 'text' : 'password'}
+              type={show ? "text" : "password"}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               autoFocus
@@ -73,14 +73,21 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlocked }) => {
               type="button"
               onClick={() => setShow((s) => !s)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
             >
-              {show ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {show ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive" role="alert">
+            <div
+              className="flex items-center gap-2 text-sm text-destructive"
+              role="alert"
+            >
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -102,7 +109,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlocked }) => {
         </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LockScreen
+export default LockScreen;

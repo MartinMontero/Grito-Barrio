@@ -7,8 +7,8 @@
  * be mounted as a standalone screen without any props.
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Shield,
   Eye,
@@ -25,8 +25,8 @@ import {
   Upload,
   AlertOctagon,
   ArrowLeft,
-  Loader2
-} from 'lucide-react'
+  Loader2,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -57,263 +57,285 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { securityManager, type SecurityConfig, type SecurityLog } from '@/lib/security'
-import { changePassphrase } from '@/lib/vault'
-import { repersistPersistedState } from '@/lib/store-helpers'
-import { isCryptoSupported } from '@/lib/crypto'
-import { createComprehensiveBackup, restoreFromComprehensiveBackup } from '@/store'
+  SelectValue,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import {
+  securityManager,
+  type SecurityConfig,
+  type SecurityLog,
+} from "@/lib/security";
+import { changePassphrase } from "@/lib/vault";
+import { repersistPersistedState } from "@/lib/store-helpers";
+import { isCryptoSupported } from "@/lib/crypto";
+import {
+  createComprehensiveBackup,
+  restoreFromComprehensiveBackup,
+} from "@/store";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface SecuritySettingsProps {
-  className?: string
+  className?: string;
 }
 
 // =============================================================================
 // COMPONENT
 // =============================================================================
 
-export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className }) => {
-  const navigate = useNavigate()
+export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
+  className,
+}) => {
+  const navigate = useNavigate();
 
   // State
-  const [config, setConfig] = useState<SecurityConfig>(securityManager.getConfig())
-  const [hasPassword, setHasPassword] = useState(false)
-  const [hasDuress, setHasDuress] = useState(false)
-  const [logs, setLogs] = useState<SecurityLog[]>([])
+  const [config, setConfig] = useState<SecurityConfig>(
+    securityManager.getConfig(),
+  );
+  const [hasPassword, setHasPassword] = useState(false);
+  const [hasDuress, setHasDuress] = useState(false);
+  const [logs, setLogs] = useState<SecurityLog[]>([]);
 
   // Dialogs
-  const [showSetupDialog, setShowSetupDialog] = useState(false)
-  const [showDuressSetup, setShowDuressSetup] = useState(false)
-  const [showWipeDialog, setShowWipeDialog] = useState(false)
-  const [showConfirmWipeDialog, setShowConfirmWipeDialog] = useState(false)
-  const [showExportDialog, setShowExportDialog] = useState(false)
-  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const [showDuressSetup, setShowDuressSetup] = useState(false);
+  const [showWipeDialog, setShowWipeDialog] = useState(false);
+  const [showConfirmWipeDialog, setShowConfirmWipeDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   // Form fields
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [duressPassword, setDuressPasswordValue] = useState('')
-  const [confirmDuress, setConfirmDuress] = useState('')
-  const [exportPass, setExportPass] = useState('')
-  const [importPass, setImportPass] = useState('')
-  const [importFile, setImportFile] = useState<File | null>(null)
-  const [wipeMinutes, setWipeMinutes] = useState(10)
-  const [wipeConfirmText, setWipeConfirmText] = useState('')
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [duressPassword, setDuressPasswordValue] = useState("");
+  const [confirmDuress, setConfirmDuress] = useState("");
+  const [exportPass, setExportPass] = useState("");
+  const [importPass, setImportPass] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [wipeMinutes, setWipeMinutes] = useState(10);
+  const [wipeConfirmText, setWipeConfirmText] = useState("");
 
   // Feedback
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [cryptoSupported, setCryptoSupported] = useState(true)
-  const [activeTab, setActiveTab] = useState('general')
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [cryptoSupported, setCryptoSupported] = useState(true);
+  const [activeTab, setActiveTab] = useState("general");
 
   // Load initial state
   const refreshState = useCallback(() => {
-    setHasPassword(securityManager.hasPassword())
-    setHasDuress(securityManager.hasDuressPassword())
-    setLogs(securityManager.getLogs().slice(-50))
-    setConfig(securityManager.getConfig())
-  }, [])
+    setHasPassword(securityManager.hasPassword());
+    setHasDuress(securityManager.hasDuressPassword());
+    setLogs(securityManager.getLogs().slice(-50));
+    setConfig(securityManager.getConfig());
+  }, []);
 
   useEffect(() => {
-    refreshState()
-    setCryptoSupported(isCryptoSupported())
-  }, [refreshState])
+    refreshState();
+    setCryptoSupported(isCryptoSupported());
+  }, [refreshState]);
 
   // Clear messages after a few seconds
   useEffect(() => {
     if (success || error) {
       const timer = setTimeout(() => {
-        setSuccess('')
-        setError('')
-      }, 4000)
-      return () => clearTimeout(timer)
+        setSuccess("");
+        setError("");
+      }, 4000);
+      return () => clearTimeout(timer);
     }
-  }, [success, error])
+  }, [success, error]);
 
   // Update configuration
-  const updateSecurityConfig = useCallback((updates: Partial<SecurityConfig>) => {
-    securityManager.updateConfig(updates)
-    setConfig(securityManager.getConfig())
-    setSuccess('Configuración actualizada')
-  }, [])
+  const updateSecurityConfig = useCallback(
+    (updates: Partial<SecurityConfig>) => {
+      securityManager.updateConfig(updates);
+      setConfig(securityManager.getConfig());
+      setSuccess("Configuración actualizada");
+    },
+    [],
+  );
 
   // Set up master password (creates vault)
   const handleSetupPassword = async () => {
-    setError('')
+    setError("");
     if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres')
-      return
+      setError("La contraseña debe tener al menos 8 caracteres");
+      return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      return
+      setError("Las contraseñas no coinciden");
+      return;
     }
-    setBusy(true)
+    setBusy(true);
     try {
-      await securityManager.setRealPassword(password)
-      await repersistPersistedState()
-      refreshState()
-      setShowSetupDialog(false)
-      setPassword('')
-      setConfirmPassword('')
-      setSuccess('Contraseña maestra configurada. Tus datos están protegidos.')
+      await securityManager.setRealPassword(password);
+      await repersistPersistedState();
+      refreshState();
+      setShowSetupDialog(false);
+      setPassword("");
+      setConfirmPassword("");
+      setSuccess("Contraseña maestra configurada. Tus datos están protegidos.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al configurar contraseña')
+      setError(
+        err instanceof Error ? err.message : "Error al configurar contraseña",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   // Change master password (vault already exists)
   const handleChangePassword = async () => {
-    setError('')
+    setError("");
     if (password.length < 8) {
-      setError('La nueva contraseña debe tener al menos 8 caracteres')
-      return
+      setError("La nueva contraseña debe tener al menos 8 caracteres");
+      return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      return
+      setError("Las contraseñas no coinciden");
+      return;
     }
-    setBusy(true)
+    setBusy(true);
     try {
-      await changePassphrase(currentPassword, password)
-      setCurrentPassword('')
-      setPassword('')
-      setConfirmPassword('')
-      setSuccess('Contraseña actualizada')
+      await changePassphrase(currentPassword, password);
+      setCurrentPassword("");
+      setPassword("");
+      setConfirmPassword("");
+      setSuccess("Contraseña actualizada");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cambiar contraseña')
+      setError(
+        err instanceof Error ? err.message : "Error al cambiar contraseña",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   // Set up duress password
   const handleSetupDuress = async () => {
-    setError('')
+    setError("");
     if (duressPassword.length < 8) {
-      setError('La contraseña de emergencia debe tener al menos 8 caracteres')
-      return
+      setError("La contraseña de emergencia debe tener al menos 8 caracteres");
+      return;
     }
     if (duressPassword !== confirmDuress) {
-      setError('Las contraseñas no coinciden')
-      return
+      setError("Las contraseñas no coinciden");
+      return;
     }
-    setBusy(true)
+    setBusy(true);
     try {
-      await securityManager.setDuressPassword(duressPassword)
-      refreshState()
-      setShowDuressSetup(false)
-      setDuressPasswordValue('')
-      setConfirmDuress('')
-      setSuccess('Contraseña de emergencia configurada')
+      await securityManager.setDuressPassword(duressPassword);
+      refreshState();
+      setShowDuressSetup(false);
+      setDuressPasswordValue("");
+      setConfirmDuress("");
+      setSuccess("Contraseña de emergencia configurada");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al configurar contraseña de emergencia')
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al configurar contraseña de emergencia",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   // Clear duress password
   const handleClearDuress = () => {
-    securityManager.clearDuressPassword()
-    refreshState()
-    setSuccess('Contraseña de emergencia eliminada')
-  }
+    securityManager.clearDuressPassword();
+    refreshState();
+    setSuccess("Contraseña de emergencia eliminada");
+  };
 
   // Schedule panic wipe
   const handleScheduleWipe = () => {
-    securityManager.scheduleWipe(wipeMinutes)
-    setShowWipeDialog(false)
-    setSuccess(`Eliminación automática programada en ${wipeMinutes} minutos`)
-  }
+    securityManager.scheduleWipe(wipeMinutes);
+    setShowWipeDialog(false);
+    setSuccess(`Eliminación automática programada en ${wipeMinutes} minutos`);
+  };
 
   const handleCancelScheduledWipe = () => {
-    securityManager.cancelWipe()
-    setSuccess('Eliminación programada cancelada')
-  }
+    securityManager.cancelWipe();
+    setSuccess("Eliminación programada cancelada");
+  };
 
   // Execute immediate wipe
   const handleImmediateWipe = () => {
-    void securityManager.executeWipe()
-  }
+    void securityManager.executeWipe();
+  };
 
   // Export backup
   const handleExport = async () => {
-    setError('')
-    setBusy(true)
+    setError("");
+    setBusy(true);
     try {
-      const pass = exportPass.trim() ? exportPass : undefined
-      const blob = await createComprehensiveBackup(pass)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      const date = new Date().toISOString().split('T')[0]
-      a.download = `grito-barrio-respaldo-${date}.${pass ? 'enc' : 'json'}`
-      a.click()
-      URL.revokeObjectURL(url)
-      setShowExportDialog(false)
-      setExportPass('')
-      setSuccess('Copia de seguridad exportada')
+      const pass = exportPass.trim() ? exportPass : undefined;
+      const blob = await createComprehensiveBackup(pass);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const date = new Date().toISOString().split("T")[0];
+      a.download = `grito-barrio-respaldo-${date}.${pass ? "enc" : "json"}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setShowExportDialog(false);
+      setExportPass("");
+      setSuccess("Copia de seguridad exportada");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al exportar datos')
+      setError(err instanceof Error ? err.message : "Error al exportar datos");
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   // Import from backup
   const handleImport = async () => {
     if (!importFile) {
-      setError('Selecciona un archivo de respaldo')
-      return
+      setError("Selecciona un archivo de respaldo");
+      return;
     }
-    setError('')
-    setBusy(true)
+    setError("");
+    setBusy(true);
     try {
-      const pass = importPass.trim() ? importPass : undefined
-      const ok = await restoreFromComprehensiveBackup(importFile, pass)
+      const pass = importPass.trim() ? importPass : undefined;
+      const ok = await restoreFromComprehensiveBackup(importFile, pass);
       if (!ok) {
-        setError('No se pudo restaurar. Verifica el archivo y la contraseña.')
-        return
+        setError("No se pudo restaurar. Verifica el archivo y la contraseña.");
+        return;
       }
-      setShowImportDialog(false)
-      setImportFile(null)
-      setImportPass('')
-      setSuccess('Datos restaurados correctamente')
+      setShowImportDialog(false);
+      setImportFile(null);
+      setImportPass("");
+      setSuccess("Datos restaurados correctamente");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al importar datos')
+      setError(err instanceof Error ? err.message : "Error al importar datos");
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   // Logs
   const handleClearLogs = () => {
-    securityManager.clearLogs()
-    setLogs([])
-    setSuccess('Registros borrados')
-  }
+    securityManager.clearLogs();
+    setLogs([]);
+    setSuccess("Registros borrados");
+  };
 
   const handleExportLogs = () => {
-    const logsJson = securityManager.exportLogs()
-    const blob = new Blob([logsJson], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `registros-seguridad-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+    const logsJson = securityManager.exportLogs();
+    const blob = new Blob([logsJson], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `registros-seguridad-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className={cn("space-y-6 pb-20", className)}>
@@ -330,7 +352,9 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
         <Shield className="w-8 h-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Seguridad</h1>
-          <p className="text-muted-foreground">Configure la protección de sus datos</p>
+          <p className="text-muted-foreground">
+            Configure la protección de sus datos
+          </p>
         </div>
       </div>
 
@@ -340,7 +364,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <AlertTriangle className="w-4 h-4" />
           <AlertTitle>Navegador no compatible</AlertTitle>
           <AlertDescription>
-            Su navegador no soporta cifrado avanzado. Algunas funciones de seguridad no estarán disponibles.
+            Su navegador no soporta cifrado avanzado. Algunas funciones de
+            seguridad no estarán disponibles.
           </AlertDescription>
         </Alert>
       )}
@@ -349,7 +374,9 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
       {success && (
         <Alert className="bg-green-50 border-green-200">
           <Check className="w-4 h-4 text-green-600" />
-          <AlertDescription className="text-green-800">{success}</AlertDescription>
+          <AlertDescription className="text-green-800">
+            {success}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -372,19 +399,19 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <div className="flex items-center justify-between">
             <span className="text-sm">Contraseña principal</span>
             <Badge variant={hasPassword ? "default" : "destructive"}>
-              {hasPassword ? 'Configurada' : 'No configurada'}
+              {hasPassword ? "Configurada" : "No configurada"}
             </Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm">Contraseña de emergencia</span>
             <Badge variant={hasDuress ? "default" : "secondary"}>
-              {hasDuress ? 'Configurada' : 'No configurada'}
+              {hasDuress ? "Configurada" : "No configurada"}
             </Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm">Cifrado</span>
             <Badge variant={hasPassword ? "default" : "secondary"}>
-              {hasPassword ? 'Activado' : 'Desactivado'}
+              {hasPassword ? "Activado" : "Desactivado"}
             </Badge>
           </div>
         </CardContent>
@@ -528,7 +555,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   <Shield className="w-12 h-12 mx-auto text-primary" />
                   <h3 className="font-semibold">Configurar Seguridad</h3>
                   <p className="text-sm text-muted-foreground">
-                    Establezca una contraseña maestra para cifrar y proteger sus datos
+                    Establezca una contraseña maestra para cifrar y proteger sus
+                    datos
                   </p>
                   <Button onClick={() => setShowSetupDialog(true)}>
                     Configurar Ahora
@@ -540,7 +568,9 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Cambiar Contraseña</CardTitle>
+                  <CardTitle className="text-base">
+                    Cambiar Contraseña
+                  </CardTitle>
                   <CardDescription>
                     Introduce tu contraseña actual y la nueva.
                   </CardDescription>
@@ -576,8 +606,16 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                       autoComplete="new-password"
                     />
                   </div>
-                  <Button onClick={handleChangePassword} className="w-full" disabled={busy}>
-                    {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Key className="w-4 h-4 mr-2" />}
+                  <Button
+                    onClick={handleChangePassword}
+                    className="w-full"
+                    disabled={busy}
+                  >
+                    {busy ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Key className="w-4 h-4 mr-2" />
+                    )}
                     Cambiar Contraseña
                   </Button>
                 </CardContent>
@@ -591,8 +629,9 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                     Contraseña de Emergencia
                   </CardTitle>
                   <CardDescription>
-                    Si se ve obligado a desbloquear, esta contraseña abre una bóveda señuelo
-                    aislada y programa el borrado de los datos reales.
+                    Si se ve obligado a desbloquear, esta contraseña abre una
+                    bóveda señuelo aislada y programa el borrado de los datos
+                    reales.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -637,7 +676,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                 Eliminación de Emergencia
               </CardTitle>
               <CardDescription>
-                Elimine todos los datos inmediatamente o programe eliminación automática
+                Elimine todos los datos inmediatamente o programe eliminación
+                automática
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -670,8 +710,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                 variant="destructive"
                 className="w-full"
                 onClick={() => {
-                  setWipeConfirmText('')
-                  setShowConfirmWipeDialog(true)
+                  setWipeConfirmText("");
+                  setShowConfirmWipeDialog(true);
                 }}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -768,10 +808,20 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   Registro de Seguridad
                 </CardTitle>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleExportLogs} aria-label="Exportar registros">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportLogs}
+                    aria-label="Exportar registros"
+                  >
                     <Download className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleClearLogs} aria-label="Borrar registros">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearLogs}
+                    aria-label="Borrar registros"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -785,29 +835,34 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                       No hay registros
                     </p>
                   ) : (
-                    logs.slice().reverse().map((log) => (
-                      <div
-                        key={log.id}
-                        className="p-3 rounded-lg bg-muted text-sm"
-                      >
-                        <div className="flex items-center justify-between">
-                          <Badge
-                            variant={
-                              log.type === 'duress' ? 'destructive' :
-                              log.type === 'failed_attempt' ? 'secondary' :
-                              'default'
-                            }
-                            className="text-xs"
-                          >
-                            {log.type}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(log.timestamp).toLocaleString('es-MX')}
-                          </span>
+                    logs
+                      .slice()
+                      .reverse()
+                      .map((log) => (
+                        <div
+                          key={log.id}
+                          className="p-3 rounded-lg bg-muted text-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <Badge
+                              variant={
+                                log.type === "duress"
+                                  ? "destructive"
+                                  : log.type === "failed_attempt"
+                                    ? "secondary"
+                                    : "default"
+                              }
+                              className="text-xs"
+                            >
+                              {log.type}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(log.timestamp).toLocaleString("es-MX")}
+                            </span>
+                          </div>
+                          <p className="mt-1">{log.details}</p>
                         </div>
-                        <p className="mt-1">{log.details}</p>
-                      </div>
-                    ))
+                      ))
                   )}
                 </div>
               </ScrollArea>
@@ -822,7 +877,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <DialogHeader>
             <DialogTitle>Configurar Contraseña Maestra</DialogTitle>
             <DialogDescription>
-              Esta contraseña cifra todos tus datos. Si la olvidas no podrás recuperarlos.
+              Esta contraseña cifra todos tus datos. Si la olvidas no podrás
+              recuperarlos.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -853,7 +909,11 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSetupDialog(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              onClick={() => setShowSetupDialog(false)}
+              disabled={busy}
+            >
               Cancelar
             </Button>
             <Button onClick={handleSetupPassword} disabled={busy}>
@@ -870,7 +930,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <DialogHeader>
             <DialogTitle>Configurar Contraseña de Emergencia</DialogTitle>
             <DialogDescription>
-              Al ingresarla se abre una bóveda señuelo y se programa el borrado de los datos reales.
+              Al ingresarla se abre una bóveda señuelo y se programa el borrado
+              de los datos reales.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -907,7 +968,11 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDuressSetup(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDuressSetup(false)}
+              disabled={busy}
+            >
               Cancelar
             </Button>
             <Button onClick={handleSetupDuress} disabled={busy}>
@@ -924,13 +989,16 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <DialogHeader>
             <DialogTitle>Programar Eliminación Automática</DialogTitle>
             <DialogDescription>
-              Todos los datos se eliminarán automáticamente cuando transcurra el tiempo seleccionado.
+              Todos los datos se eliminarán automáticamente cuando transcurra el
+              tiempo seleccionado.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex justify-between">
               <Label>Tiempo</Label>
-              <span className="text-sm text-muted-foreground">{wipeMinutes} minutos</span>
+              <span className="text-sm text-muted-foreground">
+                {wipeMinutes} minutos
+              </span>
             </div>
             <Slider
               value={[wipeMinutes]}
@@ -952,12 +1020,18 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
       </Dialog>
 
       {/* Confirm Immediate Wipe Dialog */}
-      <Dialog open={showConfirmWipeDialog} onOpenChange={setShowConfirmWipeDialog}>
+      <Dialog
+        open={showConfirmWipeDialog}
+        onOpenChange={setShowConfirmWipeDialog}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive">Eliminar Datos Ahora</DialogTitle>
+            <DialogTitle className="text-destructive">
+              Eliminar Datos Ahora
+            </DialogTitle>
             <DialogDescription>
-              Esta acción elimina permanentemente TODOS los datos y no se puede deshacer.
+              Esta acción elimina permanentemente TODOS los datos y no se puede
+              deshacer.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -975,13 +1049,16 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmWipeDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmWipeDialog(false)}
+            >
               Cancelar
             </Button>
             <Button
               variant="destructive"
               onClick={handleImmediateWipe}
-              disabled={wipeConfirmText.trim().toUpperCase() !== 'BORRAR'}
+              disabled={wipeConfirmText.trim().toUpperCase() !== "BORRAR"}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Eliminar Todo
@@ -996,8 +1073,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <DialogHeader>
             <DialogTitle>Exportar Datos</DialogTitle>
             <DialogDescription>
-              Opcional: protege el respaldo con una contraseña. Sin contraseña el archivo se
-              guarda como texto plano legible.
+              Opcional: protege el respaldo con una contraseña. Sin contraseña
+              el archivo se guarda como texto plano legible.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1018,7 +1095,11 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowExportDialog(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              onClick={() => setShowExportDialog(false)}
+              disabled={busy}
+            >
               Cancelar
             </Button>
             <Button onClick={handleExport} disabled={busy}>
@@ -1035,7 +1116,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <DialogHeader>
             <DialogTitle>Importar desde Copia</DialogTitle>
             <DialogDescription>
-              Selecciona el archivo de respaldo. Si está cifrado, introduce su contraseña.
+              Selecciona el archivo de respaldo. Si está cifrado, introduce su
+              contraseña.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1065,7 +1147,11 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImportDialog(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              onClick={() => setShowImportDialog(false)}
+              disabled={busy}
+            >
               Cancelar
             </Button>
             <Button onClick={handleImport} disabled={busy || !importFile}>
@@ -1076,7 +1162,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default SecuritySettings
+export default SecuritySettings;

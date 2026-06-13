@@ -1,11 +1,11 @@
 /**
  * Safe Point Detail Component
  * Protocolo CDMX
- * 
+ *
  * Individual safe point detailed view with history and management
  */
 
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
   MapPin,
   Phone,
@@ -29,8 +29,8 @@ import {
   UtensilsCrossed as CookingPot,
   User,
   FileText,
-  Plus
-} from 'lucide-react'
+  Plus,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -48,24 +48,34 @@ import {
   TooltipProvider,
   Alert,
   AlertTitle,
-  AlertDescription
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { SafePoint, SafePointHistoryEntry, ActivationRecord } from '@/types/resources'
-import { SAFE_POINT_TYPES, ACCESSIBILITY_LABELS } from '@/types/resources'
+  AlertDescription,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type {
+  SafePoint,
+  SafePointHistoryEntry,
+  ActivationRecord,
+} from "@/types/resources";
+import { SAFE_POINT_TYPES, ACCESSIBILITY_LABELS } from "@/types/resources";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface SafePointDetailProps {
-  safePoint: SafePoint
-  onEdit?: (safePoint: SafePoint) => void
-  onActivate?: (safePointId: string, activation: Partial<ActivationRecord>) => void
-  onAddHistory?: (safePointId: string, entry: Omit<SafePointHistoryEntry, 'id' | 'timestamp'>) => void
-  onGetDirections?: (safePoint: SafePoint) => void
-  canEdit?: boolean
-  className?: string
+  safePoint: SafePoint;
+  onEdit?: (safePoint: SafePoint) => void;
+  onActivate?: (
+    safePointId: string,
+    activation: Partial<ActivationRecord>,
+  ) => void;
+  onAddHistory?: (
+    safePointId: string,
+    entry: Omit<SafePointHistoryEntry, "id" | "timestamp">,
+  ) => void;
+  onGetDirections?: (safePoint: SafePoint) => void;
+  canEdit?: boolean;
+  className?: string;
 }
 
 // =============================================================================
@@ -79,84 +89,87 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
   onAddHistory,
   onGetDirections,
   canEdit = false,
-  className
+  className,
 }) => {
-  const [activeTab, setActiveTab] = useState('info')
-  const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("info");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   // Draft occupancy used by the editable capacity controls (canEdit only).
-  const [draftOccupancy, setDraftOccupancy] = useState(safePoint.currentOccupancy)
+  const [draftOccupancy, setDraftOccupancy] = useState(
+    safePoint.currentOccupancy,
+  );
 
   const flash = (message: string) => {
-    setStatusMessage(message)
-    window.setTimeout(() => setStatusMessage(null), 3000)
-  }
+    setStatusMessage(message);
+    window.setTimeout(() => setStatusMessage(null), 3000);
+  };
 
   // Share the safe point via the Web Share API, falling back to the clipboard.
   const handleShare = async () => {
-    const text = `${safePoint.name} - ${safePoint.address}, ${safePoint.colonia}, ${safePoint.alcaldia}. Tel: ${safePoint.contactPhone}`
+    const text = `${safePoint.name} - ${safePoint.address}, ${safePoint.colonia}, ${safePoint.alcaldia}. Tel: ${safePoint.contactPhone}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: safePoint.name, text })
+        await navigator.share({ title: safePoint.name, text });
       } else {
-        await navigator.clipboard.writeText(text)
-        flash('Información copiada al portapapeles')
+        await navigator.clipboard.writeText(text);
+        flash("Información copiada al portapapeles");
       }
     } catch {
       /* user cancelled share — no action needed */
     }
-  }
+  };
 
   // Trigger a quick activation request for this safe point.
   const handleActivate = () => {
     onActivate?.(safePoint.id, {
       peopleCount: 0,
-      eta: '30 minutos',
+      eta: "30 minutos",
       needs: [],
-      status: 'pending'
-    })
-    flash(`Solicitud de activación enviada a ${safePoint.contactName}`)
-  }
+      status: "pending",
+    });
+    flash(`Solicitud de activación enviada a ${safePoint.contactName}`);
+  };
 
   // Append a history note (records the activation/visit in the log).
   const handleAddHistory = () => {
     onAddHistory?.(safePoint.id, {
-      type: 'note',
-      description: 'Nota registrada por el operador',
-      userName: 'Operador'
-    })
-    flash('Nota agregada al historial')
-  }
+      type: "note",
+      description: "Nota registrada por el operador",
+      userName: "Operador",
+    });
+    flash("Nota agregada al historial");
+  };
 
-  const typeInfo = SAFE_POINT_TYPES[safePoint.type]
-  const capacityPercent = (safePoint.currentOccupancy / safePoint.totalCapacity) * 100
-  const isNearFull = capacityPercent > 80
-  const isFull = safePoint.availableSpots === 0
+  const typeInfo = SAFE_POINT_TYPES[safePoint.type];
+  const capacityPercent =
+    (safePoint.currentOccupancy / safePoint.totalCapacity) * 100;
+  const isNearFull = capacityPercent > 80;
+  const isFull = safePoint.availableSpots === 0;
 
   const adjustDraftOccupancy = (delta: number) => {
-    setDraftOccupancy(prev =>
-      Math.max(0, Math.min(safePoint.totalCapacity, prev + delta))
-    )
-  }
+    setDraftOccupancy((prev) =>
+      Math.max(0, Math.min(safePoint.totalCapacity, prev + delta)),
+    );
+  };
 
   const handleSaveCapacity = () => {
     onEdit?.({
       ...safePoint,
       currentOccupancy: draftOccupancy,
       availableSpots: Math.max(0, safePoint.totalCapacity - draftOccupancy),
-      lastUpdated: new Date().toISOString()
-    })
-  }
+      lastUpdated: new Date().toISOString(),
+    });
+  };
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("es-MX", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <TooltipProvider>
@@ -165,10 +178,12 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
         <div className="p-4 border-b">
           <div className="flex items-start gap-4">
             {/* Icon */}
-            <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0",
-              typeInfo.color
-            )}>
+            <div
+              className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center text-white flex-shrink-0",
+                typeInfo.color,
+              )}
+            >
               <Building className="w-8 h-8" />
             </div>
 
@@ -192,10 +207,12 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
 
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge className={cn(
-                  safePoint.isActive ? "bg-green-500" : "bg-gray-500"
-                )}>
-                  {safePoint.isActive ? 'Activo' : 'Inactivo'}
+                <Badge
+                  className={cn(
+                    safePoint.isActive ? "bg-green-500" : "bg-gray-500",
+                  )}
+                >
+                  {safePoint.isActive ? "Activo" : "Inactivo"}
                 </Badge>
                 {safePoint.accessAgreement && (
                   <Badge variant="outline">
@@ -210,7 +227,10 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                   </Badge>
                 )}
                 {isNearFull && !isFull && (
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                  <Badge
+                    variant="secondary"
+                    className="bg-orange-100 text-orange-800"
+                  >
                     <AlertTriangle className="w-3 h-3 mr-1" />
                     Casi lleno
                   </Badge>
@@ -221,29 +241,44 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
 
           {/* Capacity Alert */}
           {isNearFull && (
-            <Alert className={cn(
-              "mt-4",
-              isFull ? "bg-red-50 border-red-200" : "bg-orange-50 border-orange-200"
-            )}>
-              <AlertTriangle className={cn(
-                "w-5 h-5",
-                isFull ? "text-red-600" : "text-orange-600"
-              )} />
-              <AlertTitle className={isFull ? "text-red-800" : "text-orange-800"}>
-                {isFull ? 'Punto seguro al máximo de capacidad' : 'Capacidad limitada disponible'}
+            <Alert
+              className={cn(
+                "mt-4",
+                isFull
+                  ? "bg-red-50 border-red-200"
+                  : "bg-orange-50 border-orange-200",
+              )}
+            >
+              <AlertTriangle
+                className={cn(
+                  "w-5 h-5",
+                  isFull ? "text-red-600" : "text-orange-600",
+                )}
+              />
+              <AlertTitle
+                className={isFull ? "text-red-800" : "text-orange-800"}
+              >
+                {isFull
+                  ? "Punto seguro al máximo de capacidad"
+                  : "Capacidad limitada disponible"}
               </AlertTitle>
-              <AlertDescription className={isFull ? "text-red-700" : "text-orange-700"}>
-                {isFull 
-                  ? 'Este punto seguro ha alcanzado su capacidad máxima. Considere alternativas.'
-                  : `Solo quedan ${safePoint.availableSpots} espacios disponibles.`
-                }
+              <AlertDescription
+                className={isFull ? "text-red-700" : "text-orange-700"}
+              >
+                {isFull
+                  ? "Este punto seguro ha alcanzado su capacidad máxima. Considere alternativas."
+                  : `Solo quedan ${safePoint.availableSpots} espacios disponibles.`}
               </AlertDescription>
             </Alert>
           )}
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 flex flex-col"
+        >
           <TabsList className="mx-4 grid grid-cols-4">
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="capacity">Capacidad</TabsTrigger>
@@ -270,19 +305,15 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1"
                       onClick={() => onGetDirections?.(safePoint)}
                     >
                       <Navigation className="w-4 h-4 mr-2" />
                       Cómo llegar
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={handleShare}
-                    >
+                    <Button variant="outline" size="icon" onClick={handleShare}>
                       <Share2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -302,14 +333,14 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                     <p className="font-medium">{safePoint.contactName}</p>
                     <p className="text-sm text-muted-foreground">Responsable</p>
                   </div>
-                  
+
                   <Button variant="outline" className="w-full" asChild>
                     <a href={`tel:${safePoint.contactPhone}`}>
                       <Phone className="w-4 h-4 mr-2" />
                       {safePoint.contactPhone}
                     </a>
                   </Button>
-                  
+
                   {safePoint.contactEmail && (
                     <Button variant="outline" className="w-full" asChild>
                       <a href={`mailto:${safePoint.contactEmail}`}>
@@ -341,7 +372,8 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                     <Alert className="mt-3 bg-amber-50 border-amber-200">
                       <AlertCircle className="w-4 h-4 text-amber-600" />
                       <AlertDescription className="text-amber-800">
-                        Se requiere aviso previo de {safePoint.advanceNoticeHours} horas
+                        Se requiere aviso previo de{" "}
+                        {safePoint.advanceNoticeHours} horas
                       </AlertDescription>
                     </Alert>
                   )}
@@ -359,7 +391,9 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                           Convenio de Acceso Firmado
                         </h4>
                         <p className="text-sm text-green-800 dark:text-green-200">
-                          Fecha: {safePoint.accessAgreementDate && formatDate(safePoint.accessAgreementDate)}
+                          Fecha:{" "}
+                          {safePoint.accessAgreementDate &&
+                            formatDate(safePoint.accessAgreementDate)}
                         </p>
                         {safePoint.accessNotes && (
                           <p className="text-sm text-green-700 dark:text-green-300 mt-1">
@@ -396,7 +430,9 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                     <div className="text-5xl font-bold mb-2">
                       {safePoint.availableSpots}
                     </div>
-                    <p className="text-muted-foreground">espacios disponibles</p>
+                    <p className="text-muted-foreground">
+                      espacios disponibles
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       de {safePoint.totalCapacity} totales
                     </p>
@@ -405,17 +441,16 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Ocupación actual</span>
-                      <span className={cn(
-                        "font-medium",
-                        isNearFull ? "text-red-600" : "text-green-600"
-                      )}>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          isNearFull ? "text-red-600" : "text-green-600",
+                        )}
+                      >
                         {Math.round(capacityPercent)}%
                       </span>
                     </div>
-                    <Progress 
-                      value={capacityPercent} 
-                      className="h-3"
-                    />
+                    <Progress value={capacityPercent} className="h-3" />
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>{safePoint.currentOccupancy} ocupados</span>
                       <span>{safePoint.totalCapacity} capacidad total</span>
@@ -427,34 +462,50 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
               {/* Capacity History */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Historial de Ocupación</CardTitle>
+                  <CardTitle className="text-base">
+                    Historial de Ocupación
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {safePoint.activationHistory.slice(-5).reverse().map((activation) => (
-                      <div key={activation.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <div>
-                          <p className="font-medium">
-                            {activation.peopleCount} personas
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(activation.timestamp)}
-                          </p>
+                    {safePoint.activationHistory
+                      .slice(-5)
+                      .reverse()
+                      .map((activation) => (
+                        <div
+                          key={activation.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {activation.peopleCount} personas
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(activation.timestamp)}
+                            </p>
+                          </div>
+                          <Badge
+                            className={cn(
+                              activation.status === "confirmed"
+                                ? "bg-green-500"
+                                : activation.status === "pending"
+                                  ? "bg-yellow-500"
+                                  : activation.status === "completed"
+                                    ? "bg-blue-500"
+                                    : "bg-red-500",
+                            )}
+                          >
+                            {activation.status === "confirmed"
+                              ? "Confirmado"
+                              : activation.status === "pending"
+                                ? "Pendiente"
+                                : activation.status === "completed"
+                                  ? "Completado"
+                                  : "Rechazado"}
+                          </Badge>
                         </div>
-                        <Badge className={cn(
-                          activation.status === 'confirmed' ? 'bg-green-500' :
-                          activation.status === 'pending' ? 'bg-yellow-500' :
-                          activation.status === 'completed' ? 'bg-blue-500' :
-                          'bg-red-500'
-                        )}>
-                          {activation.status === 'confirmed' ? 'Confirmado' :
-                           activation.status === 'pending' ? 'Pendiente' :
-                           activation.status === 'completed' ? 'Completado' :
-                           'Rechazado'}
-                        </Badge>
-                      </div>
-                    ))}
-                    
+                      ))}
+
                     {safePoint.activationHistory.length === 0 && (
                       <p className="text-center text-muted-foreground py-4">
                         Sin activaciones registradas
@@ -468,7 +519,9 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
               {canEdit && (
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Actualizar Ocupación</CardTitle>
+                    <CardTitle className="text-base">
+                      Actualizar Ocupación
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -484,7 +537,13 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                         value={draftOccupancy}
                         onChange={(e) =>
                           setDraftOccupancy(
-                            Math.max(0, Math.min(safePoint.totalCapacity, parseInt(e.target.value) || 0))
+                            Math.max(
+                              0,
+                              Math.min(
+                                safePoint.totalCapacity,
+                                parseInt(e.target.value) || 0,
+                              ),
+                            ),
                           )
                         }
                         className="text-center"
@@ -513,7 +572,9 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
             <TabsContent value="amenities" className="p-4 space-y-4 mt-0">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Servicios Disponibles</CardTitle>
+                  <CardTitle className="text-base">
+                    Servicios Disponibles
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
@@ -526,44 +587,52 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                         wifi: <Wifi className="w-5 h-5" />,
                         kitchen: <CookingPot className="w-5 h-5" />,
                         showers: <Bath className="w-5 h-5" />,
-                        parking: <Car className="w-5 h-5" />
-                      }
-                      
+                        parking: <Car className="w-5 h-5" />,
+                      };
+
                       const labels: Record<string, string> = {
-                        water: 'Agua',
-                        food: 'Comida',
-                        medical: 'Atención médica',
-                        wash: 'WASH',
-                        wifi: 'WiFi',
-                        kitchen: 'Cocina',
-                        showers: 'Regaderas',
-                        parking: 'Estacionamiento'
-                      }
-                      
+                        water: "Agua",
+                        food: "Comida",
+                        medical: "Atención médica",
+                        wash: "WASH",
+                        wifi: "WiFi",
+                        kitchen: "Cocina",
+                        showers: "Regaderas",
+                        parking: "Estacionamiento",
+                      };
+
                       return (
-                        <div 
+                        <div
                           key={key}
                           className={cn(
                             "flex items-center gap-3 p-3 rounded-lg border",
-                            value 
-                              ? "bg-green-50 border-green-200 dark:bg-green-900/20" 
-                              : "bg-gray-50 border-gray-200 dark:bg-gray-800 opacity-50"
+                            value
+                              ? "bg-green-50 border-green-200 dark:bg-green-900/20"
+                              : "bg-gray-50 border-gray-200 dark:bg-gray-800 opacity-50",
                           )}
                         >
-                          <div className={cn(
-                            value ? "text-green-600" : "text-gray-400"
-                          )}>
+                          <div
+                            className={cn(
+                              value ? "text-green-600" : "text-gray-400",
+                            )}
+                          >
                             {icons[key]}
                           </div>
-                          <span className={cn(
-                            "font-medium",
-                            value ? "text-green-900 dark:text-green-100" : "text-gray-500"
-                          )}>
+                          <span
+                            className={cn(
+                              "font-medium",
+                              value
+                                ? "text-green-900 dark:text-green-100"
+                                : "text-gray-500",
+                            )}
+                          >
                             {labels[key]}
                           </span>
-                          {value && <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />}
+                          {value && (
+                            <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />
+                          )}
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </CardContent>
@@ -579,16 +648,16 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {safePoint.accessibility.map(feature => (
-                      <Badge 
-                        key={feature} 
+                    {safePoint.accessibility.map((feature) => (
+                      <Badge
+                        key={feature}
                         variant="secondary"
                         className="text-sm py-1 px-3"
                       >
                         {ACCESSIBILITY_LABELS[feature]}
                       </Badge>
                     ))}
-                    
+
                     {safePoint.accessibility.length === 0 && (
                       <p className="text-muted-foreground text-sm">
                         No hay información de accesibilidad disponible
@@ -612,39 +681,50 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
               </div>
 
               <div className="space-y-3">
-                {safePoint.history?.slice().reverse().map(entry => (
-                  <Card key={entry.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                          entry.type === 'activation' ? "bg-blue-100 text-blue-600" :
-                          entry.type === 'inspection' ? "bg-green-100 text-green-600" :
-                          entry.type === 'visit' ? "bg-purple-100 text-purple-600" :
-                          "bg-gray-100 text-gray-600"
-                        )}>
-                          <History className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline" className="text-xs capitalize">
-                              {entry.type}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(entry.timestamp)}
-                            </span>
+                {safePoint.history
+                  ?.slice()
+                  .reverse()
+                  .map((entry) => (
+                    <Card key={entry.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                              entry.type === "activation"
+                                ? "bg-blue-100 text-blue-600"
+                                : entry.type === "inspection"
+                                  ? "bg-green-100 text-green-600"
+                                  : entry.type === "visit"
+                                    ? "bg-purple-100 text-purple-600"
+                                    : "bg-gray-100 text-gray-600",
+                            )}
+                          >
+                            <History className="w-5 h-5" />
                           </div>
-                          <p className="mt-1">{entry.description}</p>
-                          {entry.userName && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Por: {entry.userName}
-                            </p>
-                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <Badge
+                                variant="outline"
+                                className="text-xs capitalize"
+                              >
+                                {entry.type}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(entry.timestamp)}
+                              </span>
+                            </div>
+                            <p className="mt-1">{entry.description}</p>
+                            {entry.userName && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Por: {entry.userName}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))}
 
                 {(!safePoint.history || safePoint.history.length === 0) && (
                   <div className="text-center py-8 text-muted-foreground">
@@ -660,8 +740,8 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
         {/* Footer Actions */}
         <div className="p-4 border-t">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1"
               onClick={() => onGetDirections?.(safePoint)}
             >
@@ -669,21 +749,20 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
               Direcciones
             </Button>
             {safePoint.isActive && !isFull && (
-              <Button
-                className="flex-1"
-                onClick={handleActivate}
-              >
+              <Button className="flex-1" onClick={handleActivate}>
                 Activar Punto
               </Button>
             )}
           </div>
           {statusMessage && (
-            <p className="mt-3 text-sm text-center text-green-600">{statusMessage}</p>
+            <p className="mt-3 text-sm text-center text-green-600">
+              {statusMessage}
+            </p>
           )}
         </div>
       </div>
     </TooltipProvider>
-  )
-}
+  );
+};
 
-export default SafePointDetail
+export default SafePointDetail;

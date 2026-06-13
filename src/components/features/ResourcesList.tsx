@@ -1,11 +1,11 @@
 /**
  * Resources List Component
  * Protocolo CDMX
- * 
+ *
  * Supplies and logistics management with checklists
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo } from "react";
 import {
   Boxes,
   Search,
@@ -17,8 +17,8 @@ import {
   Plus,
   Minus,
   TrendingDown,
-  ShoppingCart
-} from 'lucide-react'
+  ShoppingCart,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -45,31 +45,33 @@ import {
   TooltipProvider,
   Alert,
   AlertTitle,
-  AlertDescription
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { 
-  SupplyItem, 
-  SupplyChecklist, 
+  AlertDescription,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type {
+  SupplyItem,
+  SupplyChecklist,
   ResourceKit,
   ResourceCategory,
-  LogisticsRequest 
-} from '@/types/resources'
-import { RESOURCE_CATEGORIES, RESOURCE_LEVELS } from '@/types/resources'
+  LogisticsRequest,
+} from "@/types/resources";
+import { RESOURCE_CATEGORIES, RESOURCE_LEVELS } from "@/types/resources";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface ResourcesListProps {
-  supplies: SupplyItem[]
-  checklists: SupplyChecklist[]
-  kits: ResourceKit[]
-  requests: LogisticsRequest[]
-  onUpdateSupply?: (supplyId: string, quantity: number) => void
-  onCreateRequest?: (request: Omit<LogisticsRequest, 'id' | 'timestamp' | 'status'>) => void
-  onUseKit?: (kitId: string, incidentId?: string) => void
-  className?: string
+  supplies: SupplyItem[];
+  checklists: SupplyChecklist[];
+  kits: ResourceKit[];
+  requests: LogisticsRequest[];
+  onUpdateSupply?: (supplyId: string, quantity: number) => void;
+  onCreateRequest?: (
+    request: Omit<LogisticsRequest, "id" | "timestamp" | "status">,
+  ) => void;
+  onUseKit?: (kitId: string, incidentId?: string) => void;
+  className?: string;
 }
 
 // =============================================================================
@@ -78,101 +80,101 @@ interface ResourcesListProps {
 
 const MOCK_SUPPLIES: SupplyItem[] = [
   {
-    id: 'sup-1',
-    name: 'Botellas de agua 1L',
-    category: 'agua_alimentos',
+    id: "sup-1",
+    name: "Botellas de agua 1L",
+    category: "agua_alimentos",
     quantity: 150,
-    unit: 'piezas',
+    unit: "piezas",
     minQuantity: 50,
     idealQuantity: 200,
-    location: 'Almacén Central',
-    responsiblePerson: 'María García',
-    status: 'adequate',
-    needsRestock: false
+    location: "Almacén Central",
+    responsiblePerson: "María García",
+    status: "adequate",
+    needsRestock: false,
   },
   {
-    id: 'sup-2',
-    name: 'Botiquín de primeros auxilios',
-    category: 'primeros_auxilios',
+    id: "sup-2",
+    name: "Botiquín de primeros auxilios",
+    category: "primeros_auxilios",
     quantity: 8,
-    unit: 'kits',
+    unit: "kits",
     minQuantity: 10,
     idealQuantity: 15,
-    location: 'Almacén Central',
-    expirationDate: '2025-06-01',
-    status: 'low',
-    needsRestock: true
+    location: "Almacén Central",
+    expirationDate: "2025-06-01",
+    status: "low",
+    needsRestock: true,
   },
   {
-    id: 'sup-3',
-    name: 'Chalecos reflectantes',
-    category: 'seguridad',
+    id: "sup-3",
+    name: "Chalecos reflectantes",
+    category: "seguridad",
     quantity: 25,
-    unit: 'piezas',
+    unit: "piezas",
     minQuantity: 30,
     idealQuantity: 40,
-    location: 'Vehículo de respuesta',
-    status: 'low',
-    needsRestock: true
+    location: "Vehículo de respuesta",
+    status: "low",
+    needsRestock: true,
   },
   {
-    id: 'sup-4',
-    name: 'Cámaras desechables',
-    category: 'documentacion',
+    id: "sup-4",
+    name: "Cámaras desechables",
+    category: "documentacion",
     quantity: 5,
-    unit: 'piezas',
+    unit: "piezas",
     minQuantity: 10,
     idealQuantity: 20,
-    location: 'Kit de documentación',
-    status: 'critical',
-    needsRestock: true
+    location: "Kit de documentación",
+    status: "critical",
+    needsRestock: true,
   },
   {
-    id: 'sup-5',
-    name: 'Cargadores portátiles',
-    category: 'comunicaciones',
+    id: "sup-5",
+    name: "Cargadores portátiles",
+    category: "comunicaciones",
     quantity: 12,
-    unit: 'piezas',
+    unit: "piezas",
     minQuantity: 8,
     idealQuantity: 15,
-    location: 'Kit de comunicaciones',
-    status: 'adequate',
-    needsRestock: false
-  }
-]
+    location: "Kit de comunicaciones",
+    status: "adequate",
+    needsRestock: false,
+  },
+];
 
 const MOCK_KITS: ResourceKit[] = [
   {
-    id: 'kit-1',
-    name: 'Kit Básico de Respuesta',
-    level: 'basico',
-    description: 'Equipo esencial para 2-5 brigadistas',
-    category: 'logistica',
+    id: "kit-1",
+    name: "Kit Básico de Respuesta",
+    level: "basico",
+    description: "Equipo esencial para 2-5 brigadistas",
+    category: "logistica",
     contents: [],
     totalCost: 2500,
-    weight: 15
+    weight: 15,
   },
   {
-    id: 'kit-2',
-    name: 'Kit Médico Completo',
-    level: 'medio',
-    description: 'Equipo médico para atención de emergencias',
-    category: 'primeros_auxilios',
+    id: "kit-2",
+    name: "Kit Médico Completo",
+    level: "medio",
+    description: "Equipo médico para atención de emergencias",
+    category: "primeros_auxilios",
     contents: [],
     totalCost: 8500,
-    weight: 25
+    weight: 25,
   },
   {
-    id: 'kit-3',
-    name: 'Kit de Documentación',
-    level: 'basico',
-    description: 'Herramientas para documentación de incidentes',
-    category: 'documentacion',
+    id: "kit-3",
+    name: "Kit de Documentación",
+    level: "basico",
+    description: "Herramientas para documentación de incidentes",
+    category: "documentacion",
     contents: [],
     totalCost: 3500,
-    weight: 8
-  }
-]
+    weight: 8,
+  },
+];
 
 // =============================================================================
 // COMPONENT
@@ -186,59 +188,63 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
   onUpdateSupply,
   onCreateRequest,
   onUseKit,
-  className
+  className,
 }) => {
-  const [activeTab, setActiveTab] = useState('inventory')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | 'all'>('all')
-  const [showRequestDialog, setShowRequestDialog] = useState(false)
-  const [showKitDialog, setShowKitDialog] = useState(false)
+  const [activeTab, setActiveTab] = useState("inventory");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<
+    ResourceCategory | "all"
+  >("all");
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showKitDialog, setShowKitDialog] = useState(false);
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const total = supplies.length
-    const critical = supplies.filter(s => s.status === 'critical').length
-    const low = supplies.filter(s => s.status === 'low').length
-    const expired = supplies.filter(s => s.status === 'expired').length
-    const needsRestock = supplies.filter(s => s.needsRestock).length
-    
-    return { total, critical, low, expired, needsRestock }
-  }, [supplies])
+    const total = supplies.length;
+    const critical = supplies.filter((s) => s.status === "critical").length;
+    const low = supplies.filter((s) => s.status === "low").length;
+    const expired = supplies.filter((s) => s.status === "expired").length;
+    const needsRestock = supplies.filter((s) => s.needsRestock).length;
+
+    return { total, critical, low, expired, needsRestock };
+  }, [supplies]);
 
   // Filter supplies
   const filteredSupplies = useMemo(() => {
-    return supplies.filter(supply => {
-      const matchesSearch = 
-        supply.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        supply.location.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesCategory = 
-        selectedCategory === 'all' || supply.category === selectedCategory
-      
-      return matchesSearch && matchesCategory
-    }).sort((a, b) => {
-      // Sort by status priority
-      const statusPriority = { critical: 0, low: 1, adequate: 2, expired: 3 }
-      return statusPriority[a.status] - statusPriority[b.status]
-    })
-  }, [supplies, searchQuery, selectedCategory])
+    return supplies
+      .filter((supply) => {
+        const matchesSearch =
+          supply.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          supply.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesCategory =
+          selectedCategory === "all" || supply.category === selectedCategory;
+
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => {
+        // Sort by status priority
+        const statusPriority = { critical: 0, low: 1, adequate: 2, expired: 3 };
+        return statusPriority[a.status] - statusPriority[b.status];
+      });
+  }, [supplies, searchQuery, selectedCategory]);
 
   // Group supplies by status
   const groupedSupplies = useMemo(() => {
     const groups: Record<string, SupplyItem[]> = {
       critical: [],
       low: [],
-      adequate: []
-    }
-    
-    filteredSupplies.forEach(supply => {
+      adequate: [],
+    };
+
+    filteredSupplies.forEach((supply) => {
       if (groups[supply.status]) {
-        groups[supply.status].push(supply)
+        groups[supply.status].push(supply);
       }
-    })
-    
-    return groups
-  }, [filteredSupplies])
+    });
+
+    return groups;
+  }, [filteredSupplies]);
 
   return (
     <TooltipProvider>
@@ -288,28 +294,36 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
 
         {/* Stats */}
         <div className="grid grid-cols-4 gap-2 p-4">
-          <StatCard value={stats.total} label="Total" icon={<Boxes className="w-4 h-4" />} />
-          <StatCard 
-            value={stats.critical} 
-            label="Crítico" 
+          <StatCard
+            value={stats.total}
+            label="Total"
+            icon={<Boxes className="w-4 h-4" />}
+          />
+          <StatCard
+            value={stats.critical}
+            label="Crítico"
             icon={<AlertTriangle className="w-4 h-4" />}
             variant="destructive"
           />
-          <StatCard 
-            value={stats.low} 
-            label="Bajo" 
+          <StatCard
+            value={stats.low}
+            label="Bajo"
             icon={<TrendingDown className="w-4 h-4" />}
             variant="warning"
           />
-          <StatCard 
-            value={stats.expired} 
-            label="Vencido" 
+          <StatCard
+            value={stats.expired}
+            label="Vencido"
             icon={<AlertCircle className="w-4 h-4" />}
           />
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 flex flex-col"
+        >
           <TabsList className="mx-4 grid grid-cols-3">
             <TabsTrigger value="inventory">Inventario</TabsTrigger>
             <TabsTrigger value="kits">Kits</TabsTrigger>
@@ -330,9 +344,11 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                     className="pl-10"
                   />
                 </div>
-                <Select 
-                  value={selectedCategory} 
-                  onValueChange={(v) => setSelectedCategory(v as ResourceCategory | 'all')}
+                <Select
+                  value={selectedCategory}
+                  onValueChange={(v) =>
+                    setSelectedCategory(v as ResourceCategory | "all")
+                  }
                 >
                   <SelectTrigger className="w-[180px]">
                     <Filter className="w-4 h-4 mr-2" />
@@ -340,9 +356,13 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas las categorías</SelectItem>
-                    {Object.entries(RESOURCE_CATEGORIES).map(([key, { label }]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
+                    {Object.entries(RESOURCE_CATEGORIES).map(
+                      ([key, { label }]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ),
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -359,11 +379,13 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                       Stock Crítico
                     </h3>
                     <div className="space-y-2">
-                      {groupedSupplies.critical.map(supply => (
+                      {groupedSupplies.critical.map((supply) => (
                         <SupplyCard
                           key={supply.id}
                           supply={supply}
-                          onUpdateQuantity={(qty) => onUpdateSupply?.(supply.id, qty)}
+                          onUpdateQuantity={(qty) =>
+                            onUpdateSupply?.(supply.id, qty)
+                          }
                         />
                       ))}
                     </div>
@@ -378,11 +400,13 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                       Stock Bajo
                     </h3>
                     <div className="space-y-2">
-                      {groupedSupplies.low.map(supply => (
+                      {groupedSupplies.low.map((supply) => (
                         <SupplyCard
                           key={supply.id}
                           supply={supply}
-                          onUpdateQuantity={(qty) => onUpdateSupply?.(supply.id, qty)}
+                          onUpdateQuantity={(qty) =>
+                            onUpdateSupply?.(supply.id, qty)
+                          }
                         />
                       ))}
                     </div>
@@ -397,11 +421,13 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                       Stock Adecuado
                     </h3>
                     <div className="space-y-2">
-                      {groupedSupplies.adequate.map(supply => (
+                      {groupedSupplies.adequate.map((supply) => (
                         <SupplyCard
                           key={supply.id}
                           supply={supply}
-                          onUpdateQuantity={(qty) => onUpdateSupply?.(supply.id, qty)}
+                          onUpdateQuantity={(qty) =>
+                            onUpdateSupply?.(supply.id, qty)
+                          }
                         />
                       ))}
                     </div>
@@ -414,8 +440,11 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
           {/* Kits Tab */}
           <TabsContent value="kits" className="p-4 space-y-4 mt-0">
             <div className="grid gap-4">
-              {kits.map(kit => (
-                <Card key={kit.id} className="cursor-pointer hover:shadow-md transition-shadow">
+              {kits.map((kit) => (
+                <Card
+                  key={kit.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -431,32 +460,27 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                           </div>
                           <Badge>{RESOURCE_LEVELS[kit.level].label}</Badge>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Package className="w-4 h-4" />
                             {kit.contents.length} items
                           </span>
-                          {kit.weight && (
-                            <span>{kit.weight} kg</span>
-                          )}
+                          {kit.weight && <span>{kit.weight} kg</span>}
                           {kit.totalCost && (
                             <span>${kit.totalCost.toLocaleString()}</span>
                           )}
                         </div>
 
                         <div className="flex gap-2 mt-3">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setShowKitDialog(true)}
                           >
                             Ver contenido
                           </Button>
-                          <Button 
-                            size="sm"
-                            onClick={() => onUseKit?.(kit.id)}
-                          >
+                          <Button size="sm" onClick={() => onUseKit?.(kit.id)}>
                             Usar Kit
                           </Button>
                         </div>
@@ -476,7 +500,7 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                 <p>No hay solicitudes activas</p>
               </div>
             ) : (
-              requests.map(request => (
+              requests.map((request) => (
                 <Card key={request.id}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -485,24 +509,35 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
                           <h3 className="font-semibold">
                             Solicitud #{request.id.slice(-4)}
                           </h3>
-                          <Badge className={cn(
-                            request.status === 'approved' ? 'bg-green-500' :
-                            request.status === 'pending' ? 'bg-yellow-500' :
-                            request.status === 'fulfilled' ? 'bg-blue-500' :
-                            'bg-red-500'
-                          )}>
-                            {request.status === 'approved' ? 'Aprobada' :
-                             request.status === 'pending' ? 'Pendiente' :
-                             request.status === 'fulfilled' ? 'Entregada' :
-                             'Rechazada'}
+                          <Badge
+                            className={cn(
+                              request.status === "approved"
+                                ? "bg-green-500"
+                                : request.status === "pending"
+                                  ? "bg-yellow-500"
+                                  : request.status === "fulfilled"
+                                    ? "bg-blue-500"
+                                    : "bg-red-500",
+                            )}
+                          >
+                            {request.status === "approved"
+                              ? "Aprobada"
+                              : request.status === "pending"
+                                ? "Pendiente"
+                                : request.status === "fulfilled"
+                                  ? "Entregada"
+                                  : "Rechazada"}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {request.items.length} artículo(s) · {request.requestedBy}
+                          {request.items.length} artículo(s) ·{" "}
+                          {request.requestedBy}
                         </p>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        {new Date(request.timestamp).toLocaleDateString('es-MX')}
+                        {new Date(request.timestamp).toLocaleDateString(
+                          "es-MX",
+                        )}
                       </span>
                     </div>
                   </CardContent>
@@ -528,7 +563,10 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
               {/* Item selection would go here */}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowRequestDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowRequestDialog(false)}
+              >
                 Cancelar
               </Button>
               <Button onClick={() => setShowRequestDialog(false)}>
@@ -539,71 +577,96 @@ export const ResourcesList: React.FC<ResourcesListProps> = ({
         </Dialog>
       </div>
     </TooltipProvider>
-  )
-}
+  );
+};
 
 // =============================================================================
 // SUB-COMPONENTS
 // =============================================================================
 
 interface StatCardProps {
-  value: number
-  label: string
-  icon: React.ReactNode
-  variant?: 'default' | 'destructive' | 'warning'
+  value: number;
+  label: string;
+  icon: React.ReactNode;
+  variant?: "default" | "destructive" | "warning";
 }
 
-const StatCard: React.FC<StatCardProps> = ({ value, label, icon, variant = 'default' }) => (
-  <Card className={cn(
-    variant === 'destructive' && value > 0 && "border-red-200 bg-red-50",
-    variant === 'warning' && value > 0 && "border-orange-200 bg-orange-50"
-  )}>
+const StatCard: React.FC<StatCardProps> = ({
+  value,
+  label,
+  icon,
+  variant = "default",
+}) => (
+  <Card
+    className={cn(
+      variant === "destructive" && value > 0 && "border-red-200 bg-red-50",
+      variant === "warning" && value > 0 && "border-orange-200 bg-orange-50",
+    )}
+  >
     <CardContent className="p-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className={cn(
-            "text-2xl font-bold",
-            variant === 'destructive' && value > 0 ? "text-red-600" :
-            variant === 'warning' && value > 0 ? "text-orange-600" :
-            ""
-          )}>
+          <p
+            className={cn(
+              "text-2xl font-bold",
+              variant === "destructive" && value > 0
+                ? "text-red-600"
+                : variant === "warning" && value > 0
+                  ? "text-orange-600"
+                  : "",
+            )}
+          >
             {value}
           </p>
           <p className="text-xs text-muted-foreground">{label}</p>
         </div>
-        <div className={cn(
-          "p-2 rounded-lg",
-          variant === 'destructive' ? "bg-red-100 text-red-600" :
-          variant === 'warning' ? "bg-orange-100 text-orange-600" :
-          "bg-gray-100 text-gray-600"
-        )}>
+        <div
+          className={cn(
+            "p-2 rounded-lg",
+            variant === "destructive"
+              ? "bg-red-100 text-red-600"
+              : variant === "warning"
+                ? "bg-orange-100 text-orange-600"
+                : "bg-gray-100 text-gray-600",
+          )}
+        >
           {icon}
         </div>
       </div>
     </CardContent>
   </Card>
-)
+);
 
 interface SupplyCardProps {
-  supply: SupplyItem
-  onUpdateQuantity?: (quantity: number) => void
+  supply: SupplyItem;
+  onUpdateQuantity?: (quantity: number) => void;
 }
 
-const SupplyCard: React.FC<SupplyCardProps> = ({ supply, onUpdateQuantity }) => {
-  const category = RESOURCE_CATEGORIES[supply.category]
-  const percentage = Math.min((supply.quantity / supply.idealQuantity) * 100, 100)
+const SupplyCard: React.FC<SupplyCardProps> = ({
+  supply,
+  onUpdateQuantity,
+}) => {
+  const category = RESOURCE_CATEGORIES[supply.category];
+  const percentage = Math.min(
+    (supply.quantity / supply.idealQuantity) * 100,
+    100,
+  );
 
   return (
-    <Card className={cn(
-      supply.status === 'critical' && "border-red-200",
-      supply.status === 'low' && "border-orange-200"
-    )}>
+    <Card
+      className={cn(
+        supply.status === "critical" && "border-red-200",
+        supply.status === "low" && "border-orange-200",
+      )}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-            category.color.split(' ')[0]
-          )}>
+          <div
+            className={cn(
+              "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+              category.color.split(" ")[0],
+            )}
+          >
             <Package className="w-5 h-5" />
           </div>
 
@@ -615,11 +678,15 @@ const SupplyCard: React.FC<SupplyCardProps> = ({ supply, onUpdateQuantity }) => 
                   {category.label} · {supply.location}
                 </p>
               </div>
-              <Badge className={cn(
-                supply.status === 'critical' ? 'bg-red-500' :
-                supply.status === 'low' ? 'bg-orange-500' :
-                'bg-green-500'
-              )}>
+              <Badge
+                className={cn(
+                  supply.status === "critical"
+                    ? "bg-red-500"
+                    : supply.status === "low"
+                      ? "bg-orange-500"
+                      : "bg-green-500",
+                )}
+              >
                 {supply.quantity} {supply.unit}
               </Badge>
             </div>
@@ -632,10 +699,7 @@ const SupplyCard: React.FC<SupplyCardProps> = ({ supply, onUpdateQuantity }) => 
                   Mín: {supply.minQuantity} · Ideal: {supply.idealQuantity}
                 </span>
               </div>
-              <Progress 
-                value={percentage} 
-                className="h-1.5"
-              />
+              <Progress value={percentage} className="h-1.5" />
             </div>
 
             {/* Actions */}
@@ -645,7 +709,9 @@ const SupplyCard: React.FC<SupplyCardProps> = ({ supply, onUpdateQuantity }) => 
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => onUpdateQuantity(Math.max(0, supply.quantity - 1))}
+                  onClick={() =>
+                    onUpdateQuantity(Math.max(0, supply.quantity - 1))
+                  }
                 >
                   <Minus className="w-4 h-4" />
                 </Button>
@@ -666,14 +732,15 @@ const SupplyCard: React.FC<SupplyCardProps> = ({ supply, onUpdateQuantity }) => 
             {/* Expiration warning */}
             {supply.expirationDate && (
               <p className="text-xs text-orange-600 mt-2">
-                Vence: {new Date(supply.expirationDate).toLocaleDateString('es-MX')}
+                Vence:{" "}
+                {new Date(supply.expirationDate).toLocaleDateString("es-MX")}
               </p>
             )}
           </div>
         </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default ResourcesList
+export default ResourcesList;

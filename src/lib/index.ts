@@ -1,7 +1,7 @@
 /**
  * Lib Export
  * Protocolo CDMX
- * 
+ *
  * All utility libraries exported from a single entry point
  */
 
@@ -16,8 +16,8 @@ export {
   type StoreConfig,
   type IndexConfig,
   type QueryOptions,
-  type DBOperationResult
-} from './db'
+  type DBOperationResult,
+} from "./db";
 
 // Storage utilities
 export {
@@ -32,8 +32,8 @@ export {
   type StorageStats,
   type StorageType,
   getStorageType,
-  estimateSize
-} from './storage'
+  estimateSize,
+} from "./storage";
 
 // Sync logic
 export {
@@ -47,8 +47,8 @@ export {
   type SyncAction,
   type SyncResult,
   type SyncConfig,
-  type SyncState
-} from './sync'
+  type SyncState,
+} from "./sync";
 
 // Compression
 export {
@@ -61,8 +61,8 @@ export {
   compressObject,
   decompressObject,
   type CompressionAlgorithm,
-  type CompressionResult
-} from './compression'
+  type CompressionResult,
+} from "./compression";
 
 // Migration
 export {
@@ -75,8 +75,8 @@ export {
   CURRENT_DATA_VERSION,
   type Migration,
   type MigrationState,
-  type DataIntegrityReport
-} from './migration'
+  type DataIntegrityReport,
+} from "./migration";
 
 // Backup and Export
 export {
@@ -91,8 +91,8 @@ export {
   type ExportOptions,
   type ImportOptions,
   type ExportResult,
-  type ImportResult
-} from './backup'
+  type ImportResult,
+} from "./backup";
 
 // Encryption facade (Web Crypto API, vault-backed)
 export {
@@ -105,8 +105,8 @@ export {
   hashPasswordForStorage,
   verifyPasswordAgainstHash,
   generateSecureRandomId,
-  type HashResult
-} from './encryption'
+  type HashResult,
+} from "./encryption";
 
 // Vault (key management & session unlock)
 export {
@@ -125,8 +125,8 @@ export {
   destroyVault,
   onUnlockChange,
   type VaultState,
-  type UnlockResult
-} from './vault'
+  type UnlockResult,
+} from "./vault";
 
 // Crypto (Web Crypto API - preferred)
 export {
@@ -161,8 +161,8 @@ export {
   type EncryptedData as CryptoEncryptedData,
   type EncryptedBlob,
   type KeyPair,
-  type HashResult as CryptoHashResult
-} from './crypto'
+  type HashResult as CryptoHashResult,
+} from "./crypto";
 
 // Security
 export {
@@ -205,8 +205,8 @@ export {
   type DuressState,
   type SecurityLog,
   type PanicWipeState,
-  type AutoLockState
-} from './security'
+  type AutoLockState,
+} from "./security";
 
 // Roles (already exists)
 export {
@@ -219,8 +219,8 @@ export {
   type CertificationLevel,
   type RoleDefinition,
   type PrimaryAction as RoleAction,
-  type QuickAccessItem
-} from './roles'
+  type QuickAccessItem,
+} from "./roles";
 
 // Store helpers (already exists)
 export {
@@ -233,26 +233,26 @@ export {
   persistToLocalStorage,
   persistToIndexedDB,
   encryptIfEnabled,
-  decryptIfNeeded
-} from './store-helpers'
+  decryptIfNeeded,
+} from "./store-helpers";
 
 // Utils (already exists)
-export { cn, formatDate, formatTime, generateId } from './utils'
+export { cn, formatDate, formatTime, generateId } from "./utils";
 
 // Default exports
-export { default as dbDefault } from './db'
-export { default as storageDefault } from './storage'
-export { default as syncDefault } from './sync'
-export { default as compressionDefault } from './compression'
-export { default as migrationDefault } from './migration'
-export { default as backupDefault } from './backup'
-export { default as cryptoDefault } from './crypto'
-export { default as securityDefault } from './security'
+export { default as dbDefault } from "./db";
+export { default as storageDefault } from "./storage";
+export { default as syncDefault } from "./sync";
+export { default as compressionDefault } from "./compression";
+export { default as migrationDefault } from "./migration";
+export { default as backupDefault } from "./backup";
+export { default as cryptoDefault } from "./crypto";
+export { default as securityDefault } from "./security";
 
 // PDF Export
-export * from './pdfExport'
-export { default as PDFExport } from './pdfExport'
+export * from "./pdfExport";
+export { default as PDFExport } from "./pdfExport";
 
 // Form Templates
-export * from './formTemplatesIndex'
-export { default as FormTemplates } from './formTemplatesIndex'
+export * from "./formTemplatesIndex";
+export { default as FormTemplates } from "./formTemplatesIndex";

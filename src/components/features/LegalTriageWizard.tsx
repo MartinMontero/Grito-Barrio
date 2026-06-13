@@ -1,11 +1,11 @@
 /**
  * Legal Triage Wizard
  * Protocolo CDMX
- * 
+ *
  * Guides legal observers through decision tree for appropriate legal response
  */
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Scale,
   ChevronRight,
@@ -19,57 +19,80 @@ import {
   Download,
   RotateCcw,
   AlertCircle,
-  Save
-} from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Input } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useProtocoloStore } from '@/store'
+  Save,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+  Input,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import { useProtocoloStore } from "@/store";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-type WizardStep = 1 | 2 | 3 | 4
-type JudicialOrderStatus = 'present' | 'absent' | null
-type OccupantCategory = 'formal_tenant' | 'informal' | 'indigenous' | 'subtenant' | null
-type ViolenceType = 'physical_with_medical' | 'ongoing_threats' | 'theft_damage' | 'none' | null
-type PriorityLevel = 'maxima' | 'alta' | 'media' | 'baja'
-type LegalPath = 'verification_required' | 'despojo_395' | 'penal_fiscalia' | 'dh_cdhcm' | 'dh_cndh'
+type WizardStep = 1 | 2 | 3 | 4;
+type JudicialOrderStatus = "present" | "absent" | null;
+type OccupantCategory =
+  | "formal_tenant"
+  | "informal"
+  | "indigenous"
+  | "subtenant"
+  | null;
+type ViolenceType =
+  | "physical_with_medical"
+  | "ongoing_threats"
+  | "theft_damage"
+  | "none"
+  | null;
+type PriorityLevel = "maxima" | "alta" | "media" | "baja";
+type LegalPath =
+  | "verification_required"
+  | "despojo_395"
+  | "penal_fiscalia"
+  | "dh_cdhcm"
+  | "dh_cndh";
 
 interface JudicialOrderDetails {
-  tribunalName: string
-  date: string
-  caseNumber: string
-  judgeSigned: boolean
+  tribunalName: string;
+  date: string;
+  caseNumber: string;
+  judgeSigned: boolean;
 }
 
 interface TriageState {
-  step: WizardStep
+  step: WizardStep;
   judicialOrder: {
-    present: JudicialOrderStatus
-    details?: JudicialOrderDetails
-  }
-  occupantCategory: OccupantCategory
-  violenceType: ViolenceType
+    present: JudicialOrderStatus;
+    details?: JudicialOrderDetails;
+  };
+  occupantCategory: OccupantCategory;
+  violenceType: ViolenceType;
 }
 
 interface LegalRecommendation {
-  path: LegalPath
-  title: string
-  description: string
-  priority: PriorityLevel
-  actions: string[]
-  contacts: LegalContact[]
-  article?: string
+  path: LegalPath;
+  title: string;
+  description: string;
+  priority: PriorityLevel;
+  actions: string[];
+  contacts: LegalContact[];
+  article?: string;
 }
 
 interface LegalContact {
-  id: string
-  name: string
-  role: string
-  phone: string
-  hours: string
-  priority: number
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  hours: string;
+  priority: number;
 }
 
 // =============================================================================
@@ -80,397 +103,445 @@ const INITIAL_STATE: TriageState = {
   step: 1,
   judicialOrder: { present: null },
   occupantCategory: null,
-  violenceType: null
-}
+  violenceType: null,
+};
 
 const LEGAL_CONTACTS: LegalContact[] = [
   {
-    id: 'cdhcm',
-    name: 'CDHCM - Comisión de Derechos Humanos CDMX',
-    role: 'Quejas y Orientación',
-    phone: '55-5029-9300',
-    hours: '24 horas',
-    priority: 1
+    id: "cdhcm",
+    name: "CDHCM - Comisión de Derechos Humanos CDMX",
+    role: "Quejas y Orientación",
+    phone: "55-5029-9300",
+    hours: "24 horas",
+    priority: 1,
   },
   {
-    id: 'cndh',
-    name: 'CNDH - Comisión Nacional de Derechos Humanos',
-    role: 'Quejas',
-    phone: '55-5481-8740',
-    hours: 'L-V 9:00-18:00',
-    priority: 2
+    id: "cndh",
+    name: "CNDH - Comisión Nacional de Derechos Humanos",
+    role: "Quejas",
+    phone: "55-5481-8740",
+    hours: "L-V 9:00-18:00",
+    priority: 2,
   },
   {
-    id: 'fiscalia',
-    name: 'Fiscalía Especializada en Delitos Patrimoniales',
-    role: 'Denuncias',
-    phone: '55-5200-4000',
-    hours: '24 horas',
-    priority: 1
+    id: "fiscalia",
+    name: "Fiscalía Especializada en Delitos Patrimoniales",
+    role: "Denuncias",
+    phone: "55-5200-4000",
+    hours: "24 horas",
+    priority: 1,
   },
   {
-    id: 'defensoria',
-    name: 'Instituto de Defensoría Pública',
-    role: 'Asesoría Legal Gratuita',
-    phone: '55-5009-2600',
-    hours: 'L-V 9:00-18:00',
-    priority: 1
-  }
-]
+    id: "defensoria",
+    name: "Instituto de Defensoría Pública",
+    role: "Asesoría Legal Gratuita",
+    phone: "55-5009-2600",
+    hours: "L-V 9:00-18:00",
+    priority: 1,
+  },
+];
 
-const OCCUPANT_PROTECTIOS: Record<Exclude<OccupantCategory, null>, {
-  title: string
-  protections: string[]
-  documentation: string[]
-  priorityActions: string[]
-}> = {
+const OCCUPANT_PROTECTIOS: Record<
+  Exclude<OccupantCategory, null>,
+  {
+    title: string;
+    protections: string[];
+    documentation: string[];
+    priorityActions: string[];
+  }
+> = {
   formal_tenant: {
-    title: 'Inquilino Formal',
+    title: "Inquilino Formal",
     protections: [
-      'Contrato de arrendamiento vigente',
-      'Protección bajo Ley de Vivienda CDMX',
-      'Debido proceso judicial obligatorio',
-      'Contrademanda por arrendamiento'
+      "Contrato de arrendamiento vigente",
+      "Protección bajo Ley de Vivienda CDMX",
+      "Debido proceso judicial obligatorio",
+      "Contrademanda por arrendamiento",
     ],
     documentation: [
-      'Contrato de arrendamiento',
-      'Recibos de pago de renta',
-      'Comprobantes de servicios',
-      'Historial de pagos'
+      "Contrato de arrendamiento",
+      "Recibos de pago de renta",
+      "Comprobantes de servicios",
+      "Historial de pagos",
     ],
     priorityActions: [
-      'Verificar vigencia del contrato',
-      'Documentar cumplimiento de obligaciones',
-      'Preparar contrademanda'
-    ]
+      "Verificar vigencia del contrato",
+      "Documentar cumplimiento de obligaciones",
+      "Preparar contrademanda",
+    ],
   },
   informal: {
-    title: 'Ocupante Informal',
+    title: "Ocupante Informal",
     protections: [
-      'Derecho a vivienda digna (Art. 1° Ley de Vivienda)',
-      'Prohibición de desalojo forzoso',
-      'Proceso legal obligatorio',
-      'Asesoría jurídica gratuita'
+      "Derecho a vivienda digna (Art. 1° Ley de Vivienda)",
+      "Prohibición de desalojo forzoso",
+      "Proceso legal obligatorio",
+      "Asesoría jurídica gratuita",
     ],
     documentation: [
-      'Prueba de residencia (recibos, testimonios)',
-      'Mejoras realizadas al inmueble',
-      'Documentación de ocupación prolongada',
-      'Testimonios de vecinos'
+      "Prueba de residencia (recibos, testimonios)",
+      "Mejoras realizadas al inmueble",
+      "Documentación de ocupación prolongada",
+      "Testimonios de vecinos",
     ],
     priorityActions: [
-      'Documentar tiempo de residencia',
-      'Reunir testimonios de vecinos',
-      'Verificar servicios a nombre del ocupante'
-    ]
+      "Documentar tiempo de residencia",
+      "Reunir testimonios de vecinos",
+      "Verificar servicios a nombre del ocupante",
+    ],
   },
   indigenous: {
-    title: 'Colectivo Indígena',
+    title: "Colectivo Indígena",
     protections: [
-      'Derechos colectivos de pueblos indígenas',
-      'Consulta previa obligatoria',
-      'Protección especial bajo DH',
-      'Acceso a defensoría especializada'
+      "Derechos colectivos de pueblos indígenas",
+      "Consulta previa obligatoria",
+      "Protección especial bajo DH",
+      "Acceso a defensoría especializada",
     ],
     documentation: [
-      'Documentación de pertenencia étnica',
-      'Resoluciones de territorio',
-      'Testimonios de autoridades comunitarias',
-      'Documentación histórica de ocupación'
+      "Documentación de pertenencia étnica",
+      "Resoluciones de territorio",
+      "Testimonios de autoridades comunitarias",
+      "Documentación histórica de ocupación",
     ],
     priorityActions: [
-      'Contactar defensoría especializada',
-      'Activar alerta de pueblos indígenas',
-      'Documentar afectación colectiva'
-    ]
+      "Contactar defensoría especializada",
+      "Activar alerta de pueblos indígenas",
+      "Documentar afectación colectiva",
+    ],
   },
   subtenant: {
-    title: 'Subarrendatario',
+    title: "Subarrendatario",
     protections: [
-      'Derechos derivados del arrendamiento principal',
-      'Notificación al arrendador principal',
-      'Posibilidad de negociación',
-      'Asesoría sobre obligaciones del inquilino principal'
+      "Derechos derivados del arrendamiento principal",
+      "Notificación al arrendador principal",
+      "Posibilidad de negociación",
+      "Asesoría sobre obligaciones del inquilino principal",
     ],
     documentation: [
-      'Contrato de subarrendamiento',
-      'Pagos al inquilino principal',
-      'Comunicaciones con inquilino principal',
-      'Contrato principal (si disponible)'
+      "Contrato de subarrendamiento",
+      "Pagos al inquilino principal",
+      "Comunicaciones con inquilino principal",
+      "Contrato principal (si disponible)",
     ],
     priorityActions: [
-      'Contactar inquilino principal',
-      'Verificar vigencia de contrato principal',
-      'Documentar pagos realizados'
-    ]
-  }
-}
+      "Contactar inquilino principal",
+      "Verificar vigencia de contrato principal",
+      "Documentar pagos realizados",
+    ],
+  },
+};
 
-const VIOLENCE_PATHS: Record<Exclude<ViolenceType, null>, {
-  penalPath: string
-  dhPath: string
-  priority: PriorityLevel
-  immediateActions: string[]
-}> = {
+const VIOLENCE_PATHS: Record<
+  Exclude<ViolenceType, null>,
+  {
+    penalPath: string;
+    dhPath: string;
+    priority: PriorityLevel;
+    immediateActions: string[];
+  }
+> = {
   physical_with_medical: {
-    penalPath: 'Fiscalía General de Justicia - Denuncia por lesiones',
-    dhPath: 'CDHCM - Queja por violencia',
-    priority: 'maxima',
+    penalPath: "Fiscalía General de Justicia - Denuncia por lesiones",
+    dhPath: "CDHCM - Queja por violencia",
+    priority: "maxima",
     immediateActions: [
-      'Asegurar constancia médica',
-      'Fotografiar lesiones',
-      'Levantar acta en Ministerio Público',
-      'Activar protocolo de seguridad'
-    ]
+      "Asegurar constancia médica",
+      "Fotografiar lesiones",
+      "Levantar acta en Ministerio Público",
+      "Activar protocolo de seguridad",
+    ],
   },
   ongoing_threats: {
-    penalPath: 'Fiscalía - Denuncia por amenazas',
-    dhPath: 'CDHCM - Queja por intimidación',
-    priority: 'alta',
+    penalPath: "Fiscalía - Denuncia por amenazas",
+    dhPath: "CDHCM - Queja por intimidación",
+    priority: "alta",
     immediateActions: [
-      'Documentar amenazas (audio, video)',
-      'Testimonios de amenazas',
-      'Medidas de protección',
-      'Alerta a redes de apoyo'
-    ]
+      "Documentar amenazas (audio, video)",
+      "Testimonios de amenazas",
+      "Medidas de protección",
+      "Alerta a redes de apoyo",
+    ],
   },
   theft_damage: {
-    penalPath: 'Fiscalía - Denuncia por robo/daño',
-    dhPath: 'CDHCM - Queja por afectación patrimonial',
-    priority: 'alta',
+    penalPath: "Fiscalía - Denuncia por robo/daño",
+    dhPath: "CDHCM - Queja por afectación patrimonial",
+    priority: "alta",
     immediateActions: [
-      'Inventariar bienes faltantes/dañados',
-      'Fotografiar daños',
-      'Levantar acta MP',
-      'Asegurar evidencia'
-    ]
+      "Inventariar bienes faltantes/dañados",
+      "Fotografiar daños",
+      "Levantar acta MP",
+      "Asegurar evidencia",
+    ],
   },
   none: {
-    penalPath: 'No aplica',
-    dhPath: 'CDHCM - Prevención',
-    priority: 'media',
+    penalPath: "No aplica",
+    dhPath: "CDHCM - Prevención",
+    priority: "media",
     immediateActions: [
-      'Documentar situación',
-      'Asesoría preventiva',
-      'Preparar defensas legales'
-    ]
-  }
-}
+      "Documentar situación",
+      "Asesoría preventiva",
+      "Preparar defensas legales",
+    ],
+  },
+};
 
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
 
-function getPriorityColor(priority: PriorityLevel): { bg: string; text: string; border: string; light: string } {
+function getPriorityColor(priority: PriorityLevel): {
+  bg: string;
+  text: string;
+  border: string;
+  light: string;
+} {
   const colors = {
-    maxima: { bg: 'bg-red-600', text: 'text-red-700', border: 'border-red-200', light: 'bg-red-50' },
-    alta: { bg: 'bg-orange-500', text: 'text-orange-700', border: 'border-orange-200', light: 'bg-orange-50' },
-    media: { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-200', light: 'bg-yellow-50' },
-    baja: { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-200', light: 'bg-green-50' }
-  }
-  return colors[priority]
+    maxima: {
+      bg: "bg-red-600",
+      text: "text-red-700",
+      border: "border-red-200",
+      light: "bg-red-50",
+    },
+    alta: {
+      bg: "bg-orange-500",
+      text: "text-orange-700",
+      border: "border-orange-200",
+      light: "bg-orange-50",
+    },
+    media: {
+      bg: "bg-yellow-500",
+      text: "text-yellow-700",
+      border: "border-yellow-200",
+      light: "bg-yellow-50",
+    },
+    baja: {
+      bg: "bg-green-500",
+      text: "text-green-700",
+      border: "border-green-200",
+      light: "bg-green-50",
+    },
+  };
+  return colors[priority];
 }
 
 function getPriorityLabel(priority: PriorityLevel): string {
   const labels = {
-    maxima: 'Máxima',
-    alta: 'Alta',
-    media: 'Media',
-    baja: 'Baja'
-  }
-  return labels[priority]
+    maxima: "Máxima",
+    alta: "Alta",
+    media: "Media",
+    baja: "Baja",
+  };
+  return labels[priority];
 }
 
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
-export const LegalTriageWizard: React.FC<{ incidentId?: string }> = ({ incidentId }) => {
-  const store = useProtocoloStore()
-  const currentUser = store.currentUser
-  const draftKey = `triage-${incidentId || 'global'}`
+export const LegalTriageWizard: React.FC<{ incidentId?: string }> = ({
+  incidentId,
+}) => {
+  const store = useProtocoloStore();
+  const currentUser = store.currentUser;
+  const draftKey = `triage-${incidentId || "global"}`;
 
   const [state, setState] = useState<TriageState>(() => {
     // Restore an in-progress draft so answers survive navigation/unmount.
-    const draft = store.getProtocolDraft<TriageState>(draftKey)
-    return draft ?? INITIAL_STATE
-  })
-  const [isComplete, setIsComplete] = useState(false)
-  const [saved, setSaved] = useState(false)
+    const draft = store.getProtocolDraft<TriageState>(draftKey);
+    return draft ?? INITIAL_STATE;
+  });
+  const [isComplete, setIsComplete] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Persist answers on every change (debounced) so they are not lost on unmount.
   useEffect(() => {
-    const t = setTimeout(() => store.saveProtocolDraft(draftKey, state), 300)
-    return () => clearTimeout(t)
-  }, [state, draftKey, store])
+    const t = setTimeout(() => store.saveProtocolDraft(draftKey, state), 300);
+    return () => clearTimeout(t);
+  }, [state, draftKey, store]);
 
   // Calculate recommendations based on state
   const recommendations = useMemo((): LegalRecommendation[] => {
-    const recs: LegalRecommendation[] = []
+    const recs: LegalRecommendation[] = [];
 
     // Based on judicial order
-    if (state.judicialOrder.present === 'present') {
+    if (state.judicialOrder.present === "present") {
       recs.push({
-        path: 'verification_required',
-        title: 'Verificación de Orden Judicial',
-        description: 'Evaluar proporcionalidad, cumplimiento de debido proceso y derechos humanos',
-        priority: 'alta',
+        path: "verification_required",
+        title: "Verificación de Orden Judicial",
+        description:
+          "Evaluar proporcionalidad, cumplimiento de debido proceso y derechos humanos",
+        priority: "alta",
         actions: [
-          'Verificar autenticidad de la orden',
-          'Revisar cumplimiento de plazos legales',
-          'Evaluar proporcionalidad de la medida',
-          'Documentar posibles irregularidades'
+          "Verificar autenticidad de la orden",
+          "Revisar cumplimiento de plazos legales",
+          "Evaluar proporcionalidad de la medida",
+          "Documentar posibles irregularidades",
         ],
-        contacts: LEGAL_CONTACTS.filter(c => c.id === 'defensoria'),
-        article: 'Artículo 12 Ley de Vivienda CDMX'
-      })
-    } else if (state.judicialOrder.present === 'absent') {
+        contacts: LEGAL_CONTACTS.filter((c) => c.id === "defensoria"),
+        article: "Artículo 12 Ley de Vivienda CDMX",
+      });
+    } else if (state.judicialOrder.present === "absent") {
       recs.push({
-        path: 'despojo_395',
-        title: 'Despojo (Artículo 395 Código Penal)',
-        description: 'Denuncia por despojo ante Fiscalía',
-        priority: 'maxima',
+        path: "despojo_395",
+        title: "Despojo (Artículo 395 Código Penal)",
+        description: "Denuncia por despojo ante Fiscalía",
+        priority: "maxima",
         actions: [
-          'Documentar violencia, amenazas o engaño',
-          'Presión política inmediata',
-          'Activar alerta de DDHH',
-          'Solicitar medidas cautelares'
+          "Documentar violencia, amenazas o engaño",
+          "Presión política inmediata",
+          "Activar alerta de DDHH",
+          "Solicitar medidas cautelares",
         ],
-        contacts: LEGAL_CONTACTS.filter(c => ['fiscalia', 'cdhcm'].includes(c.id)),
-        article: 'Artículo 395 Código Penal Federal'
-      })
+        contacts: LEGAL_CONTACTS.filter((c) =>
+          ["fiscalia", "cdhcm"].includes(c.id),
+        ),
+        article: "Artículo 395 Código Penal Federal",
+      });
     }
 
     // Based on occupant category
     if (state.occupantCategory) {
-      const protection = OCCUPANT_PROTECTIOS[state.occupantCategory]
+      const protection = OCCUPANT_PROTECTIOS[state.occupantCategory];
       recs.push({
-        path: 'dh_cdhcm',
+        path: "dh_cdhcm",
         title: `Protección para ${protection.title}`,
-        description: 'Queja ante CDHCM por vulneración de derechos',
-        priority: state.occupantCategory === 'indigenous' ? 'maxima' : 'alta',
+        description: "Queja ante CDHCM por vulneración de derechos",
+        priority: state.occupantCategory === "indigenous" ? "maxima" : "alta",
         actions: protection.priorityActions,
-        contacts: LEGAL_CONTACTS.filter(c => ['cdhcm', 'defensoria'].includes(c.id))
-      })
+        contacts: LEGAL_CONTACTS.filter((c) =>
+          ["cdhcm", "defensoria"].includes(c.id),
+        ),
+      });
     }
 
     // Based on violence
     if (state.violenceType) {
-      const violence = VIOLENCE_PATHS[state.violenceType]
-      if (state.violenceType !== 'none') {
+      const violence = VIOLENCE_PATHS[state.violenceType];
+      if (state.violenceType !== "none") {
         recs.push({
-          path: 'penal_fiscalia',
-          title: 'Vía Penal',
+          path: "penal_fiscalia",
+          title: "Vía Penal",
           description: violence.penalPath,
           priority: violence.priority,
           actions: violence.immediateActions,
-          contacts: LEGAL_CONTACTS.filter(c => c.id === 'fiscalia')
-        })
+          contacts: LEGAL_CONTACTS.filter((c) => c.id === "fiscalia"),
+        });
       }
-      
+
       recs.push({
-        path: 'dh_cdhcm',
-        title: 'Vía Derechos Humanos',
+        path: "dh_cdhcm",
+        title: "Vía Derechos Humanos",
         description: violence.dhPath,
         priority: violence.priority,
-        actions: ['Levantar queja formal', 'Solicitar medidas cautelares'],
-        contacts: LEGAL_CONTACTS.filter(c => ['cdhcm', 'cndh'].includes(c.id))
-      })
+        actions: ["Levantar queja formal", "Solicitar medidas cautelares"],
+        contacts: LEGAL_CONTACTS.filter((c) =>
+          ["cdhcm", "cndh"].includes(c.id),
+        ),
+      });
     }
 
-    return recs
-  }, [state])
+    return recs;
+  }, [state]);
 
   const highestPriority = useMemo((): PriorityLevel => {
-    const priorities = recommendations.map(r => r.priority)
-    if (priorities.includes('maxima')) return 'maxima'
-    if (priorities.includes('alta')) return 'alta'
-    if (priorities.includes('media')) return 'media'
-    return 'baja'
-  }, [recommendations])
+    const priorities = recommendations.map((r) => r.priority);
+    if (priorities.includes("maxima")) return "maxima";
+    if (priorities.includes("alta")) return "alta";
+    if (priorities.includes("media")) return "media";
+    return "baja";
+  }, [recommendations]);
 
   const handleNext = () => {
     if (state.step < 4) {
-      setState(prev => ({ ...prev, step: (prev.step + 1) as WizardStep }))
+      setState((prev) => ({ ...prev, step: (prev.step + 1) as WizardStep }));
     } else {
-      setIsComplete(true)
+      setIsComplete(true);
     }
-  }
+  };
 
   const handleBack = () => {
     if (state.step > 1) {
-      setState(prev => ({ ...prev, step: (prev.step - 1) as WizardStep }))
+      setState((prev) => ({ ...prev, step: (prev.step - 1) as WizardStep }));
     }
-  }
+  };
 
   const handleReset = () => {
-    setState(INITIAL_STATE)
-    setIsComplete(false)
-    setSaved(false)
-    store.clearProtocolDraft(draftKey)
-  }
+    setState(INITIAL_STATE);
+    setIsComplete(false);
+    setSaved(false);
+    store.clearProtocolDraft(draftKey);
+  };
 
   // Build a human-readable summary of the triage result.
   const buildSummary = (): string => `TRIAGE LEGAL - PROTOCOLO CDMX
 ==============================
 
-Incidente: ${incidentId || 'N/A'}
-Fecha: ${new Date().toLocaleString('es-MX')}
+Incidente: ${incidentId || "N/A"}
+Fecha: ${new Date().toLocaleString("es-MX")}
 
 RESULTADOS DEL TRIAGE
 ---------------------
 
-1. Orden Judicial: ${state.judicialOrder.present === 'present' ? 'SÍ' : 'NO'}
-${state.judicialOrder.details ? `   Tribunal: ${state.judicialOrder.details.tribunalName}
+1. Orden Judicial: ${state.judicialOrder.present === "present" ? "SÍ" : "NO"}
+${
+  state.judicialOrder.details
+    ? `   Tribunal: ${state.judicialOrder.details.tribunalName}
    Fecha: ${state.judicialOrder.details.date}
    Expediente: ${state.judicialOrder.details.caseNumber}
-   Firmada: ${state.judicialOrder.details.judgeSigned ? 'SÍ' : 'NO'}
-` : ''}
-2. Categoría de Ocupante: ${state.occupantCategory ? OCCUPANT_PROTECTIOS[state.occupantCategory].title : 'N/A'}
+   Firmada: ${state.judicialOrder.details.judgeSigned ? "SÍ" : "NO"}
+`
+    : ""
+}
+2. Categoría de Ocupante: ${state.occupantCategory ? OCCUPANT_PROTECTIOS[state.occupantCategory].title : "N/A"}
 
-3. Violencia/Amenazas: ${state.violenceType ? VIOLENCE_PATHS[state.violenceType].dhPath : 'N/A'}
+3. Violencia/Amenazas: ${state.violenceType ? VIOLENCE_PATHS[state.violenceType].dhPath : "N/A"}
 
 RECOMENDACIONES
 ---------------
 
 Prioridad: ${getPriorityLabel(highestPriority).toUpperCase()}
 
-${recommendations.map((rec, i) => `${i + 1}. ${rec.title}
+${recommendations
+  .map(
+    (rec, i) => `${i + 1}. ${rec.title}
    ${rec.description}
-   Artículo: ${rec.article || 'N/A'}
+   Artículo: ${rec.article || "N/A"}
 
    Acciones:
-${rec.actions.map(a => `   - ${a}`).join('\n')}
+${rec.actions.map((a) => `   - ${a}`).join("\n")}
 
    Contactos:
-${rec.contacts.map(c => `   - ${c.name}: ${c.phone}`).join('\n')}
-`).join('\n')}
+${rec.contacts.map((c) => `   - ${c.name}: ${c.phone}`).join("\n")}
+`,
+  )
+  .join("\n")}
 ==============================
-Generado por Protocolo CDMX`
+Generado por Protocolo CDMX`;
 
   // Persist the triage result as a permanent text documentation entry (with
   // hash + chain of custody), replacing the previous localStorage write.
   const handleSave = async () => {
     await store.saveProtocolResult({
       incidentId,
-      capturedBy: currentUser?.pseudonym || 'Operador',
-      title: `Triage legal ${incidentId ? `- ${incidentId}` : ''}`.trim(),
-      summary: buildSummary()
-    })
-    store.clearProtocolDraft(draftKey)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
+      capturedBy: currentUser?.pseudonym || "Operador",
+      title: `Triage legal ${incidentId ? `- ${incidentId}` : ""}`.trim(),
+      summary: buildSummary(),
+    });
+    store.clearProtocolDraft(draftKey);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   const handleExport = () => {
-    const blob = new Blob([buildSummary()], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `triage-legal-${incidentId || Date.now()}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([buildSummary()], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `triage-legal-${incidentId || Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Render Step 1: Judicial Order
   const renderStep1 = () => (
@@ -486,15 +557,20 @@ Generado por Protocolo CDMX`
 
       <div className="grid grid-cols-1 gap-4">
         <button
-          onClick={() => setState(prev => ({ 
-            ...prev, 
-            judicialOrder: { present: 'present', details: prev.judicialOrder.details }
-          }))}
+          onClick={() =>
+            setState((prev) => ({
+              ...prev,
+              judicialOrder: {
+                present: "present",
+                details: prev.judicialOrder.details,
+              },
+            }))
+          }
           className={cn(
             "p-6 rounded-xl border-2 text-left transition-all",
-            state.judicialOrder.present === 'present'
+            state.judicialOrder.present === "present"
               ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-              : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
+              : "border-gray-200 dark:border-gray-700 hover:border-blue-300",
           )}
         >
           <div className="flex items-center gap-3">
@@ -511,15 +587,17 @@ Generado por Protocolo CDMX`
         </button>
 
         <button
-          onClick={() => setState(prev => ({ 
-            ...prev, 
-            judicialOrder: { present: 'absent' }
-          }))}
+          onClick={() =>
+            setState((prev) => ({
+              ...prev,
+              judicialOrder: { present: "absent" },
+            }))
+          }
           className={cn(
             "p-6 rounded-xl border-2 text-left transition-all",
-            state.judicialOrder.present === 'absent'
+            state.judicialOrder.present === "absent"
               ? "border-red-500 bg-red-50 dark:bg-red-900/20"
-              : "border-gray-200 dark:border-gray-700 hover:border-red-300"
+              : "border-gray-200 dark:border-gray-700 hover:border-red-300",
           )}
         >
           <div className="flex items-center gap-3">
@@ -536,7 +614,7 @@ Generado por Protocolo CDMX`
         </button>
       </div>
 
-      {state.judicialOrder.present === 'present' && (
+      {state.judicialOrder.present === "present" && (
         <Card className="border-blue-200 dark:border-blue-800">
           <CardHeader className="bg-blue-50 dark:bg-blue-900/20">
             <CardTitle className="text-blue-800 dark:text-blue-200 text-base">
@@ -549,20 +627,24 @@ Generado por Protocolo CDMX`
                 Nombre del tribunal
               </label>
               <Input
-                value={state.judicialOrder.details?.tribunalName || ''}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  judicialOrder: {
-                    ...prev.judicialOrder,
-                    details: {
-                      ...prev.judicialOrder.details,
-                      tribunalName: e.target.value,
-                      date: prev.judicialOrder.details?.date || '',
-                      caseNumber: prev.judicialOrder.details?.caseNumber || '',
-                      judgeSigned: prev.judicialOrder.details?.judgeSigned || false
-                    }
-                  }
-                }))}
+                value={state.judicialOrder.details?.tribunalName || ""}
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    judicialOrder: {
+                      ...prev.judicialOrder,
+                      details: {
+                        ...prev.judicialOrder.details,
+                        tribunalName: e.target.value,
+                        date: prev.judicialOrder.details?.date || "",
+                        caseNumber:
+                          prev.judicialOrder.details?.caseNumber || "",
+                        judgeSigned:
+                          prev.judicialOrder.details?.judgeSigned || false,
+                      },
+                    },
+                  }))
+                }
                 placeholder="Ej: Juzgado 15 Civil"
               />
             </div>
@@ -572,20 +654,25 @@ Generado por Protocolo CDMX`
               </label>
               <Input
                 type="date"
-                value={state.judicialOrder.details?.date || ''}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  judicialOrder: {
-                    ...prev.judicialOrder,
-                    details: {
-                      ...prev.judicialOrder.details,
-                      tribunalName: prev.judicialOrder.details?.tribunalName || '',
-                      date: e.target.value,
-                      caseNumber: prev.judicialOrder.details?.caseNumber || '',
-                      judgeSigned: prev.judicialOrder.details?.judgeSigned || false
-                    }
-                  }
-                }))}
+                value={state.judicialOrder.details?.date || ""}
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    judicialOrder: {
+                      ...prev.judicialOrder,
+                      details: {
+                        ...prev.judicialOrder.details,
+                        tribunalName:
+                          prev.judicialOrder.details?.tribunalName || "",
+                        date: e.target.value,
+                        caseNumber:
+                          prev.judicialOrder.details?.caseNumber || "",
+                        judgeSigned:
+                          prev.judicialOrder.details?.judgeSigned || false,
+                      },
+                    },
+                  }))
+                }
               />
             </div>
             <div>
@@ -593,20 +680,24 @@ Generado por Protocolo CDMX`
                 Número de expediente
               </label>
               <Input
-                value={state.judicialOrder.details?.caseNumber || ''}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  judicialOrder: {
-                    ...prev.judicialOrder,
-                    details: {
-                      ...prev.judicialOrder.details,
-                      tribunalName: prev.judicialOrder.details?.tribunalName || '',
-                      date: prev.judicialOrder.details?.date || '',
-                      caseNumber: e.target.value,
-                      judgeSigned: prev.judicialOrder.details?.judgeSigned || false
-                    }
-                  }
-                }))}
+                value={state.judicialOrder.details?.caseNumber || ""}
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    judicialOrder: {
+                      ...prev.judicialOrder,
+                      details: {
+                        ...prev.judicialOrder.details,
+                        tribunalName:
+                          prev.judicialOrder.details?.tribunalName || "",
+                        date: prev.judicialOrder.details?.date || "",
+                        caseNumber: e.target.value,
+                        judgeSigned:
+                          prev.judicialOrder.details?.judgeSigned || false,
+                      },
+                    },
+                  }))
+                }
                 placeholder="Ej: 1234/2024"
               />
             </div>
@@ -614,18 +705,22 @@ Generado por Protocolo CDMX`
               <input
                 type="checkbox"
                 checked={state.judicialOrder.details?.judgeSigned || false}
-                onChange={(e) => setState(prev => ({
-                  ...prev,
-                  judicialOrder: {
-                    ...prev.judicialOrder,
-                    details: {
-                      tribunalName: prev.judicialOrder.details?.tribunalName || '',
-                      date: prev.judicialOrder.details?.date || '',
-                      caseNumber: prev.judicialOrder.details?.caseNumber || '',
-                      judgeSigned: e.target.checked
-                    }
-                  }
-                }))}
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    judicialOrder: {
+                      ...prev.judicialOrder,
+                      details: {
+                        tribunalName:
+                          prev.judicialOrder.details?.tribunalName || "",
+                        date: prev.judicialOrder.details?.date || "",
+                        caseNumber:
+                          prev.judicialOrder.details?.caseNumber || "",
+                        judgeSigned: e.target.checked,
+                      },
+                    },
+                  }))
+                }
                 className="rounded border-gray-300"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -636,7 +731,7 @@ Generado por Protocolo CDMX`
         </Card>
       )}
 
-      {state.judicialOrder.present === 'absent' && (
+      {state.judicialOrder.present === "absent" && (
         <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
@@ -646,7 +741,9 @@ Generado por Protocolo CDMX`
                   Camino de Despojo (Artículo 395)
                 </h3>
                 <ul className="space-y-2 text-sm text-red-800 dark:text-red-300">
-                  <li>• Prioridad de documentación de violencia, amenazas, engaño</li>
+                  <li>
+                    • Prioridad de documentación de violencia, amenazas, engaño
+                  </li>
                   <li>• Énfasis en presión política inmediata</li>
                   <li>• Activar alerta de Derechos Humanos</li>
                 </ul>
@@ -656,7 +753,7 @@ Generado por Protocolo CDMX`
         </Card>
       )}
     </div>
-  )
+  );
 
   // Render Step 2: Occupant Category
   const renderStep2 = () => (
@@ -671,25 +768,29 @@ Generado por Protocolo CDMX`
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {(Object.keys(OCCUPANT_PROTECTIOS) as Exclude<OccupantCategory, null>[]).map((category) => {
-          const protection = OCCUPANT_PROTECTIOS[category]
-          const isSelected = state.occupantCategory === category
-          
+        {(
+          Object.keys(OCCUPANT_PROTECTIOS) as Exclude<OccupantCategory, null>[]
+        ).map((category) => {
+          const protection = OCCUPANT_PROTECTIOS[category];
+          const isSelected = state.occupantCategory === category;
+
           return (
             <button
               key={category}
-              onClick={() => setState(prev => ({ ...prev, occupantCategory: category }))}
+              onClick={() =>
+                setState((prev) => ({ ...prev, occupantCategory: category }))
+              }
               className={cn(
                 "p-4 rounded-xl border-2 text-left transition-all",
                 isSelected
                   ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
-                  : "border-gray-200 dark:border-gray-700 hover:border-purple-300"
+                  : "border-gray-200 dark:border-gray-700 hover:border-purple-300",
               )}
             >
               <div className="font-bold text-gray-900 dark:text-white mb-2">
                 {protection.title}
               </div>
-              
+
               {isSelected && (
                 <div className="space-y-3 mt-3">
                   <div>
@@ -698,21 +799,27 @@ Generado por Protocolo CDMX`
                     </div>
                     <ul className="text-sm space-y-1">
                       {protection.protections.map((p, i) => (
-                        <li key={i} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-gray-700 dark:text-gray-300"
+                        >
                           <Shield className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
                           {p}
                         </li>
                       ))}
                     </ul>
                   </div>
-                  
+
                   <div>
                     <div className="text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase mb-1">
                       Documentación Prioritaria
                     </div>
                     <ul className="text-sm space-y-1">
                       {protection.documentation.map((d, i) => (
-                        <li key={i} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-gray-700 dark:text-gray-300"
+                        >
                           <FileText className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
                           {d}
                         </li>
@@ -722,11 +829,11 @@ Generado por Protocolo CDMX`
                 </div>
               )}
             </button>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 
   // Render Step 3: Violence/Threats
   const renderStep3 = () => (
@@ -741,81 +848,93 @@ Generado por Protocolo CDMX`
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {(Object.keys(VIOLENCE_PATHS) as Exclude<ViolenceType, null>[]).map((type) => {
-          const violence = VIOLENCE_PATHS[type]
-          const isSelected = state.violenceType === type
-          const colors = getPriorityColor(violence.priority)
-          
-          return (
-            <button
-              key={type}
-              onClick={() => setState(prev => ({ ...prev, violenceType: type }))}
-              className={cn(
-                "p-4 rounded-xl border-2 text-left transition-all",
-                isSelected
-                  ? cn("border-2", colors.border, colors.light.replace('bg-', 'bg-opacity-50'))
-                  : "border-gray-200 dark:border-gray-700"
-              )}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className={cn("font-bold", colors.text)}>
-                  {type === 'physical_with_medical' && 'Violencia Física con Documentación Médica'}
-                  {type === 'ongoing_threats' && 'Amenazas Continuas'}
-                  {type === 'theft_damage' && 'Robo/Daño a Propiedad'}
-                  {type === 'none' && 'Sin Violencia Documentada'}
-                </span>
-                <Badge className={cn(colors.bg, "text-white")}>
-                  {getPriorityLabel(violence.priority)}
-                </Badge>
-              </div>
-              
-              {isSelected && (
-                <div className="space-y-3 mt-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                        Vía Penal
-                      </div>
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {violence.penalPath}
-                      </div>
-                    </div>
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                        Vía Derechos Humanos
-                      </div>
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {violence.dhPath}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                      Acciones Inmediatas
-                    </div>
-                    <ul className="text-sm space-y-1">
-                      {violence.immediateActions.map((action, i) => (
-                        <li key={i} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                          <AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                          {action}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+        {(Object.keys(VIOLENCE_PATHS) as Exclude<ViolenceType, null>[]).map(
+          (type) => {
+            const violence = VIOLENCE_PATHS[type];
+            const isSelected = state.violenceType === type;
+            const colors = getPriorityColor(violence.priority);
+
+            return (
+              <button
+                key={type}
+                onClick={() =>
+                  setState((prev) => ({ ...prev, violenceType: type }))
+                }
+                className={cn(
+                  "p-4 rounded-xl border-2 text-left transition-all",
+                  isSelected
+                    ? cn(
+                        "border-2",
+                        colors.border,
+                        colors.light.replace("bg-", "bg-opacity-50"),
+                      )
+                    : "border-gray-200 dark:border-gray-700",
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={cn("font-bold", colors.text)}>
+                    {type === "physical_with_medical" &&
+                      "Violencia Física con Documentación Médica"}
+                    {type === "ongoing_threats" && "Amenazas Continuas"}
+                    {type === "theft_damage" && "Robo/Daño a Propiedad"}
+                    {type === "none" && "Sin Violencia Documentada"}
+                  </span>
+                  <Badge className={cn(colors.bg, "text-white")}>
+                    {getPriorityLabel(violence.priority)}
+                  </Badge>
                 </div>
-              )}
-            </button>
-          )
-        })}
+
+                {isSelected && (
+                  <div className="space-y-3 mt-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                          Vía Penal
+                        </div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {violence.penalPath}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                          Vía Derechos Humanos
+                        </div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {violence.dhPath}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                        Acciones Inmediatas
+                      </div>
+                      <ul className="text-sm space-y-1">
+                        {violence.immediateActions.map((action, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-gray-700 dark:text-gray-300"
+                          >
+                            <AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                            {action}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </button>
+            );
+          },
+        )}
       </div>
     </div>
-  )
+  );
 
   // Render Results
   const renderResults = () => {
-    const priorityColors = getPriorityColor(highestPriority)
-    
+    const priorityColors = getPriorityColor(highestPriority);
+
     return (
       <div className="space-y-6">
         <div className="text-center">
@@ -828,10 +947,7 @@ Generado por Protocolo CDMX`
         </div>
 
         {/* Priority Badge */}
-        <div className={cn(
-          "p-6 rounded-xl text-center",
-          priorityColors.light
-        )}>
+        <div className={cn("p-6 rounded-xl text-center", priorityColors.light)}>
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
             Nivel de Prioridad
           </div>
@@ -847,21 +963,31 @@ Generado por Protocolo CDMX`
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800">
-              <span className="text-gray-600 dark:text-gray-400">Orden Judicial</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Orden Judicial
+              </span>
               <span className="font-medium">
-                {state.judicialOrder.present === 'present' ? 'Sí' : 'No'}
+                {state.judicialOrder.present === "present" ? "Sí" : "No"}
               </span>
             </div>
             <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800">
-              <span className="text-gray-600 dark:text-gray-400">Categoría</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Categoría
+              </span>
               <span className="font-medium">
-                {state.occupantCategory ? OCCUPANT_PROTECTIOS[state.occupantCategory].title : 'N/A'}
+                {state.occupantCategory
+                  ? OCCUPANT_PROTECTIOS[state.occupantCategory].title
+                  : "N/A"}
               </span>
             </div>
             <div className="flex justify-between py-2">
-              <span className="text-gray-600 dark:text-gray-400">Violencia</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Violencia
+              </span>
               <span className="font-medium">
-                {state.violenceType ? VIOLENCE_PATHS[state.violenceType].dhPath : 'N/A'}
+                {state.violenceType
+                  ? VIOLENCE_PATHS[state.violenceType].dhPath
+                  : "N/A"}
               </span>
             </div>
           </CardContent>
@@ -873,11 +999,14 @@ Generado por Protocolo CDMX`
             <Scale className="w-5 h-5" />
             Recomendaciones Legales
           </h3>
-          
+
           {recommendations.map((rec, index) => {
-            const colors = getPriorityColor(rec.priority)
+            const colors = getPriorityColor(rec.priority);
             return (
-              <Card key={index} className={cn("overflow-hidden", colors.border)}>
+              <Card
+                key={index}
+                className={cn("overflow-hidden", colors.border)}
+              >
                 <CardHeader className={cn(colors.light, "py-3")}>
                   <div className="flex items-center justify-between">
                     <CardTitle className={cn("text-base", colors.text)}>
@@ -897,14 +1026,17 @@ Generado por Protocolo CDMX`
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     {rec.description}
                   </p>
-                  
+
                   <div>
                     <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">
                       Acciones Recomendadas
                     </div>
                     <ul className="space-y-1">
                       {rec.actions.map((action, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                        >
                           <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                           {action}
                         </li>
@@ -920,7 +1052,7 @@ Generado por Protocolo CDMX`
                       {rec.contacts.map((contact) => (
                         <a
                           key={contact.id}
-                          href={`tel:${contact.phone.replace(/-/g, '')}`}
+                          href={`tel:${contact.phone.replace(/-/g, "")}`}
                           className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                           <div>
@@ -943,7 +1075,7 @@ Generado por Protocolo CDMX`
                   </div>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
 
@@ -963,7 +1095,7 @@ Generado por Protocolo CDMX`
             className="flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            {saved ? 'Guardado!' : 'Guardar'}
+            {saved ? "Guardado!" : "Guardar"}
           </Button>
           <Button
             variant="outline"
@@ -982,8 +1114,8 @@ Generado por Protocolo CDMX`
           </Button>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
@@ -1000,19 +1132,19 @@ Generado por Protocolo CDMX`
                 Wizard de decisiones legales
               </p>
             </div>
-            {incidentId && (
-              <Badge variant="secondary">
-                {incidentId}
-              </Badge>
-            )}
+            {incidentId && <Badge variant="secondary">{incidentId}</Badge>}
           </div>
 
           {/* Progress */}
           {!isComplete && (
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600 dark:text-gray-400">Paso {state.step} de 3</span>
-                <span className="font-medium">{Math.round((state.step / 3) * 100)}%</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  Paso {state.step} de 3
+                </span>
+                <span className="font-medium">
+                  {Math.round((state.step / 3) * 100)}%
+                </span>
               </div>
               <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
@@ -1020,7 +1152,7 @@ Generado por Protocolo CDMX`
                   style={{ width: `${(state.step / 3) * 100}%` }}
                 />
               </div>
-              
+
               {/* Step indicators */}
               <div className="flex justify-between mt-3">
                 {[1, 2, 3].map((step) => (
@@ -1030,7 +1162,7 @@ Generado por Protocolo CDMX`
                       "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all",
                       step <= state.step
                         ? "bg-purple-600 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-500",
                     )}
                   >
                     {step}
@@ -1044,7 +1176,9 @@ Generado por Protocolo CDMX`
 
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
-        {isComplete ? renderResults() : (
+        {isComplete ? (
+          renderResults()
+        ) : (
           <>
             {state.step === 1 && renderStep1()}
             {state.step === 2 && renderStep2()}
@@ -1070,7 +1204,7 @@ Generado por Protocolo CDMX`
                   (state.step === 3 && !state.violenceType)
                 }
               >
-                {state.step === 3 ? 'Ver Resultados' : 'Siguiente'}
+                {state.step === 3 ? "Ver Resultados" : "Siguiente"}
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -1078,7 +1212,7 @@ Generado por Protocolo CDMX`
         )}
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default LegalTriageWizard
+export default LegalTriageWizard;

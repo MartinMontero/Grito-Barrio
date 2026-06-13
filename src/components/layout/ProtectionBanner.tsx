@@ -7,21 +7,21 @@
  * one tap away from enabling protection. Dismissible for the session.
  */
 
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ShieldAlert, X } from 'lucide-react'
-import { getVaultState } from '@/lib/vault'
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ShieldAlert, X } from "lucide-react";
+import { getVaultState } from "@/lib/vault";
 
-const DISMISS_KEY = 'gb_protection_banner_dismissed'
+const DISMISS_KEY = "gb_protection_banner_dismissed";
 
 export const ProtectionBanner: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem(DISMISS_KEY) === '1'
-  )
+    () => sessionStorage.getItem(DISMISS_KEY) === "1",
+  );
 
   // Only show when there is no vault yet (data currently unencrypted).
-  if (dismissed || getVaultState() !== 'uninitialized') return null
+  if (dismissed || getVaultState() !== "uninitialized") return null;
 
   return (
     <div className="bg-amber-50 border-b border-amber-200 text-amber-900">
@@ -32,15 +32,15 @@ export const ProtectionBanner: React.FC = () => {
           contraseña para protegerlos.
         </p>
         <button
-          onClick={() => navigate('/settings')}
+          onClick={() => navigate("/settings")}
           className="font-semibold underline underline-offset-2 whitespace-nowrap"
         >
           Proteger
         </button>
         <button
           onClick={() => {
-            sessionStorage.setItem(DISMISS_KEY, '1')
-            setDismissed(true)
+            sessionStorage.setItem(DISMISS_KEY, "1");
+            setDismissed(true);
           }}
           aria-label="Descartar aviso"
           className="text-amber-700/70 hover:text-amber-900"
@@ -49,7 +49,7 @@ export const ProtectionBanner: React.FC = () => {
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProtectionBanner
+export default ProtectionBanner;

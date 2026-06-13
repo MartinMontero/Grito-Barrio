@@ -1,53 +1,69 @@
-import React, { useState } from 'react'
-import { Search, ChevronRight, AlertTriangle, Shield, FileText, Heart, BookOpen } from 'lucide-react'
-import { Card, CardContent, Badge, Button } from '@/components/ui'
-import { Input } from '@/components/ui/Input'
-import { cn } from '@/lib/utils'
-import { protocols } from '@/data/protocols'
-import type { Protocol } from '@/types'
+import React, { useState } from "react";
+import {
+  Search,
+  ChevronRight,
+  AlertTriangle,
+  Shield,
+  FileText,
+  Heart,
+  BookOpen,
+} from "lucide-react";
+import { Card, CardContent, Badge, Button } from "@/components/ui";
+import { Input } from "@/components/ui/Input";
+import { cn } from "@/lib/utils";
+import { protocols } from "@/data/protocols";
+import type { Protocol } from "@/types";
 
 interface ProtocolsPageProps {
-  onProtocolSelect: (protocol: Protocol) => void
+  onProtocolSelect: (protocol: Protocol) => void;
 }
 
-const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+const categoryIcons: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   prevention: Shield,
   immediate_response: AlertTriangle,
   legal_process: FileText,
   documentation: BookOpen,
-  support: Heart
-}
+  support: Heart,
+};
 
 const categoryLabels: Record<string, string> = {
-  prevention: 'Prevención',
-  immediate_response: 'Respuesta Inmediata',
-  legal_process: 'Proceso Legal',
-  documentation: 'Documentación',
-  support: 'Apoyo'
-}
+  prevention: "Prevención",
+  immediate_response: "Respuesta Inmediata",
+  legal_process: "Proceso Legal",
+  documentation: "Documentación",
+  support: "Apoyo",
+};
 
 export function ProtocolsPage({ onProtocolSelect }: ProtocolsPageProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  
-  const filteredProtocols = protocols.filter(protocol => {
-    const matchesSearch = protocol.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         protocol.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory ? protocol.category === selectedCategory : true
-    return matchesSearch && matchesCategory
-  })
-  
-  const emergencyProtocols = filteredProtocols.filter(p => p.isEmergency)
-  const regularProtocols = filteredProtocols.filter(p => !p.isEmergency)
-  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const filteredProtocols = protocols.filter((protocol) => {
+    const matchesSearch =
+      protocol.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      protocol.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory
+      ? protocol.category === selectedCategory
+      : true;
+    return matchesSearch && matchesCategory;
+  });
+
+  const emergencyProtocols = filteredProtocols.filter((p) => p.isEmergency);
+  const regularProtocols = filteredProtocols.filter((p) => !p.isEmergency);
+
   return (
     <div className="space-y-4 pb-20">
       {/* Page Header */}
       <div className="px-4 pt-2">
         <h1 className="text-2xl font-bold">Protocolos</h1>
-        <p className="text-muted-foreground">Guías paso a paso para diferentes situaciones</p>
+        <p className="text-muted-foreground">
+          Guías paso a paso para diferentes situaciones
+        </p>
       </div>
-      
+
       {/* Search */}
       <div className="px-4">
         <div className="relative">
@@ -60,7 +76,7 @@ export function ProtocolsPage({ onProtocolSelect }: ProtocolsPageProps) {
           />
         </div>
       </div>
-      
+
       {/* Category Filter */}
       <div className="px-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -72,7 +88,7 @@ export function ProtocolsPage({ onProtocolSelect }: ProtocolsPageProps) {
             Todos
           </Button>
           {Object.entries(categoryLabels).map(([key, label]) => {
-            const Icon = categoryIcons[key]
+            const Icon = categoryIcons[key];
             return (
               <Button
                 key={key}
@@ -84,11 +100,11 @@ export function ProtocolsPage({ onProtocolSelect }: ProtocolsPageProps) {
                 {Icon && <Icon className="w-3 h-3 mr-1" />}
                 {label}
               </Button>
-            )
+            );
           })}
         </div>
       </div>
-      
+
       {/* Emergency Protocols */}
       {emergencyProtocols.length > 0 && (
         <div className="px-4">
@@ -97,65 +113,70 @@ export function ProtocolsPage({ onProtocolSelect }: ProtocolsPageProps) {
             Emergencia
           </h2>
           <div className="space-y-2">
-            {emergencyProtocols.map(protocol => (
-              <ProtocolCard 
-                key={protocol.id} 
-                protocol={protocol} 
+            {emergencyProtocols.map((protocol) => (
+              <ProtocolCard
+                key={protocol.id}
+                protocol={protocol}
                 onClick={() => onProtocolSelect(protocol)}
               />
             ))}
           </div>
         </div>
       )}
-      
+
       {/* Regular Protocols */}
       {regularProtocols.length > 0 && (
         <div className="px-4">
           <h2 className="text-lg font-semibold mb-3">
-            {emergencyProtocols.length > 0 ? 'Otros Protocolos' : 'Protocolos Disponibles'}
+            {emergencyProtocols.length > 0
+              ? "Otros Protocolos"
+              : "Protocolos Disponibles"}
           </h2>
           <div className="space-y-2">
-            {regularProtocols.map(protocol => (
-              <ProtocolCard 
-                key={protocol.id} 
-                protocol={protocol} 
+            {regularProtocols.map((protocol) => (
+              <ProtocolCard
+                key={protocol.id}
+                protocol={protocol}
                 onClick={() => onProtocolSelect(protocol)}
               />
             ))}
           </div>
         </div>
       )}
-      
+
       {filteredProtocols.length === 0 && (
         <div className="px-4 text-center py-8">
           <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">No se encontraron protocolos</p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="mt-3"
-            onClick={() => { setSearchQuery(''); setSelectedCategory(null) }}
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedCategory(null);
+            }}
           >
             Limpiar filtros
           </Button>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface ProtocolCardProps {
-  protocol: Protocol
-  onClick: () => void
+  protocol: Protocol;
+  onClick: () => void;
 }
 
 function ProtocolCard({ protocol, onClick }: ProtocolCardProps) {
-  const Icon = categoryIcons[protocol.category] || BookOpen
-  
+  const Icon = categoryIcons[protocol.category] || BookOpen;
+
   return (
-    <Card 
+    <Card
       className={cn(
         "cursor-pointer hover:bg-accent/50 transition-colors",
-        protocol.isEmergency && "border-destructive/30"
+        protocol.isEmergency && "border-destructive/30",
       )}
       onClick={onClick}
     >
@@ -163,19 +184,25 @@ function ProtocolCard({ protocol, onClick }: ProtocolCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <Icon className={cn(
-                "w-4 h-4",
-                protocol.isEmergency ? "text-destructive" : "text-primary"
-              )} />
+              <Icon
+                className={cn(
+                  "w-4 h-4",
+                  protocol.isEmergency ? "text-destructive" : "text-primary",
+                )}
+              />
               <Badge variant="secondary" className="text-xs">
                 {categoryLabels[protocol.category]}
               </Badge>
               {protocol.isEmergency && (
-                <Badge variant="destructive" className="text-xs">Emergencia</Badge>
+                <Badge variant="destructive" className="text-xs">
+                  Emergencia
+                </Badge>
               )}
             </div>
             <h3 className="font-semibold">{protocol.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{protocol.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {protocol.description}
+            </p>
             <p className="text-xs text-muted-foreground mt-2">
               {protocol.steps.length} pasos
             </p>
@@ -184,5 +211,5 @@ function ProtocolCard({ protocol, onClick }: ProtocolCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
