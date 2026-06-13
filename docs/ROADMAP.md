@@ -1,4 +1,4 @@
-# Roadmap - Protocolo CDMX
+# Roadmap - Grito & Barrio
 
 Este documento describe la dirección futura del proyecto y las características planificadas.
 
@@ -23,7 +23,7 @@ Este documento describe la dirección futura del proyecto y las características
 
 ### 1.1 Meta Principal
 
-**Convertir a Protocolo CDMX en la herramienta estándar de respuesta comunitaria a desalojos en México y Latinoamérica, manteniendo siempre los más altos estándares de seguridad y privacidad.**
+**Convertir a Grito & Barrio en la herramienta estándar de respuesta comunitaria a desalojos en México y Latinoamérica, manteniendo siempre los más altos estándares de seguridad y privacidad.**
 
 ### 1.2 Pilares Estratégicos
 
@@ -339,9 +339,9 @@ Este roadmap se actualiza:
 
 ## 10. Recursos
 
-- [Issues etiquetados como roadmap](https://github.com/organization/protocolo-cdmx/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap)
-- [Discusiones sobre el futuro](https://github.com/organization/protocolo-cdmx/discussions/categories/ideas)
-- [Votación de características](https://github.com/organization/protocolo-cdmx/projects/1)
+- [Issues etiquetados como roadmap](https://github.com/MartinMontero/grito-barrio/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap)
+- [Discusiones sobre el futuro](https://github.com/MartinMontero/grito-barrio/discussions/categories/ideas)
+- [Votación de características](https://github.com/MartinMontero/grito-barrio/projects/1)
 
 ---
 
@@ -353,4 +353,4 @@ Este roadmap se actualiza:
 - Nuevas amenazas de seguridad
 - Oportunidades estratégicas
 
-**Protocolo CDMX** - Construyendo el futuro de la respuesta comunitaria
+**Grito & Barrio** - Construyendo el futuro de la respuesta comunitaria

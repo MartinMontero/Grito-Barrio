@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   AlertTriangle, 
   Shield, 
@@ -16,7 +16,6 @@ import {
   Activity,
   UserCheck,
   AlertOctagon,
-  MoreVertical,
   Share2,
   Navigation
 } from 'lucide-react'

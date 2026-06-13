@@ -5,7 +5,7 @@
  * Guides legal observers through decision tree for appropriate legal response
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Scale,
   ChevronRight,
@@ -14,21 +14,14 @@ import {
   AlertTriangle,
   FileText,
   Phone,
-  Users,
   Shield,
   Printer,
   Download,
   RotateCcw,
-  ExternalLink,
-  MapPin,
-  Clock,
   AlertCircle,
-  BookOpen,
-  ArrowRight,
-  Save,
-  Share2
+  Save
 } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Input, Checkbox } from '@/components/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 // =============================================================================

@@ -1,4 +1,4 @@
-# Guía de Usuario - Protocolo CDMX
+# Guía de Usuario - Grito & Barrio
 
 ## Tabla de Contenidos
 
@@ -20,7 +20,7 @@
 **En Dispositivos Móviles (iOS/Android):**
 
 1. Abre tu navegador (Chrome, Safari, Firefox)
-2. Ve a: https://protocolo-cdmx.github.io/app/
+2. Ve a: https://grito-barrio.pages.dev/
 3. Espera a que aparezca el banner "Agregar a la pantalla de inicio"
 4. Toca "Agregar" o "Instalar"
 5. La app aparecerá en tu pantalla de inicio como cualquier otra app
@@ -65,7 +65,7 @@
 
 #### 4. Completar Entrenamiento Básico
 
-- Módulo 1: Introducción a Protocolo CDMX
+- Módulo 1: Introducción a Grito & Barrio
 - Módulo 2: Protocolos de Respuesta
 - Módulo 3: Seguridad Digital
 - Certificación automática al completar
@@ -522,7 +522,7 @@ Coordinador General
 
 **Nivel 1 - Básico:**
 
-1. **Introducción a Protocolo CDMX**
+1. **Introducción a Grito & Barrio**
    - Propósito y filosofía
    - Estructura de la app
    - Seguridad digital básica
@@ -837,7 +837,7 @@ Aproximadamente 50-100MB base + datos locales según uso.
 No recomendado por seguridad. Cada brigadista debe tener cuenta individual.
 
 **¿Cómo reporto un bug?**
-Via GitHub: https://github.com/protocolo-cdmx/app/issues
+Via GitHub: https://github.com/MartinMontero/grito-barrio/issues
 O email: soporte@protocolo-cdmx.org
 
 ---
@@ -847,8 +847,8 @@ O email: soporte@protocolo-cdmx.org
 **Canales de Contacto:**
 
 - 📧 Email: soporte@protocolo-cdmx.org
-- 💬 Discord: [Servidor de Protocolo CDMX](https://discord.gg/protocolocdmx)
-- 🐛 GitHub Issues: [Reportar problema](https://github.com/protocolo-cdmx/app/issues)
+- 💬 Discord: [Servidor de Grito & Barrio](https://discord.gg/protocolocdmx)
+- 🐛 GitHub Issues: [Reportar problema](https://github.com/MartinMontero/grito-barrio/issues)
 - 📱 WhatsApp: [Número de soporte]
 
 **Horario de Atención:**
@@ -860,7 +860,7 @@ O email: soporte@protocolo-cdmx.org
 
 <div align="center">
 
-**Protocolo CDMX** - *Por la defensa del derecho a la vivienda*
+**Grito & Barrio** - *Por la defensa del derecho a la vivienda*
 
 [Inicio](../README.md) • [Guía Desarrolladores](./DEVELOPER.md) • [Seguridad](./SECURITY.md)
 

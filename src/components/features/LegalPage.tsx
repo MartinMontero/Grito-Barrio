@@ -1,6 +1,6 @@
 import React from 'react'
 import { ChevronRight, Scale, BookOpen, Shield, FileText, Gavel } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { legalResources } from '@/data/protocols'
 import type { LegalResource, LegalCategory } from '@/types'

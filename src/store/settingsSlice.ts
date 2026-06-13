@@ -6,11 +6,9 @@
  */
 
 import type { StateCreator } from 'zustand'
-import type { EmergencyPhase } from '@/types'
 import {
   getCurrentTimestamp,
   persistToLocalStorage,
-  persistToIndexedDB,
   encryptIfEnabled,
   decryptIfNeeded
 } from '@/lib/store-helpers'
@@ -82,11 +80,11 @@ export interface SettingsSlice {
   toggleHighQualityMedia: () => void
   setAutoLockTimeout: (minutes: number) => void
   setWipeDataThreshold: (attempts: number) => void
-  exportAllData: (encryptionEnabled: boolean) => Promise<Blob>
-  importData: (encryptedBlob: Blob, encryptionEnabled: boolean) => Promise<boolean>
+  exportAllData: (password?: string) => Promise<Blob>
+  importData: (encryptedBlob: Blob, password?: string) => Promise<boolean>
   resetAllSettings: () => void
-  createBackup: () => Promise<boolean>
-  restoreFromBackup: (backupBlob: Blob) => Promise<boolean>
+  createBackup: (password?: string) => Promise<boolean>
+  restoreFromBackup: (backupBlob: Blob, password?: string) => Promise<boolean>
   getStorageUsage: () => { used: number; available: number }
   clearAllData: () => Promise<boolean>
 }
@@ -367,7 +365,7 @@ export const createSettingsSlice: StateCreator<
     /**
      * Export all app data
      */
-    exportAllData: async (encryptionEnabled: boolean): Promise<Blob> => {
+    exportAllData: async (password?: string): Promise<Blob> => {
       set({ backupInProgress: true })
 
       try {
@@ -387,10 +385,10 @@ export const createSettingsSlice: StateCreator<
           resources: {} // Would come from resources slice
         }
 
-        const encrypted = await encryptIfEnabled(exportData, encryptionEnabled)
+        const encrypted = await encryptIfEnabled(exportData, password)
 
         const blob = new Blob([encrypted], {
-          type: encryptionEnabled ? 'application/encrypted' : 'application/json'
+          type: password ? 'application/octet-stream' : 'application/json'
         })
 
         set({
@@ -408,12 +406,12 @@ export const createSettingsSlice: StateCreator<
     /**
      * Import data from encrypted blob
      */
-    importData: async (encryptedBlob: Blob, encryptionEnabled: boolean): Promise<boolean> => {
+    importData: async (encryptedBlob: Blob, password?: string): Promise<boolean> => {
       set({ importInProgress: true })
 
       try {
         const text = await encryptedBlob.text()
-        const data = await decryptIfNeeded<DataExport>(text, encryptionEnabled)
+        const data = await decryptIfNeeded<DataExport>(text, password)
 
         if (!data || !data.version) {
           throw new Error('Invalid import file')
@@ -456,15 +454,14 @@ export const createSettingsSlice: StateCreator<
     /**
      * Create a backup
      */
-    createBackup: async (): Promise<boolean> => {
+    createBackup: async (password?: string): Promise<boolean> => {
       try {
-        const blob = await get().exportAllData(get().settings.encryptionEnabled)
+        const blob = await get().exportAllData(password)
 
-        // In a real app, you'd save this to a file or cloud storage
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `protocolo-backup-${getCurrentTimestamp().split('T')[0]}.backup`
+        a.download = `grito-barrio-backup-${getCurrentTimestamp().split('T')[0]}.backup`
         a.click()
         URL.revokeObjectURL(url)
 
@@ -476,10 +473,10 @@ export const createSettingsSlice: StateCreator<
     },
 
     /**
-     * Restore from backup file
+     * Restore from backup file (pass the password used to create it, if any)
      */
-    restoreFromBackup: async (backupBlob: Blob): Promise<boolean> => {
-      return get().importData(backupBlob, get().settings.encryptionEnabled)
+    restoreFromBackup: async (backupBlob: Blob, password?: string): Promise<boolean> => {
+      return get().importData(backupBlob, password)
     },
 
     /**

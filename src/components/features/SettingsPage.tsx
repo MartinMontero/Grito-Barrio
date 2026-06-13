@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
-import { User, Bell, Moon, Shield, Database, ChevronRight, LogOut, Info, Smartphone, Lock } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, Button, Switch, Badge } from '@/components/ui'
-import { Separator } from '@/components/ui/Separator'
-import { cn } from '@/lib/utils'
+import { User, Bell, Moon, Shield, Database, ChevronRight, LogOut, Info, Smartphone } from 'lucide-react'
+import { Card, CardContent, Button, Switch, Badge } from '@/components/ui'
 import { useProtocoloStore } from '@/store'
 
 interface SettingsPageProps {

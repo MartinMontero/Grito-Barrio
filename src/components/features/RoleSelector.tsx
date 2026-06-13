@@ -9,17 +9,10 @@ import React, { useState } from 'react'
 import {
   Check,
   ChevronRight,
-  Shield,
-  Users,
-  Heart,
-  Scale,
-  Radio,
-  Package,
   AlertCircle,
   Award,
   Info,
   Lock,
-  Unlock,
   ArrowRight,
   UserCheck,
   GraduationCap
@@ -28,7 +21,6 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/compo
 import { cn } from '@/lib/utils'
 import type { TeamRole, CertificationLevel } from '@/types'
 import { 
-  ROLE_DEFINITIONS, 
   AVAILABLE_ROLES,
   ROLE_CERTIFICATION_LABELS,
   checkCertificationLevel,

@@ -57,7 +57,7 @@ export async function generateFormPDF(
   // Enable PDF/A compliance if requested
   if (options.pdfaCompliance) {
     // Add PDF/A metadata
-    ;(doc as any).setCreationDate?.(new Date(formData.createdAt))
+    (doc as any).setCreationDate?.(new Date(formData.createdAt))
     ;(doc as any).setModificationDate?.(new Date(formData.updatedAt))
   }
 

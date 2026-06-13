@@ -5,16 +5,19 @@
  * Duress mode, auto-lock, panic wipe, and advanced security features
  */
 
-import {
-  hashPassword,
-  verifyPassword as cryptoVerifyPassword,
-  sha256,
-  generateSalt,
-  type HashResult
-} from './crypto'
+import { sha256, generateSalt } from './crypto'
 import { storage } from './storage'
 import { db } from './db'
 import { syncQueue } from './sync'
+import {
+  createVault,
+  setDuressPassphrase,
+  unlock as vaultUnlock,
+  isVaultInitialized,
+  hasDuressSlot,
+  removeDuressSlot,
+  destroyVault
+} from './vault'
 
 // =============================================================================
 // TYPES
@@ -160,82 +163,74 @@ class SecurityManager {
   // =============================================================================
 
   /**
-   * Set real password
+   * Set the master password. Creates the encryption vault (the passphrase
+   * derives the key that protects all data). Throws if a vault already exists —
+   * use the vault's `changePassphrase` to rotate it.
    */
   async setRealPassword(password: string): Promise<void> {
-    const hash = await hashPassword(password)
-    storage.local.set(REAL_PASSWORD_HASH_KEY, hash)
+    if (isVaultInitialized()) {
+      throw new Error('Ya existe una contraseña maestra. Usa "cambiar contraseña" para rotarla.')
+    }
+    await createVault(password)
+    this.config.encryptionEnabled = true
+    this.saveConfig()
+    this.log('login', 'Vault created / master password set')
   }
 
   /**
-   * Set duress password
+   * Set a duress password. Unlocking with it opens an isolated decoy vault and
+   * silently schedules a wipe.
    */
   async setDuressPassword(password: string): Promise<void> {
-    const hash = await hashPassword(password)
-    storage.local.set(DURESS_PASSWORD_KEY, hash)
+    await setDuressPassphrase(password)
     this.config.duressEnabled = true
     this.saveConfig()
   }
 
   /**
-   * Clear duress password
+   * Remove the duress password (decoy vault slot).
    */
   clearDuressPassword(): void {
-    storage.local.remove(DURESS_PASSWORD_KEY)
+    removeDuressSlot()
     this.config.duressEnabled = false
     this.saveConfig()
   }
 
   /**
-   * Verify password and check if it's duress
+   * Verify a password by attempting to unlock the vault. Detects duress.
    */
   async verifyPassword(input: string): Promise<{ valid: boolean; isDuress: boolean }> {
-    // Check if account is locked out
     if (this.isLockedOut()) {
       this.log('failed_attempt', 'Account locked due to too many failed attempts')
-      throw new Error('Account locked. Try again later.')
+      throw new Error('Demasiados intentos fallidos. Espera antes de volver a intentar.')
     }
 
-    // Check against real password
-    const realHash = storage.local.get<HashResult>(REAL_PASSWORD_HASH_KEY)
-    if (realHash) {
-      const isRealValid = await cryptoVerifyPassword(input, realHash)
-      if (isRealValid) {
-        this.recordSuccessfulLogin()
-        return { valid: true, isDuress: false }
+    const result = await vaultUnlock(input)
+    if (result.success) {
+      this.recordSuccessfulLogin()
+      this.log(result.duress ? 'duress' : 'login', result.duress ? 'Duress unlock' : 'Unlock')
+      if (result.duress) {
+        this.activateDuressMode()
       }
+      return { valid: true, isDuress: result.duress }
     }
 
-    // Check against duress password
-    if (this.config.duressEnabled) {
-      const duressHash = storage.local.get<HashResult>(DURESS_PASSWORD_KEY)
-      if (duressHash) {
-        const isDuressValid = await cryptoVerifyPassword(input, duressHash)
-        if (isDuressValid) {
-          this.recordSuccessfulLogin()
-          this.activateDuressMode()
-          return { valid: true, isDuress: true }
-        }
-      }
-    }
-
-    // Failed attempt
     await this.recordFailedAttempt(input)
     return { valid: false, isDuress: false }
   }
 
   /**
-   * Check if password is set
+   * Whether a master password / vault exists.
    */
   hasPassword(): boolean {
-    return storage.local.has(REAL_PASSWORD_HASH_KEY)
+    return isVaultInitialized()
   }
 
   /**
-   * Check if duress password is set
+   * Whether a duress password is configured.
    */
   hasDuressPassword(): boolean {
-    return this.config.duressEnabled && storage.local.has(DURESS_PASSWORD_KEY)
+    return hasDuressSlot()
   }
 
   // =============================================================================
@@ -470,14 +465,29 @@ class SecurityManager {
       delayMinutes
     }
 
-    storage.session.set(PANIC_WIPE_KEY, state)
+    // Persisted DURABLY (localStorage) so the deadline survives a reload or the
+    // tab being closed and reopened — closing the app no longer cancels a wipe.
+    storage.local.set(PANIC_WIPE_KEY, state)
 
-    // Set timer
     this.panicWipeTimer = window.setTimeout(() => {
       this.executeWipe()
     }, delayMinutes * 60 * 1000)
+  }
 
-    this.log('wipe', `Panic wipe scheduled in ${delayMinutes} minutes`)
+  /**
+   * On app startup, re-arm (or immediately execute) a wipe that was scheduled
+   * before the last reload/close. Call once during boot.
+   */
+  armScheduledWipeOnStartup(): void {
+    const state = storage.local.get<PanicWipeState>(PANIC_WIPE_KEY)
+    if (!state?.scheduled || !state.executeAt) return
+
+    const remaining = new Date(state.executeAt).getTime() - Date.now()
+    if (remaining <= 0) {
+      void this.executeWipe()
+      return
+    }
+    this.panicWipeTimer = window.setTimeout(() => this.executeWipe(), remaining)
   }
 
   /**
@@ -487,25 +497,18 @@ class SecurityManager {
     if (this.panicWipeTimer) {
       clearTimeout(this.panicWipeTimer)
       this.panicWipeTimer = null
-
-      const state: PanicWipeState = {
-        scheduled: false,
-        executeAt: null,
-        delayMinutes: 0
-      }
-      storage.session.set(PANIC_WIPE_KEY, state)
-
-      this.log('wipe', 'Panic wipe cancelled')
-      return true
     }
-    return false
+
+    const wasScheduled = this.isWipeScheduled()
+    storage.local.set(PANIC_WIPE_KEY, { scheduled: false, executeAt: null, delayMinutes: 0 })
+    return wasScheduled
   }
 
   /**
    * Check if wipe is scheduled
    */
   isWipeScheduled(): boolean {
-    const state = storage.session.get<PanicWipeState>(PANIC_WIPE_KEY)
+    const state = storage.local.get<PanicWipeState>(PANIC_WIPE_KEY)
     return state?.scheduled ?? false
   }
 
@@ -513,7 +516,7 @@ class SecurityManager {
    * Get wipe state
    */
   getWipeState(): PanicWipeState {
-    return storage.session.get<PanicWipeState>(PANIC_WIPE_KEY) || {
+    return storage.local.get<PanicWipeState>(PANIC_WIPE_KEY) || {
       scheduled: false,
       executeAt: null,
       delayMinutes: 0
@@ -521,51 +524,57 @@ class SecurityManager {
   }
 
   /**
-   * Execute panic wipe
+   * Execute panic wipe — irreversibly destroy ALL local data.
+   *
+   * Order matters: stop timers, then destroy the entire IndexedDB database
+   * (incidents, documentation, users, checklists, contacts, safePoints,
+   * backups, settings, syncQueue), the key vault, and every Web Storage entry
+   * for this origin. We deliberately do NOT write any log entry during or after
+   * the wipe (deniability — no forensic "a wipe happened" breadcrumb), and we
+   * only reload once destruction has settled.
    */
   async executeWipe(): Promise<void> {
-    this.log('wipe', 'EXECUTING PANIC WIPE')
+    // eslint-disable-next-line no-console
+    console.warn('[Security] Executing panic wipe')
+
+    // Stop any pending timers so nothing re-arms mid-wipe.
+    if (this.panicWipeTimer) {
+      clearTimeout(this.panicWipeTimer)
+      this.panicWipeTimer = null
+    }
+    if (this.autoLockTimer) {
+      clearTimeout(this.autoLockTimer)
+      this.autoLockTimer = null
+    }
 
     try {
-      // 1. Clear all sync queue
-      syncQueue.clear()
+      try { syncQueue.clear() } catch { /* best effort */ }
 
-      // 2. Clear sensitive stores from IndexedDB
-      await Promise.all([
-        db.clear('incidents'),
-        db.clear('documentation'),
-        db.clear('users'),
-        db.clear('checklists')
-      ])
-
-      // 3. Clear storage
-      storage.clearAll()
-
-      // 4. Clear session
-      storage.session.clear()
-
-      // 5. Clear passwords
-      storage.local.remove(REAL_PASSWORD_HASH_KEY)
-      storage.local.remove(DURESS_PASSWORD_KEY)
-
-      // 6. Clear security log
-      storage.local.remove(SECURITY_LOG_KEY)
-
-      // 7. Reset state
-      this.duressState = {
-        active: false,
-        activatedAt: null,
-        fakeDataVisible: false,
-        hiddenAccessEnabled: false
+      // Destroy the whole database (covers every store, including backups).
+      try {
+        await db.deleteDatabase()
+      } catch (error) {
+        console.error('[Security] Database deletion failed during wipe:', error)
       }
 
-      this.log('wipe', 'Panic wipe completed successfully')
+      // Destroy the key vault (wrapped keys) and drop the in-memory key.
+      try { destroyVault() } catch { /* best effort */ }
 
-      // Force reload
-      window.location.reload()
-    } catch (error) {
-      this.log('wipe', `Panic wipe failed: ${error}`)
-      throw error
+      // Clear every legacy/key/log entry, then ALL Web Storage for this origin.
+      try {
+        storage.local.remove(REAL_PASSWORD_HASH_KEY)
+        storage.local.remove(DURESS_PASSWORD_KEY)
+        storage.local.remove(SECURITY_LOG_KEY)
+      } catch { /* best effort */ }
+      try { localStorage.clear() } catch { /* best effort */ }
+      try { sessionStorage.clear() } catch { /* best effort */ }
+
+      // Reset in-memory state.
+      this.duressState = { active: false, activatedAt: null, fakeDataVisible: false, hiddenAccessEnabled: false }
+      this.failedAttempts = []
+    } finally {
+      // Reload to a clean, locked, empty app.
+      try { window.location.reload() } catch { /* non-browser env */ }
     }
   }
 
@@ -644,12 +653,23 @@ class SecurityManager {
     }
 
     const radius = this.config.locationFuzzingRadius
-    
-    // Random offset within radius (approximate for lat/lng)
-    // 111,320 meters per degree latitude at equator
-    // 111,320 * cos(lat) meters per degree longitude
-    const latOffset = (Math.random() - 0.5) * 2 * (radius / 111320)
-    const lngOffset = (Math.random() - 0.5) * 2 * (radius / (111320 * Math.cos(lat * Math.PI / 180)))
+
+    // Deterministic offset seeded by the true coordinate. Reporting the same
+    // place repeatedly therefore yields the SAME fuzzed point, so an adversary
+    // cannot average many noisy reports to recover the real location (a real
+    // weakness of per-call Math.random() fuzzing).
+    const seed = `${lat.toFixed(5)},${lng.toFixed(5)}`
+    let h = 2166136261 >>> 0 // FNV-1a
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i)
+      h = Math.imul(h, 16777619) >>> 0
+    }
+    const r1 = (h & 0xffff) / 0xffff
+    const r2 = ((h >>> 16) & 0xffff) / 0xffff
+
+    // 111,320 m per degree latitude; longitude scaled by cos(lat).
+    const latOffset = (r1 - 0.5) * 2 * (radius / 111320)
+    const lngOffset = (r2 - 0.5) * 2 * (radius / (111320 * Math.cos(lat * Math.PI / 180)))
 
     return {
       lat: lat + latOffset,
@@ -805,41 +825,41 @@ class SecurityManager {
 
 export const securityManager = new SecurityManager()
 
-// Convenience exports
-export const {
-  getConfig,
-  updateConfig,
-  setRealPassword,
-  setDuressPassword,
-  clearDuressPassword,
-  verifyPassword,
-  hasPassword,
-  hasDuressPassword,
-  activateDuressMode,
-  deactivateDuressMode,
-  getDuressState,
-  isDuressActive,
-  enableHiddenAccess,
-  disableHiddenAccess,
-  lockApp,
-  unlockApp,
-  isLocked,
-  setAutoLockTimeout,
-  recordActivity,
-  scheduleWipe,
-  cancelWipe,
-  isWipeScheduled,
-  getWipeState,
-  executeWipe,
-  stripExif,
-  fuzzLocation,
-  log,
-  getLogs,
-  clearLogs,
-  exportLogs,
-  onLock,
-  onDuress,
-  onActivity
-} = securityManager
+// Convenience exports. These MUST be bound to the instance — destructuring the
+// methods would detach `this` and make every call throw at runtime.
+export const getConfig = securityManager.getConfig.bind(securityManager)
+export const updateConfig = securityManager.updateConfig.bind(securityManager)
+export const setRealPassword = securityManager.setRealPassword.bind(securityManager)
+export const setDuressPassword = securityManager.setDuressPassword.bind(securityManager)
+export const clearDuressPassword = securityManager.clearDuressPassword.bind(securityManager)
+export const verifyPassword = securityManager.verifyPassword.bind(securityManager)
+export const hasPassword = securityManager.hasPassword.bind(securityManager)
+export const hasDuressPassword = securityManager.hasDuressPassword.bind(securityManager)
+export const activateDuressMode = securityManager.activateDuressMode.bind(securityManager)
+export const deactivateDuressMode = securityManager.deactivateDuressMode.bind(securityManager)
+export const getDuressState = securityManager.getDuressState.bind(securityManager)
+export const isDuressActive = securityManager.isDuressActive.bind(securityManager)
+export const enableHiddenAccess = securityManager.enableHiddenAccess.bind(securityManager)
+export const disableHiddenAccess = securityManager.disableHiddenAccess.bind(securityManager)
+export const lockApp = securityManager.lockApp.bind(securityManager)
+export const unlockApp = securityManager.unlockApp.bind(securityManager)
+export const isLocked = securityManager.isLocked.bind(securityManager)
+export const setAutoLockTimeout = securityManager.setAutoLockTimeout.bind(securityManager)
+export const recordActivity = securityManager.recordActivity.bind(securityManager)
+export const scheduleWipe = securityManager.scheduleWipe.bind(securityManager)
+export const armScheduledWipeOnStartup = securityManager.armScheduledWipeOnStartup.bind(securityManager)
+export const cancelWipe = securityManager.cancelWipe.bind(securityManager)
+export const isWipeScheduled = securityManager.isWipeScheduled.bind(securityManager)
+export const getWipeState = securityManager.getWipeState.bind(securityManager)
+export const executeWipe = securityManager.executeWipe.bind(securityManager)
+export const stripExif = securityManager.stripExif.bind(securityManager)
+export const fuzzLocation = securityManager.fuzzLocation.bind(securityManager)
+export const log = securityManager.log.bind(securityManager)
+export const getLogs = securityManager.getLogs.bind(securityManager)
+export const clearLogs = securityManager.clearLogs.bind(securityManager)
+export const exportLogs = securityManager.exportLogs.bind(securityManager)
+export const onLock = securityManager.onLock.bind(securityManager)
+export const onDuress = securityManager.onDuress.bind(securityManager)
+export const onActivity = securityManager.onActivity.bind(securityManager)
 
 export default securityManager

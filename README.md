@@ -2,14 +2,14 @@
 
 Herramienta de respuesta comunitaria para apoyo en desalojos ilegales en la Ciudad de México.
 
-[![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://protocolo-cdmx.pages.dev)
+[![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://grito-barrio.pages.dev)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 
 Una PWA (Progressive Web App) desarrollada con React, TypeScript y Vite.
 
-🌐 **Live Demo:** [https://protocolo-cdmx.pages.dev](https://protocolo-cdmx.pages.dev)
+🌐 **Live Demo:** [https://grito-barrio.pages.dev](https://grito-barrio.pages.dev)
 
 ---
 
@@ -32,15 +32,15 @@ El proyecto está configurado para desplegarse automáticamente en **Cloudflare 
 
 ### URLs del Proyecto
 
-- 🌐 **Producción:** [https://protocolo-cdmx.pages.dev](https://protocolo-cdmx.pages.dev)
-- 🔧 **Repositorio:** [https://github.com/MartinMontero/MXMutalAid](https://github.com/MartinMontero/MXMutalAid)
+- 🌐 **Producción:** [https://grito-barrio.pages.dev](https://grito-barrio.pages.dev)
+- 🔧 **Repositorio:** [https://github.com/MartinMontero/grito-barrio](https://github.com/MartinMontero/grito-barrio)
 
 ### Configuración Rápida
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/MartinMontero/MXMutalAid.git
-cd MXMutalAid
+git clone https://github.com/MartinMontero/grito-barrio.git
+cd grito-barrio
 
 # Instalar dependencias
 npm install
@@ -59,7 +59,7 @@ Para instrucciones detalladas de despliegue, ver [DEPLOY.md](./DEPLOY.md).
 ## 📁 Estructura del Proyecto
 
 ```
-protocolo-cdmx/
+grito-barrio/
 ├── src/
 │   ├── components/
 │   │   ├── ui/          # Componentes reutilizables

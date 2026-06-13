@@ -7,6 +7,8 @@
  */
 
 import { compress, decompress } from './compression'
+import { encryptData, decryptData } from './encryption'
+import { getDataKey, isVaultInitialized } from './vault'
 
 // =============================================================================
 // TYPES
@@ -619,40 +621,53 @@ class StorageManager {
 // LEGACY COMPATIBILITY FUNCTIONS (for store-helpers.ts)
 // =============================================================================
 
-const storeDataCache = new Map<string, unknown>()
+interface PersistRecord {
+  key: string
+  /** JSON string (plaintext) OR base64 ciphertext when `encrypted` is true. */
+  data: string
+  encrypted: boolean
+  timestamp: number
+}
 
 /**
- * Store data (legacy API for store-helpers.ts)
- * Uses IndexedDB if available, falls back to localStorage
+ * Persist slice state to IndexedDB (with localStorage fallback).
+ *
+ * Encryption semantics (fail-closed):
+ *  - `encrypt === true` and the vault is UNLOCKED  → encrypt with the DEK.
+ *  - `encrypt === true` and the vault is LOCKED     → throw (never write plaintext).
+ *  - `encrypt === true` and NO vault configured     → write plaintext (encryption
+ *    not yet enabled; the UI discloses this and nudges the user to set a passphrase).
+ *  - `encrypt === false`                            → write plaintext.
  */
 export async function storeData<T>(
   key: string,
   data: T,
   encrypt: boolean = false
 ): Promise<boolean> {
+  const serialized = JSON.stringify(data)
+  let record: PersistRecord
+
+  if (encrypt && getDataKey()) {
+    record = { key, data: await encryptData(serialized), encrypted: true, timestamp: Date.now() }
+  } else if (encrypt && isVaultInitialized()) {
+    // Vault exists but is locked — refuse to persist sensitive data in the clear.
+    throw new Error(`[storeData] Vault locked; refusing to persist "${key}" unencrypted.`)
+  } else {
+    record = { key, data: serialized, encrypted: false, timestamp: Date.now() }
+  }
+
   try {
-    // Try IndexedDB first
     const { db } = await import('./db')
     await db.init()
-    
-    const result = await db.put('settings' as any, {
-      key,
-      data: encrypt ? JSON.stringify(data) : data,
-      encrypted: encrypt,
-      timestamp: Date.now()
-    })
-    
-    if (result.success) {
-      return true
-    }
+    const result = await db.put('settings' as any, record)
+    if (result.success) return true
   } catch (error) {
     console.warn('[storeData] IndexedDB failed, falling back to localStorage:', error)
   }
-  
-  // Fallback to localStorage
+
   try {
-    storage.local.set(key, data)
-    storeDataCache.set(key, data)
+    // Store the same envelope shape in localStorage so getData can read it back.
+    storage.local.set(`persist:${key}`, record)
     return true
   } catch (error) {
     console.error('[storeData] Failed to store data:', error)
@@ -661,59 +676,47 @@ export async function storeData<T>(
 }
 
 /**
- * Get data (legacy API for store-helpers.ts)
+ * Read slice state persisted by `storeData`. Decrypts using the vault DEK when
+ * the record is encrypted; returns null if the vault is locked or decryption
+ * fails (fail-closed: never returns ciphertext as if it were data).
  */
-export async function getData<T>(
-  key: string,
-  decrypt: boolean = false
-): Promise<T | null> {
-  // Check cache first
-  const cached = storeDataCache.get(key)
-  if (cached !== undefined) {
-    return cached as T
+export async function getData<T>(key: string): Promise<T | null> {
+  const decodeRecord = async (record: PersistRecord | undefined | null): Promise<T | null> => {
+    if (!record || typeof record.data !== 'string') return null
+    if (record.encrypted) {
+      const dek = getDataKey()
+      if (!dek) return null // locked — cannot decrypt yet
+      try {
+        return JSON.parse(await decryptData(record.data)) as T
+      } catch (error) {
+        console.error(`[getData] Failed to decrypt "${key}":`, error)
+        return null
+      }
+    }
+    try {
+      return JSON.parse(record.data) as T
+    } catch {
+      return null
+    }
   }
-  
+
   try {
-    // Try IndexedDB first
     const { db } = await import('./db')
     await db.init()
-    
-    const result = await db.get<{
-      key: string
-      data: T | string
-      encrypted: boolean
-      timestamp: number
-    }>('settings' as any, key)
-    
+    const result = await db.get<PersistRecord>('settings' as any, key)
     if (result.success && result.data) {
-      const { data } = result.data
-      
-      if (decrypt && typeof data === 'string') {
-        try {
-          return JSON.parse(data) as T
-        } catch {
-          return data as unknown as T
-        }
-      }
-      
-      return data as T
+      return decodeRecord(result.data)
     }
   } catch (error) {
     console.warn('[getData] IndexedDB failed, falling back to localStorage:', error)
   }
-  
-  // Fallback to localStorage
+
   try {
-    const data = storage.local.get<T>(key)
-    if (data !== undefined) {
-      storeDataCache.set(key, data)
-      return data
-    }
+    return decodeRecord(storage.local.get<PersistRecord>(`persist:${key}`))
   } catch (error) {
     console.error('[getData] Failed to get data:', error)
+    return null
   }
-  
-  return null
 }
 
 // =============================================================================

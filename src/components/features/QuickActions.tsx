@@ -8,9 +8,7 @@
 import React, { useState } from 'react'
 import { 
   Plus, 
-  Phone, 
-  Camera, 
-  X,
+  Camera,
   AlertTriangle,
   FileText,
   MapPin,

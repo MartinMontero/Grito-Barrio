@@ -5,8 +5,8 @@
  * Tests for IndexedDB operations, CRUD, queries, and migrations
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createMockIncident, createMockFormData, wait } from '../setup'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createMockIncident } from '../setup'
 
 // Mock IndexedDB
 const mockIndex = {

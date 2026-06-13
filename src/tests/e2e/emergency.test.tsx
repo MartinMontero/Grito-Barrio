@@ -5,10 +5,9 @@
  * End-to-end tests simulating real user interactions
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMockIncident, createMockFormData, wait } from '../setup'
 
 describe('E2E - User Onboarding', () => {
   const user = userEvent.setup()

@@ -8,12 +8,6 @@
 import React, { useState, useMemo } from 'react'
 import {
   Boxes,
-  Droplets,
-  Heart,
-  Shield,
-  FileText,
-  Radio,
-  Truck,
   Search,
   Filter,
   AlertTriangle,
@@ -22,24 +16,13 @@ import {
   Package,
   Plus,
   Minus,
-  History,
   TrendingDown,
-  ShoppingCart,
-  ChevronRight,
-  MoreHorizontal,
-  Download,
-  Share2,
-  Settings,
-  Users,
-  Clock
+  ShoppingCart
 } from 'lucide-react'
 import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   Input,
   Badge,
   Progress,
@@ -59,10 +42,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Alert,
   AlertTitle,
   AlertDescription
@@ -73,7 +53,6 @@ import type {
   SupplyChecklist, 
   ResourceKit,
   ResourceCategory,
-  ResourceLevel,
   LogisticsRequest 
 } from '@/types/resources'
 import { RESOURCE_CATEGORIES, RESOURCE_LEVELS } from '@/types/resources'

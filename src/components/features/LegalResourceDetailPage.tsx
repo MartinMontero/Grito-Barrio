@@ -1,7 +1,6 @@
 import React from 'react'
 import { ArrowLeft, Scale, ExternalLink } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui'
-import { Separator } from '@/components/ui/Separator'
+import { Button, Card, CardContent, Badge } from '@/components/ui'
 import type { LegalResource } from '@/types'
 
 interface LegalResourceDetailPageProps {

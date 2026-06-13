@@ -5,7 +5,7 @@
  * Tests for WCAG compliance and assistive technology compatibility
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
 describe('Accessibility - Screen Reader Compatibility', () => {

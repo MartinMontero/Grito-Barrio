@@ -1,4 +1,4 @@
-# Seguridad - Protocolo CDMX
+# Seguridad - Grito & Barrio
 
 **Versión**: 1.0.0  
 **Última actualización**: Febrero 2025  
@@ -23,7 +23,7 @@
 
 ### 1.1 Filosofía de Seguridad
 
-Protocolo CDMX fue diseñado con **seguridad y privacidad como prioridades fundamentales**. Entendemos que la herramienta puede ser utilizada en situaciones de alto riesgo, donde la protección de datos puede ser crítica para la seguridad de las personas involucradas.
+Grito & Barrio fue diseñado con **seguridad y privacidad como prioridades fundamentales**. Entendemos que la herramienta puede ser utilizada en situaciones de alto riesgo, donde la protección de datos puede ser crítica para la seguridad de las personas involucradas.
 
 **Principios Clave**:
 
@@ -431,10 +431,10 @@ Los investigadores de seguridad que reporten vulnerabilidades válidas serán re
 
 ---
 
-**⚠️ IMPORTANTE**: Esta documentación de seguridad es pública intencionalmente. La seguridad por oscuridad no es seguridad real. La seguridad de Protocolo CDMX se basa en:
+**⚠️ IMPORTANTE**: Esta documentación de seguridad es pública intencionalmente. La seguridad por oscuridad no es seguridad real. La seguridad de Grito & Barrio se basa en:
 
 - Algoritmos criptográficos probados (AES-256, SHA-256, PBKDF2)
 - Código abierto auditado por la comunidad
 - Diseño con seguridad en mente desde el inicio
 
-**Protocolo CDMX** - Protegiendo a los defensores de derechos humanos
+**Grito & Barrio** - Protegiendo a los defensores de derechos humanos

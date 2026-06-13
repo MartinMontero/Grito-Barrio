@@ -26,8 +26,8 @@ Grito & Barrio es una Progressive Web App (PWA) diseñada para proporcionar info
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tuusuario/protocolo-cdmx.git
-cd protocolo-cdmx
+git clone https://github.com/MartinMontero/grito-barrio.git
+cd grito-barrio
 
 # Instalar dependencias
 npm install
@@ -55,7 +55,7 @@ npm run deploy
 ## 📁 Estructura del Proyecto
 
 ```
-protocolo-cdmx/
+grito-barrio/
 ├── public/                    # Activos estáticos
 │   ├── manifest.json         # Configuración PWA
 │   ├── pwa-192x192.png       # Iconos

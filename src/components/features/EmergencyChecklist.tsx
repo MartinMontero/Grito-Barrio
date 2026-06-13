@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Check,
   ChevronDown,
@@ -11,25 +11,20 @@ import {
   Filter,
   Wifi,
   WifiOff,
-  MoreVertical,
-  Undo2,
   AlertTriangle,
   FileText,
   Shield,
   Activity,
-  Users,
   Phone,
   Camera,
   MapPin,
   Lock,
-  Unlock,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  Circle
+  CheckCircle2
 } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui'
-import { cn, formatTime } from '@/lib/utils'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
+import { cn } from '@/lib/utils'
 import { useProtocoloStore } from '@/store'
 import type { EmergencyPhase, TeamRole, ChecklistItem } from '@/types'
 

@@ -1,8 +1,8 @@
-# Settings Module - Protocolo CDMX
+# Settings Module - Grito & Barrio
 
 ## Overview
 
-The comprehensive Settings module provides users with full control over their Protocolo CDMX experience, including profile management, security configuration, privacy settings, and data management.
+The comprehensive Settings module provides users with full control over their Grito & Barrio experience, including profile management, security configuration, privacy settings, and data management.
 
 ## Component Structure
 
@@ -213,4 +213,4 @@ interface Settings {
 
 ## License
 
-GPL v3 - Part of Protocolo CDMX
+GPL v3 - Part of Grito & Barrio

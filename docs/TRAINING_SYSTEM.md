@@ -1,6 +1,6 @@
 # Training and Certification System
 
-Protocolo CDMX includes a comprehensive training and certification system to ensure all brigade members are properly prepared for emergency response.
+Grito & Barrio includes a comprehensive training and certification system to ensure all brigade members are properly prepared for emergency response.
 
 ## Overview
 

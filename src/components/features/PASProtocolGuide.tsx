@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState } from 'react'
 import {
   Shield,
   Phone,
@@ -8,18 +8,12 @@ import {
   Check,
   AlertTriangle,
   Activity,
-  ThermometerSun,
-  ThermometerSnowflake,
   Droplets,
-  MapPin,
-  Users,
-  Clock,
   ExternalLink,
   CheckCircle2,
   Plus,
   Minus,
-  AlertOctagon,
-  Stethoscope
+  AlertOctagon
 } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { cn } from '@/lib/utils'

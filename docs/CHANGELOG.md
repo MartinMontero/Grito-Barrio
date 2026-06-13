@@ -1,4 +1,4 @@
-# Changelog - Protocolo CDMX
+# Changelog - Grito & Barrio
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
@@ -240,4 +240,4 @@ Ejemplo:
 
 ---
 
-**Protocolo CDMX** - Manteniendo un registro de todos los cambios importantes.
+**Grito & Barrio** - Manteniendo un registro de todos los cambios importantes.

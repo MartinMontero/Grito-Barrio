@@ -7,14 +7,7 @@
 
 import type { FormTemplate } from '@/types/forms'
 import { 
-  ALCALDIAS, 
-  TEAM_ROLES, 
-  EVIDENCE_TYPES, 
-  AUTHORITY_TYPES,
-  VIOLENCE_TYPES,
-  LEGAL_ROUTES,
-  PRIORITY_LEVELS,
-  OCCUPANT_CATEGORIES
+  ALCALDIAS
 } from '@/types/forms'
 
 // =============================================================================

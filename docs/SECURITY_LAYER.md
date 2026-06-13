@@ -1,6 +1,6 @@
 # Security Layer Documentation
 
-Protocolo CDMX implements military-grade security features to protect sensitive data in high-risk situations.
+Grito & Barrio implements military-grade security features to protect sensitive data in high-risk situations.
 
 ## Overview
 

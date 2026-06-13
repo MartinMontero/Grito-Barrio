@@ -10,7 +10,6 @@ import type { ChecklistItem, EmergencyPhase, ChecklistCategory } from '@/types'
 import {
   getCurrentTimestamp,
   calculateProgress,
-  updateInArray,
   persistToIndexedDB
 } from '@/lib/store-helpers'
 

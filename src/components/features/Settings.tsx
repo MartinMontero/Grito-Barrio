@@ -15,54 +15,34 @@ import {
   Eye,
   Bell,
   Database,
-  Globe,
   Accessibility,
-  Wifi,
   Info,
   HelpCircle,
   MessageSquare,
   Bug,
   Lightbulb,
-  Moon,
-  Sun,
-  Monitor,
-  ChevronRight,
   LogOut,
   Save,
   Download,
-  Upload,
   Trash2,
   AlertTriangle,
   CheckCircle,
-  Clock,
   FileText,
   Award,
   GraduationCap,
   Phone,
   Mail,
   MapPin,
-  Fingerprint,
   Key,
   EyeOff,
-  Eye as EyeIcon,
-  Volume2,
-  Vibrate,
   HardDrive,
   Cloud,
   RefreshCw,
-  RotateCcw,
   Type,
   Contrast,
-  Minimize2,
-  Languages,
   ExternalLink,
   Github,
-  Heart,
-  ChevronDown,
-  ChevronUp,
-  MoreVertical,
-  Copy,
-  Check
+  Heart
 } from 'lucide-react'
 import {
   Button,
@@ -100,22 +80,14 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Progress,
   Avatar,
   AvatarFallback,
   AvatarImage,
-  Textarea,
-  RadioGroup,
-  RadioGroupItem
+  Textarea
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
 import { useProtocoloStore } from '@/store'
-import { generateFormPDF, downloadPDF } from '@/lib/pdfExport'
-import type { UserRole, CertificationLevel } from '@/types'
 
 // =============================================================================
 // TYPES

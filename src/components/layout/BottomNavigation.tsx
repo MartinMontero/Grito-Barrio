@@ -16,9 +16,7 @@ import {
   Settings,
   LucideIcon
 } from 'lucide-react'
-import { Badge } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { useProtocoloStore } from '@/store'
 
 interface NavItem {
   id: string

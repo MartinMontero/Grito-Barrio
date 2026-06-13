@@ -21,11 +21,9 @@ import {
   Shield,
   Users,
   X,
-  User,
   Award,
   Clock,
   Info,
-  AlertOctagon,
   ChevronRight,
   LogOut
 } from 'lucide-react'

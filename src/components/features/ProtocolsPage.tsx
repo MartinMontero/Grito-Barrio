@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Search, ChevronRight, AlertTriangle, Shield, FileText, Heart, BookOpen } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@/components/ui'
+import { Card, CardContent, Badge, Button } from '@/components/ui'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 import { protocols } from '@/data/protocols'

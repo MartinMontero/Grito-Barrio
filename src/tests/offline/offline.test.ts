@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createMockIncident, createMockFormData, wait } from '../setup'
+import { createMockIncident } from '../setup'
 
 describe('Offline - Basic Functionality', () => {
   beforeEach(() => {

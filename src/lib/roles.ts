@@ -21,7 +21,6 @@ import {
   Building2,
   Truck,
   Stethoscope,
-  BookOpen,
   Share2,
   Bell,
   LogOut,

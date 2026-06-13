@@ -1,7 +1,6 @@
 import React from 'react'
 import { AlertTriangle, Phone, Shield, FileText, Users } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { Button, Card, CardContent, Badge } from '@/components/ui'
 import { useProtocoloStore } from '@/store'
 import { protocols } from '@/data/protocols'
 

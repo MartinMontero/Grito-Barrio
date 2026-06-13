@@ -5,9 +5,26 @@
  * Middleware for persistence, encryption, and shared store functionality
  */
 
-import { generateSecureRandomId as generateSecureId, encryptObject, decryptObject } from '@/lib/encryption'
+import { encryptObject, decryptObject } from '@/lib/encryption'
 import { storeData, getData } from '@/lib/storage'
 import type { StateCreator, StoreApi } from 'zustand'
+
+/**
+ * Registry of slice loaders, so the app can re-hydrate every persisted slice
+ * after the vault is unlocked (the DEK is memory-only and unavailable at the
+ * initial, pre-unlock load).
+ */
+const persistedLoaders = new Set<() => Promise<void>>()
+
+/**
+ * Re-load every persisted slice from storage. Call after a successful unlock so
+ * encrypted slices that returned empty at startup get their decrypted data.
+ */
+export async function hydratePersistedState(): Promise<void> {
+  for (const load of persistedLoaders) {
+    await load()
+  }
+}
 
 /**
  * Middleware for persisting store state to IndexedDB
@@ -22,10 +39,10 @@ export function persistToIndexedDB<T extends object>(
       get: StoreApi<T>['getState'],
       api: StoreApi<T>
     ) => {
-      // Load persisted state on initialization
+      // Load persisted state (may return nothing until the vault is unlocked)
       const loadPersistedState = async () => {
         try {
-          const persisted = await getData<Partial<T>>(storeName, encrypt)
+          const persisted = await getData<Partial<T>>(storeName)
           if (persisted) {
             set(persisted as T, false)
           }
@@ -34,15 +51,16 @@ export function persistToIndexedDB<T extends object>(
         }
       }
 
-      // Load persisted state
-      loadPersistedState()
+      persistedLoaders.add(loadPersistedState)
+      void loadPersistedState()
 
       // Wrap set to persist changes
       const originalSet = set
       const persistSet: typeof set = (partial, replace) => {
         originalSet(partial, replace)
-        
-        // Persist to IndexedDB
+
+        // Persist to IndexedDB. Errors (e.g. fail-closed when locked) are
+        // logged but never crash the UI.
         const state = get()
         storeData(storeName, state, encrypt).catch(error => {
           console.error(`Error persisting ${storeName}:`, error)
@@ -182,21 +200,22 @@ export function isValidIncidentId(id: string): boolean {
 }
 
 /**
- * Encrypt sensitive data if encryption is enabled
+ * Encrypt data for a PORTABLE export/backup using a user-supplied password.
+ * When no password is given the data is serialized as plaintext JSON.
  */
-export async function encryptIfEnabled<T>(data: T, encryptionEnabled: boolean): Promise<string> {
-  if (encryptionEnabled) {
-    return encryptObject(data as object)
+export async function encryptIfEnabled<T>(data: T, password?: string): Promise<string> {
+  if (password) {
+    return encryptObject(data as object, password)
   }
   return JSON.stringify(data)
 }
 
 /**
- * Decrypt data if it was encrypted
+ * Inverse of `encryptIfEnabled`. Pass the same password used to export.
  */
-export async function decryptIfNeeded<T>(data: string, encryptionEnabled: boolean): Promise<T | null> {
-  if (encryptionEnabled) {
-    return decryptObject<T & object>(data)
+export async function decryptIfNeeded<T>(data: string, password?: string): Promise<T | null> {
+  if (password) {
+    return decryptObject<T & object>(data, password)
   }
   try {
     return JSON.parse(data) as T

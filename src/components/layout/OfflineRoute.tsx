@@ -8,9 +8,8 @@
 
 import React from 'react'
 import { WifiOff, RefreshCw, CloudOff } from 'lucide-react'
-import { Button, Alert, AlertTitle, AlertDescription } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { useProtocoloStore } from '@/store'
 
 interface OfflineRouteProps {
   children: React.ReactNode

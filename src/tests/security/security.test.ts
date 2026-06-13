@@ -5,8 +5,7 @@
  * Tests for security features, authentication, and data protection
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createMockIncident, createMockFormData } from '../setup'
+import { describe, it, expect } from 'vitest'
 
 describe('Security - Duress Mode', () => {
   it('should activate duress mode with special password', async () => {

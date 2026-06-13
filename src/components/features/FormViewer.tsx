@@ -12,8 +12,7 @@ import {
   Printer, 
   Download, 
   FileText, 
-  CheckCircle, 
-  Clock,
+  CheckCircle,
   Hash,
   Shield,
   AlertTriangle
@@ -33,8 +32,7 @@ import {
   TooltipTrigger
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { FormData, FormTemplate, FormType } from '@/types/forms'
-import { FORM_TEMPLATES } from '@/types/forms'
+import type { FormData, FormTemplate } from '@/types/forms'
 
 interface FormViewerProps {
   formData: FormData

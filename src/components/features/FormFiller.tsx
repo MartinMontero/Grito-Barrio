@@ -5,10 +5,9 @@
  * Editable form component with input fields, validation, and auto-save
  */
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import {
   Save,
   Send,
@@ -18,11 +17,7 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  FileText,
-  Edit3,
-  PenTool,
-  ChevronDown,
-  ChevronUp
+  Edit3
 } from 'lucide-react'
 import {
   Button,
@@ -41,28 +36,23 @@ import {
   Checkbox,
   Label,
   Badge,
-  Separator,
   Alert,
   AlertTitle,
   AlertDescription,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  ScrollArea,
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { FormData, FormTemplate, FormField, FieldType } from '@/types/forms'
+import type { FormData, FormTemplate, FormField } from '@/types/forms'
 import { useProtocoloStore } from '@/store'
 
 interface FormFillerProps {

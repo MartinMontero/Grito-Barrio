@@ -1,8 +1,8 @@
-# Testing Strategy - Protocolo CDMX
+# Testing Strategy - Grito & Barrio
 
 ## Overview
 
-This comprehensive testing suite ensures Protocolo CDMX is reliable, secure, and accessible for high-stakes emergency response situations. The testing strategy covers all aspects of the application from unit-level logic to end-to-end user workflows.
+This comprehensive testing suite ensures Grito & Barrio is reliable, secure, and accessible for high-stakes emergency response situations. The testing strategy covers all aspects of the application from unit-level logic to end-to-end user workflows.
 
 ## Test Architecture
 
@@ -371,4 +371,4 @@ The testing suite ensures:
 
 ## License
 
-GPL v3 - Part of Protocolo CDMX
+GPL v3 - Part of Grito & Barrio

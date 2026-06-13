@@ -1,7 +1,6 @@
 import React from 'react'
 import { ArrowLeft, Clock, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Alert, AlertTitle, AlertDescription } from '@/components/ui'
-import { Separator } from '@/components/ui/Separator'
+import { Button, Card, CardContent, Badge, Alert, AlertTitle, AlertDescription } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { Protocol } from '@/types'
 

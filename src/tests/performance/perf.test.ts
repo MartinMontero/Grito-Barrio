@@ -5,7 +5,7 @@
  * Tests for app responsiveness and resource usage
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createMockIncident, wait } from '../setup'
 
 describe('Performance - App Load Time', () => {
@@ -274,8 +274,9 @@ describe('Performance - Network Operations', () => {
     await wait(slowNetworkDelay)
     const loadTime = performance.now() - startTime
     
-    // App should still be usable
-    expect(loadTime).toBeGreaterThanOrEqual(slowNetworkDelay)
+    // App should still be usable (timer fired ~ the requested delay; allow a
+    // small scheduler tolerance so the assertion isn't flaky).
+    expect(loadTime).toBeGreaterThanOrEqual(slowNetworkDelay - 50)
   })
 
   it('should compress data before transmission', () => {

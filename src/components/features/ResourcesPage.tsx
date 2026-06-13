@@ -1,7 +1,7 @@
 import React from 'react'
-import { Phone, MapPin, Clock, Mail, ExternalLink, Building2, Heart, Shield, Scale } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@/components/ui'
-import { cn, formatPhone } from '@/lib/utils'
+import { Phone, MapPin, Clock, Mail, Building2, Heart, Shield, Scale } from 'lucide-react'
+import { Card, CardContent, Badge } from '@/components/ui'
+import { formatPhone } from '@/lib/utils'
 import { externalResources, emergencyContacts } from '@/data/protocols'
 import type { Resource, ResourceType } from '@/types'
 

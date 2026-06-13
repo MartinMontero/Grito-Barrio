@@ -7,6 +7,7 @@
  */
 
 import { encryptData, decryptData } from './encryption'
+import { getDataKey, isVaultInitialized } from './vault'
 
 // =============================================================================
 // TYPES
@@ -151,7 +152,6 @@ const STORE_CONFIGS: StoreConfig[] = [
 
 class IndexedDBWrapper {
   private db: IDBDatabase | null = null
-  private encryptionKey: string | null = null
   private isInitializing = false
   private initPromise: Promise<void> | null = null
   private retryAttempts = 3
@@ -232,13 +232,6 @@ class IndexedDBWrapper {
     }
 
     console.log(`[DB] Database v${DB_VERSION} initialized with ${STORE_CONFIGS.length} stores`)
-  }
-
-  /**
-   * Set encryption key for sensitive stores
-   */
-  setEncryptionKey(key: string): void {
-    this.encryptionKey = key
   }
 
   /**
@@ -653,31 +646,45 @@ class IndexedDBWrapper {
   // PRIVATE METHODS
   // =============================================================================
 
+  /**
+   * Encrypt a record destined for an "encrypted" store. The stored shape is
+   * ONLY `{ [keyPath]: key, __encrypted: ciphertext }` — no plaintext fields
+   * are ever written, so seizing the IndexedDB profile yields only ciphertext.
+   * Fails closed: if the vault is locked we refuse to write plaintext.
+   */
   private async encryptIfNeeded<T>(storeName: StoreName, item: T): Promise<T> {
     const config = STORE_CONFIGS.find(c => c.name === storeName)
-    
-    if (config?.encrypted && this.encryptionKey) {
-      const encrypted = await encryptData(JSON.stringify(item), this.encryptionKey)
-      return { ...item, __encrypted: encrypted } as unknown as T
+    if (!config?.encrypted) return item
+
+    const dek = getDataKey()
+    if (dek) {
+      const encrypted = await encryptData(JSON.stringify(item))
+      const keyPath = config.keyPath
+      const keyValue = (item as Record<string, unknown>)[keyPath]
+      return { [keyPath]: keyValue, __encrypted: encrypted } as unknown as T
     }
-    
+
+    if (isVaultInitialized()) {
+      throw new Error(`[db] Vault locked; refusing to write plaintext to encrypted store "${storeName}".`)
+    }
+
+    // No vault configured yet — encryption not enabled (disclosed in the UI).
     return item
   }
 
   private async decryptIfNeeded<T>(storeName: StoreName, item: T): Promise<T> {
     const config = STORE_CONFIGS.find(c => c.name === storeName)
     const encryptedItem = item as unknown as { __encrypted?: string }
-    
-    if (config?.encrypted && this.encryptionKey && encryptedItem.__encrypted) {
-      try {
-        const decrypted = await decryptData(encryptedItem.__encrypted, this.encryptionKey)
-        return JSON.parse(decrypted) as T
-      } catch (error) {
-        console.error('Failed to decrypt item:', error)
-        return item
-      }
+
+    if (config?.encrypted && encryptedItem.__encrypted) {
+      const dek = getDataKey()
+      // Locked: cannot decrypt. Return the ciphertext envelope as-is (callers
+      // such as backup re-store it unchanged); never expose plaintext.
+      if (!dek) return item
+      const decrypted = await decryptData(encryptedItem.__encrypted)
+      return JSON.parse(decrypted) as T
     }
-    
+
     return item
   }
 

@@ -8,6 +8,7 @@
 
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
+import { encryptData, decryptData } from '@/lib/encryption'
 
 // Import slice creators
 import { createIncidentSlice, type IncidentSlice, type AlertData, type IncidentHistoryEntry } from './incidentSlice'
@@ -135,7 +136,7 @@ export function closeIncidentComprehensive(
   const store = useProtocoloStore.getState()
   
   // Export documentation before closing
-  store.exportEntries(incidentId, store.settings.encryptionEnabled)
+  store.exportEntries(incidentId)
     .then(blob => {
       // In real app, would save this blob
       console.log(`Documentation exported for ${incidentId}`)
@@ -149,18 +150,20 @@ export function closeIncidentComprehensive(
 }
 
 /**
- * Create a comprehensive backup of all data
+ * Create a comprehensive backup of all data. If `password` is supplied the
+ * backup file is encrypted (PBKDF2 + AES-GCM) so it is portable to another
+ * device; otherwise it is plaintext JSON (the caller/UI must disclose this).
  */
-export async function createComprehensiveBackup(): Promise<Blob> {
+export async function createComprehensiveBackup(password?: string): Promise<Blob> {
   const store = useProtocoloStore.getState()
-  
+
   const backup = {
     version: '1.0.0',
     timestamp: getCurrentTimestamp(),
     settings: store.settings,
     security: {
       ...store.security,
-      duressPassword: undefined // Never backup duress password
+      duressPassword: undefined // Never back up the duress password
     },
     incidents: store.incidents,
     incidentHistory: store.incidentHistory,
@@ -172,36 +175,35 @@ export async function createComprehensiveBackup(): Promise<Blob> {
       supplies: store.supplies
     }
   }
-  
-  const encrypted = store.settings.encryptionEnabled
-    ? await encryptBackup(backup)
-    : JSON.stringify(backup)
-  
-  return new Blob([encrypted], {
-    type: store.settings.encryptionEnabled ? 'application/encrypted' : 'application/json'
+
+  const serialized = JSON.stringify(backup)
+  const payload = password ? await encryptData(serialized, password) : serialized
+
+  return new Blob([payload], {
+    type: password ? 'application/octet-stream' : 'application/json'
   })
 }
 
 /**
- * Restore from comprehensive backup
+ * Restore from a comprehensive backup. Pass the same `password` used to create
+ * it (omit for a plaintext backup).
  */
-export async function restoreFromComprehensiveBackup(blob: Blob): Promise<boolean> {
+export async function restoreFromComprehensiveBackup(blob: Blob, password?: string): Promise<boolean> {
   const store = useProtocoloStore.getState()
-  
+
   try {
     const text = await blob.text()
-    const data = store.settings.encryptionEnabled
-      ? await decryptBackup(text)
-      : JSON.parse(text)
-    
+    const json = password ? await decryptData(text, password) : text
+    const data = JSON.parse(json)
+
     if (!data || data.version !== '1.0.0') {
       throw new Error('Invalid or incompatible backup file')
     }
-    
-    // Restore each slice
-    if (data.settings) store.importData(blob, store.settings.encryptionEnabled)
+
+    // Restore slices that support structured import
+    if (data.settings) await store.importData(blob, password)
     if (data.resources) store.importResources(data.resources)
-    
+
     return true
   } catch (error) {
     console.error('Restore failed:', error)
@@ -215,16 +217,6 @@ export async function restoreFromComprehensiveBackup(blob: Blob): Promise<boolea
 
 function getCurrentTimestamp(): string {
   return new Date().toISOString()
-}
-
-async function encryptBackup(data: unknown): Promise<string> {
-  // Would use actual encryption in production
-  return JSON.stringify(data)
-}
-
-async function decryptBackup(encrypted: string): Promise<unknown> {
-  // Would use actual decryption in production
-  return JSON.parse(encrypted)
 }
 
 // =============================================================================

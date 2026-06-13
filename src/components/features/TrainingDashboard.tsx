@@ -17,13 +17,8 @@ import {
   Circle,
   Lock,
   Play,
-  ChevronRight,
-  Star,
   Trophy,
-  Zap,
-  Calendar,
   Download,
-  MoreHorizontal,
   RefreshCw
 } from 'lucide-react'
 import {
@@ -32,7 +27,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   Progress,
   Badge,
   Tabs,
@@ -40,12 +34,7 @@ import {
   TabsList,
   TabsTrigger,
   ScrollArea,
-  Avatar,
-  AvatarFallback,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Alert,
   AlertTitle,
   AlertDescription

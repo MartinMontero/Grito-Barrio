@@ -4,7 +4,7 @@
 `src/components/features/EvidenceCollection.tsx`
 
 ## 🎯 Descripción
-El componente EvidenceCollection proporciona una interfaz completa para la captura y gestión de evidencia forense en la aplicación Protocolo CDMX. Incluye cámara integrada, grabación de audio, gestión de cadena de custodia y características de seguridad avanzadas.
+El componente EvidenceCollection proporciona una interfaz completa para la captura y gestión de evidencia forense en la aplicación Grito & Barrio. Incluye cámara integrada, grabación de audio, gestión de cadena de custodia y características de seguridad avanzadas.
 
 ## 📸 Captura de Evidencia
 

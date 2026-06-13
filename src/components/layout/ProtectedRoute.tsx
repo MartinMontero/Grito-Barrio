@@ -7,12 +7,11 @@
  */
 
 import React from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { AlertTriangle, Shield, Award } from 'lucide-react'
 import { Button, Alert, AlertTitle, AlertDescription } from '@/components/ui'
-import { cn } from '@/lib/utils'
 import { useProtocoloStore } from '@/store'
-import type { UserRole, TeamRole } from '@/types'
+import type { UserRole } from '@/types'
 
 interface ProtectedRouteProps {
   children: React.ReactNode

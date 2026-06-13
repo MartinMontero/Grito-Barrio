@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createMockIncident, createMockTeamMember, createMockFormData, wait } from '../setup'
+import { createMockIncident, createMockTeamMember } from '../setup'
 import type { Incident, TeamMember, IncidentStatus } from '@/types'
 
 // Mock the store

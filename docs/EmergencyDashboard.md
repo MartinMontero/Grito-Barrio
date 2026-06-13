@@ -4,7 +4,7 @@
 `src/components/features/EmergencyDashboard.tsx`
 
 ## 🎯 Descripción
-El Emergency Dashboard es la pantalla principal de respuesta a incidentes para la aplicación Protocolo CDMX. Proporciona una interfaz completa para gestionar incidentes activos, incluyendo temporizador de fases, checklist de respuesta, estado del equipo, y activación de retirada.
+El Emergency Dashboard es la pantalla principal de respuesta a incidentes para la aplicación Grito & Barrio. Proporciona una interfaz completa para gestionar incidentes activos, incluyendo temporizador de fases, checklist de respuesta, estado del equipo, y activación de retirada.
 
 ## 📦 Estructura del Componente
 
@@ -170,7 +170,7 @@ store.triggerWithdrawal(incidentId, reason)
 
 ### Sin Incidente Activo
 Cuando no hay un incidente activo, el dashboard muestra:
-- Logo de Protocolo CDMX
+- Logo de Grito & Barrio
 - Botón prominente "ACTIVAR ALERTA"
 - Información del usuario autenticado
 

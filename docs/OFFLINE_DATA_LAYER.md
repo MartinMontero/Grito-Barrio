@@ -1,6 +1,6 @@
 # Offline-First Data Layer
 
-Protocolo CDMX uses a comprehensive offline-first data layer that ensures all critical functionality works without internet connectivity.
+Grito & Barrio uses a comprehensive offline-first data layer that ensures all critical functionality works without internet connectivity.
 
 ## Architecture Overview
 

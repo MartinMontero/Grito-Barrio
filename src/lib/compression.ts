@@ -20,117 +20,73 @@ export interface CompressionResult {
 }
 
 // =============================================================================
-// LZ-STRING COMPRESSION (Built-in, no dependencies)
+// RUN-LENGTH COMPRESSION (Built-in, lossless, UTF-8 safe, no dependencies)
 // =============================================================================
+//
+// The previous implementation was lossy: it had an off-by-one base64 bug
+// (`enc4 = chr2 & 63` instead of `chr3 & 63`) and used a `\x00` run marker that
+// collided with literal NUL bytes and with the UTF-16 code units produced by
+// `charCodeAt` on multi-byte characters (emoji, accented Spanish). This rewrite
+// operates on UTF-8 BYTES with an unambiguous escape, so any input — including
+// NUL bytes and multi-byte text — round-trips exactly.
+//
+// Encoding: a run of identical bytes is emitted as `0x00 <byte> <count>` when
+// the run length is >= 4, OR whenever the byte is itself 0x00 (so the marker is
+// always unambiguous). Otherwise the bytes are emitted literally. The byte
+// stream is then base64-encoded and prefixed with 'C'.
 
-// Base64 character set
-const KEY_STR = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+import { arrayBufferToBase64, base64ToArrayBuffer } from './crypto'
 
-/**
- * LZ-String compression implementation
- * Lightweight compression for localStorage optimization
- */
+const COMPRESSED_PREFIX = 'C'
+const RUN_MARKER = 0x00
+
 export function compress(input: string): string {
   if (!input) return ''
-  
-  let output = ''
+
+  const bytes = new TextEncoder().encode(input)
+  const out: number[] = []
   let i = 0
-  let chr1, chr2, chr3, enc1, enc2, enc3, enc4
-  
-  // Simple run-length encoding for repeated characters
-  let currentChar = input[0]
-  let count = 1
-  let compressed = ''
-  
-  for (let j = 1; j <= input.length; j++) {
-    if (j < input.length && input[j] === currentChar && count < 255) {
-      count++
+
+  while (i < bytes.length) {
+    const b = bytes[i]
+    let run = 1
+    while (i + run < bytes.length && bytes[i + run] === b && run < 255) {
+      run++
+    }
+
+    if (run >= 4 || b === RUN_MARKER) {
+      out.push(RUN_MARKER, b, run)
     } else {
-      if (count > 3) {
-        compressed += '\x00' + currentChar + String.fromCharCode(count)
-      } else {
-        compressed += currentChar.repeat(count)
-      }
-      currentChar = input[j]
-      count = 1
+      for (let k = 0; k < run; k++) out.push(b)
     }
+    i += run
   }
-  
-  // Base64 encode the result
-  input = compressed
-  
-  while (i < input.length) {
-    chr1 = input.charCodeAt(i++)
-    chr2 = input.charCodeAt(i++)
-    chr3 = input.charCodeAt(i++)
-    
-    enc1 = chr1 >> 2
-    enc2 = ((chr1 & 3) << 4) | (chr2 >> 4)
-    enc3 = ((chr2 & 15) << 2) | (chr3 >> 6)
-    enc4 = chr2 & 63
-    
-    if (isNaN(chr2)) {
-      enc3 = enc4 = 64
-    } else if (isNaN(chr3)) {
-      enc4 = 64
-    }
-    
-    output += KEY_STR.charAt(enc1) + KEY_STR.charAt(enc2) + KEY_STR.charAt(enc3) + KEY_STR.charAt(enc4)
-  }
-  
-  return 'C' + output // 'C' prefix indicates compressed
+
+  return COMPRESSED_PREFIX + arrayBufferToBase64(new Uint8Array(out).buffer)
 }
 
-/**
- * LZ-String decompression
- */
 export function decompress(input: string): string {
-  if (!input || input[0] !== 'C') return input || ''
-  
-  input = input.slice(1) // Remove compression prefix
-  
-  let output = ''
+  if (!input) return ''
+  if (input[0] !== COMPRESSED_PREFIX) return input
+
+  const data = new Uint8Array(base64ToArrayBuffer(input.slice(1)))
+  const out: number[] = []
   let i = 0
-  let chr1, chr2, chr3, enc1, enc2, enc3, enc4
-  
-  // Base64 decode
-  let decoded = ''
-  
-  while (i < input.length) {
-    enc1 = KEY_STR.indexOf(input.charAt(i++))
-    enc2 = KEY_STR.indexOf(input.charAt(i++))
-    enc3 = KEY_STR.indexOf(input.charAt(i++))
-    enc4 = KEY_STR.indexOf(input.charAt(i++))
-    
-    chr1 = (enc1 << 2) | (enc2 >> 4)
-    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2)
-    chr3 = ((enc3 & 3) << 6) | enc4
-    
-    decoded += String.fromCharCode(chr1)
-    
-    if (enc3 !== 64) {
-      decoded += String.fromCharCode(chr2)
-    }
-    if (enc4 !== 64) {
-      decoded += String.fromCharCode(chr3)
-    }
-  }
-  
-  // Decompress run-length encoding
-  let k = 0
-  while (k < decoded.length) {
-    if (decoded[k] === '\x00' && k + 2 < decoded.length) {
-      const char = decoded[k + 1]
-      const count = decoded.charCodeAt(k + 2)
-      output += char.repeat(count)
-      k += 3
+
+  while (i < data.length) {
+    const b = data[i]
+    if (b === RUN_MARKER && i + 2 < data.length) {
+      const ch = data[i + 1]
+      const count = data[i + 2]
+      for (let k = 0; k < count; k++) out.push(ch)
+      i += 3
     } else {
-      output += decoded[k]
-      k++
+      out.push(b)
+      i++
     }
   }
-  
-  return output
+
+  return new TextDecoder().decode(new Uint8Array(out))
 }
 
 // =============================================================================

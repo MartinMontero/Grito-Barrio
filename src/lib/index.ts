@@ -94,9 +94,8 @@ export {
   type ImportResult
 } from './backup'
 
-// Encryption (legacy - now using crypto.ts)
+// Encryption facade (Web Crypto API, vault-backed)
 export {
-  getEncryptionKey,
   encryptData,
   decryptData,
   encryptObject,
@@ -106,15 +105,28 @@ export {
   hashPasswordForStorage,
   verifyPasswordAgainstHash,
   generateSecureRandomId,
-  isEncrypted,
-  clearEncryptionKey,
-  setDuressPassword,
-  getDuressPassword,
-  clearDuressPassword,
-  rotateEncryptionKey,
-  generateSalt,
   type HashResult
 } from './encryption'
+
+// Vault (key management & session unlock)
+export {
+  getVaultState,
+  isVaultInitialized,
+  isUnlocked,
+  isDuressActive as isVaultDuressActive,
+  getDataKey,
+  createVault,
+  setDuressPassphrase,
+  hasDuressSlot,
+  removeDuressSlot,
+  unlock as unlockVault,
+  lock as lockVault,
+  changePassphrase,
+  destroyVault,
+  onUnlockChange,
+  type VaultState,
+  type UnlockResult
+} from './vault'
 
 // Crypto (Web Crypto API - preferred)
 export {
@@ -175,6 +187,7 @@ export {
   setAutoLockTimeout,
   recordActivity,
   scheduleWipe,
+  armScheduledWipeOnStartup,
   cancelWipe,
   isWipeScheduled,
   getWipeState,

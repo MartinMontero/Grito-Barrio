@@ -15,7 +15,8 @@
 export const CRYPTO_CONSTANTS = {
   ALGORITHM: 'AES-GCM' as const,
   KEY_LENGTH: 256 as const,
-  ITERATIONS: 100000,
+  // OWASP 2023+ guidance for PBKDF2-HMAC-SHA256.
+  ITERATIONS: 600000,
   SALT_LENGTH: 32,
   IV_LENGTH: 12,
   TAG_LENGTH: 128,
@@ -319,6 +320,46 @@ export async function decryptFromString(
 }
 
 // =============================================================================
+// SYMMETRIC ENCRYPTION WITH A CryptoKey (no per-call KDF)
+// =============================================================================
+//
+// These are used for at-rest data protected by the in-memory vault key (DEK).
+// The DEK is already a strong 256-bit random key, so no PBKDF2 is needed per
+// message — only a fresh random IV. Output format is base64(iv || ciphertext).
+
+/**
+ * Encrypt a string with an existing AES-GCM CryptoKey.
+ */
+export async function encryptStringWithKey(plaintext: string, key: CryptoKey): Promise<string> {
+  const iv = generateIV()
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: CRYPTO_CONSTANTS.ALGORITHM, iv: iv as any, tagLength: CRYPTO_CONSTANTS.TAG_LENGTH },
+    key,
+    new TextEncoder().encode(plaintext) as any
+  )
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength)
+  combined.set(iv, 0)
+  combined.set(new Uint8Array(ciphertext), iv.length)
+  return arrayBufferToBase64(combined.buffer)
+}
+
+/**
+ * Decrypt a string previously produced by `encryptStringWithKey`.
+ * Throws if the key is wrong or the data was tampered with (GCM tag mismatch).
+ */
+export async function decryptStringWithKey(payload: string, key: CryptoKey): Promise<string> {
+  const combined = new Uint8Array(base64ToArrayBuffer(payload))
+  const iv = combined.slice(0, CRYPTO_CONSTANTS.IV_LENGTH)
+  const ciphertext = combined.slice(CRYPTO_CONSTANTS.IV_LENGTH)
+  const decrypted = await crypto.subtle.decrypt(
+    { name: CRYPTO_CONSTANTS.ALGORITHM, iv: iv as any, tagLength: CRYPTO_CONSTANTS.TAG_LENGTH },
+    key,
+    ciphertext as any
+  )
+  return new TextDecoder().decode(decrypted)
+}
+
+// =============================================================================
 // HASHING
 // =============================================================================
 
@@ -413,7 +454,9 @@ export async function verifyPassword(
   storedHash: HashResult
 ): Promise<boolean> {
   const computed = await hashPassword(password, storedHash.salt)
-  return computed.hash === storedHash.hash
+  // Constant-time comparison to avoid leaking how many leading characters
+  // matched via response timing.
+  return constantTimeCompare(computed.hash, storedHash.hash)
 }
 
 // =============================================================================
@@ -430,45 +473,31 @@ export async function encryptFile(
 ): Promise<EncryptedBlob> {
   // Read file as array buffer
   const arrayBuffer = await file.arrayBuffer()
-  
+
   // Report progress
   onProgress?.(0.1)
 
-  // Derive key
+  // Derive key. A fresh salt + IV is generated for every file, so no
+  // (key, nonce) pair is ever reused — a hard requirement for AES-GCM.
   const { key, salt } = await deriveKeyFromPassword(password)
   const iv = generateIV()
-  
+
   onProgress?.(0.3)
 
-  // Encrypt in chunks for large files
-  const chunkSize = 1024 * 1024 // 1MB chunks
-  const chunks: ArrayBuffer[] = []
-  
-  for (let i = 0; i < arrayBuffer.byteLength; i += chunkSize) {
-    const chunk = arrayBuffer.slice(i, i + chunkSize)
-    const encryptedChunk = await crypto.subtle.encrypt(
-      {
-        name: CRYPTO_CONSTANTS.ALGORITHM,
-        iv: iv as any,
-        tagLength: CRYPTO_CONSTANTS.TAG_LENGTH
-      },
-      key,
-      chunk
-    )
-    chunks.push(encryptedChunk)
-    
-    onProgress?.(0.3 + (0.6 * (i / arrayBuffer.byteLength)))
-  }
-
-  // Combine chunks
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0)
-  const combined = new Uint8Array(totalLength)
-  let offset = 0
-  
-  for (const chunk of chunks) {
-    combined.set(new Uint8Array(chunk), offset)
-    offset += chunk.byteLength
-  }
+  // Single-shot AES-GCM over the whole file. This produces one ciphertext
+  // with a single authentication tag, which `decryptFile` can verify in one
+  // operation. (The previous chunked variant reused one IV across chunks —
+  // catastrophic nonce reuse — and could not be decrypted as a whole.)
+  const ciphertext = await crypto.subtle.encrypt(
+    {
+      name: CRYPTO_CONSTANTS.ALGORITHM,
+      iv: iv as any,
+      tagLength: CRYPTO_CONSTANTS.TAG_LENGTH
+    },
+    key,
+    arrayBuffer
+  )
+  const combined = new Uint8Array(ciphertext)
 
   onProgress?.(0.9)
 
@@ -665,6 +694,8 @@ export default {
   decrypt,
   encryptToString,
   decryptFromString,
+  encryptStringWithKey,
+  decryptStringWithKey,
   
   // Hashing
   sha256,

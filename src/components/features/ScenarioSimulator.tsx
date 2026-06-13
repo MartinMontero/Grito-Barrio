@@ -5,7 +5,7 @@
  * Interactive practice scenarios for training
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Play,
   Clock,
@@ -17,33 +17,20 @@ import {
   Trophy,
   Target,
   History,
-  Zap,
   Shield,
   AlertOctagon,
   ChevronLeft,
   Star,
   Timer,
-  TrendingUp,
   HelpCircle,
-  Lightbulb,
-  Eye,
-  EyeOff
+  Lightbulb
 } from 'lucide-react'
 import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   Badge,
   Progress,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
   Tabs,
   TabsContent,
   TabsList,
@@ -52,16 +39,12 @@ import {
   RadioGroup,
   RadioGroupItem,
   Label,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Alert,
-  AlertTitle,
   AlertDescription
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { Scenario, ScenarioStage, ScenarioProgress } from '@/types/training'
+import type { Scenario, ScenarioProgress } from '@/types/training'
 
 // =============================================================================
 // TYPES

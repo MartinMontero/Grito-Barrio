@@ -12,18 +12,13 @@ import {
   CheckCircle2,
   Circle,
   Play,
-  FileText,
-  HelpCircle,
   Clock,
   Trophy,
   AlertCircle,
   Download,
-  Check,
-  X,
   RotateCcw,
   BookOpen,
-  ListChecks,
-  MoreHorizontal
+  ListChecks
 } from 'lucide-react'
 import {
   Button,
@@ -45,13 +40,10 @@ import {
   Alert,
   AlertTitle,
   AlertDescription,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
+  TooltipProvider
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { TrainingModule, Lesson, Quiz, Question } from '@/types/training'
+import type { TrainingModule, Lesson, Quiz } from '@/types/training'
 
 // =============================================================================
 // TYPES

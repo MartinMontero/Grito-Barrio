@@ -13,17 +13,14 @@ import {
   Search,
   Navigation,
   Phone,
-  AlertTriangle,
   CheckCircle2,
   Users,
   Clock,
-  ChevronRight,
   Home,
   Building,
   Church,
   School,
   Accessibility,
-  Dog,
   Wifi,
   Car,
   Droplets,
@@ -31,7 +28,6 @@ import {
   Plus,
   Minus,
   LocateFixed,
-  X,
   AlertCircle,
   Send
 } from 'lucide-react'
@@ -39,8 +35,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Badge,
   Select,
@@ -54,25 +48,15 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   ScrollArea,
   Switch,
-  Label as UILabel,
-  Separator,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Alert,
-  AlertTitle,
   AlertDescription,
   Progress
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { SafePoint, SafePointType, ActivationRecord, AccessibilityFeature } from '@/types/resources'
+import type { SafePoint, ActivationRecord } from '@/types/resources'
 import { SAFE_POINT_TYPES, ACCESSIBILITY_LABELS } from '@/types/resources'
 
 // =============================================================================

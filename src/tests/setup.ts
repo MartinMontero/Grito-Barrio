@@ -6,7 +6,29 @@
  */
 
 import '@testing-library/jest-dom'
+// A faithful in-memory IndexedDB so db.ts is exercised for real (not mocked).
+import 'fake-indexeddb/auto'
+import { webcrypto } from 'node:crypto'
 import { expect, vi } from 'vitest'
+
+// ============================================================================
+// REAL WEB CRYPTO
+// ============================================================================
+// jsdom ships a non-functional `crypto.subtle` stub, which is why the original
+// suite mocked crypto and never tested real code. Install Node's real WebCrypto
+// so encryption/decryption, key derivation and the vault run for real in tests.
+Object.defineProperty(globalThis, 'crypto', {
+  configurable: true,
+  writable: true,
+  value: webcrypto,
+})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'crypto', {
+    configurable: true,
+    writable: true,
+    value: webcrypto,
+  })
+}
 
 // ============================================================================
 // MOCK SETUP
@@ -51,40 +73,7 @@ Object.defineProperty(window, 'ResizeObserver', {
   value: MockResizeObserver,
 })
 
-// Mock Crypto API — use defineProperty because global.crypto is getter-only in Node 19+
-Object.defineProperty(global, 'crypto', {
-  writable: true,
-  configurable: true,
-  value: {
-    subtle: {
-      digest: vi.fn(),
-      encrypt: vi.fn(),
-      decrypt: vi.fn(),
-      generateKey: vi.fn(),
-      importKey: vi.fn(),
-      exportKey: vi.fn(),
-      deriveKey: vi.fn(),
-      sign: vi.fn(),
-      verify: vi.fn(),
-    },
-    getRandomValues: (arr: Uint8Array) => {
-      for (let i = 0; i < arr.length; i++) {
-        arr[i] = Math.floor(Math.random() * 256)
-      }
-      return arr
-    },
-    randomUUID: () => 'test-uuid-12345',
-  },
-})
-
-// Mock IndexedDB
-const mockIndexedDB = {
-  open: vi.fn(),
-  deleteDatabase: vi.fn(),
-  databases: vi.fn(),
-}
-
-global.indexedDB = mockIndexedDB as any
+// Crypto and IndexedDB are provided for real (see top of file).
 
 // Mock navigator APIs
 Object.defineProperty(navigator, 'permissions', {
@@ -105,39 +94,15 @@ Object.defineProperty(navigator, 'onLine', {
   value: true,
 })
 
-// Mock URL.createObjectURL and revokeObjectURL
+// Mock URL.createObjectURL and revokeObjectURL (jsdom doesn't implement them)
 global.URL.createObjectURL = vi.fn(() => 'blob:test-url')
 global.URL.revokeObjectURL = vi.fn()
 
-// Mock Blob.prototype.arrayBuffer — not implemented in jsdom
-if (!Blob.prototype.arrayBuffer) {
-  Blob.prototype.arrayBuffer = function () {
-    return Promise.resolve(new ArrayBuffer(0))
-  }
-}
-
-// Mock FileReader
-class MockFileReader {
-  onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null
-  onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null
-  result: string | ArrayBuffer | null = null
-  
-  readAsText(blob: Blob) {
-    setTimeout(() => {
-      this.result = JSON.stringify({ test: 'data' })
-      this.onload?.call(this as any, new ProgressEvent('load'))
-    }, 0)
-  }
-  
-  readAsDataURL(blob: Blob) {
-    setTimeout(() => {
-      this.result = 'data:image/png;base64,test'
-      this.onload?.call(this as any, new ProgressEvent('load'))
-    }, 0)
-  }
-}
-
-global.FileReader = MockFileReader as any
+// jsdom's Blob/File don't implement arrayBuffer()/text(), which file encryption
+// and backup import/restore rely on. Use Node's spec-compliant Blob/File.
+import { Blob as NodeBlob, File as NodeFile } from 'node:buffer'
+global.Blob = NodeBlob as unknown as typeof Blob
+global.File = NodeFile as unknown as typeof File
 
 // ============================================================================
 // TEST UTILITIES

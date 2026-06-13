@@ -10,7 +10,6 @@ import {
   AlertTriangle, 
   Shield, 
   Lock, 
-  Unlock, 
   Eye, 
   EyeOff, 
   Clock,
@@ -39,7 +38,6 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { securityManager } from '@/lib/security'
-import type { Incident } from '@/types'
 
 // =============================================================================
 // TYPES

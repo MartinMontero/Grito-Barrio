@@ -12,45 +12,26 @@ import {
   Mic,
   FileText,
   Lock,
-  Unlock,
   Shield,
   Check,
   X,
-  ChevronLeft,
-  ChevronRight,
   MoreVertical,
   Download,
-  Share2,
   Trash2,
   Search,
   Filter,
   Grid,
   List,
   AlertTriangle,
-  Eye,
-  EyeOff,
   MapPin,
   Clock,
   User,
-  Hash,
   Fingerprint,
-  Save,
-  RotateCcw,
   Image as ImageIcon,
   Play,
-  Square,
-  Pause,
-  FileSignature,
-  CircleOff as Blur,
-  VolumeX,
-  Archive,
-  FileCheck,
-  ExternalLink,
-  Copy,
-  CheckCircle2,
-  AlertOctagon
+  Square
 } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Input, Textarea, Select } from '@/components/ui'
+import { Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 // =============================================================================

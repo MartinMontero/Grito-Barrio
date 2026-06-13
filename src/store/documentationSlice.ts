@@ -35,8 +35,8 @@ export interface DocumentationSlice {
   getEntriesByIncident: (incidentId: string) => DocumentationEntry[]
   getEntriesByType: (type: DocumentationType) => DocumentationEntry[]
   getEntryById: (id: string) => DocumentationEntry | undefined
-  exportEntries: (incidentId: string, encryptionEnabled: boolean) => Promise<Blob>
-  importEntries: (encryptedBlob: Blob, encryptionEnabled: boolean) => Promise<boolean>
+  exportEntries: (incidentId: string, password?: string) => Promise<Blob>
+  importEntries: (encryptedBlob: Blob, password?: string) => Promise<boolean>
   setCurrentEntry: (entry: DocumentationEntry | null) => void
   startCapture: () => void
   endCapture: (error?: string) => void
@@ -175,7 +175,7 @@ export const createDocumentationSlice: StateCreator<
      */
     exportEntries: async (
       incidentId: string,
-      encryptionEnabled: boolean
+      password?: string
     ): Promise<Blob> => {
       const entries = get().getEntriesByIncident(incidentId)
 
@@ -190,23 +190,22 @@ export const createDocumentationSlice: StateCreator<
         totalEntries: entries.length
       }
 
-      // Encrypt if enabled
-      const encrypted = await encryptIfEnabled(exportData, encryptionEnabled)
+      // Encrypt with the supplied password (portable), else plaintext JSON
+      const encrypted = await encryptIfEnabled(exportData, password)
 
-      // Create blob
       const blob = new Blob([encrypted], {
-        type: encryptionEnabled ? 'application/encrypted' : 'application/json'
+        type: password ? 'application/octet-stream' : 'application/json'
       })
 
       return blob
     },
 
     /**
-     * Import entries from an encrypted blob
+     * Import entries from a blob (pass the password used to export, if any)
      */
     importEntries: async (
       encryptedBlob: Blob,
-      encryptionEnabled: boolean
+      password?: string
     ): Promise<boolean> => {
       try {
         const text = await encryptedBlob.text()
@@ -215,7 +214,7 @@ export const createDocumentationSlice: StateCreator<
           exportedAt: string
           entries: DocumentationEntry[]
           totalEntries: number
-        }>(text, encryptionEnabled)
+        }>(text, password)
 
         if (!data || !data.entries) {
           throw new Error('Invalid import data')

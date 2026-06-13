@@ -5,10 +5,8 @@
  * Tests for complete user flows and system interactions
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { createMockIncident, createMockTeamMember, createMockFormData, wait } from '../setup'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createMockIncident, createMockTeamMember, wait } from '../setup'
 
 describe('Integration - Complete Emergency Flow', () => {
   const mockFlow = {

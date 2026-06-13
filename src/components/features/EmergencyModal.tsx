@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { AlertTriangle, Phone, Camera, Users, FileText, X, ChevronRight, MapPin, FilePlus } from 'lucide-react'
-import { Button, Card, CardContent, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
+import { AlertTriangle, Phone, Camera, Users, X, FilePlus } from 'lucide-react'
+import { Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { emergencyContacts } from '@/data/protocols'
 import { useProtocoloStore } from '@/store'
