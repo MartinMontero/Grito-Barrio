@@ -13,6 +13,7 @@ import { TopHeader } from './TopHeader'
 import { BottomNavigation } from './BottomNavigation'
 import { DrawerMenu } from './DrawerMenu'
 import { EmergencyOverlay } from './EmergencyOverlay'
+import { ProtectionBanner } from './ProtectionBanner'
 import { cn } from '@/lib/utils'
 import { useProtocoloStore } from '@/store'
 
@@ -105,6 +106,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         "pt-14 pb-20 lg:pb-6 lg:pl-64 min-h-screen",
         "transition-all duration-300 ease-in-out"
       )}>
+        <ProtectionBanner />
         <div className={cn(
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
           largeText && "max-w-full"

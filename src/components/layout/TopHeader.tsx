@@ -112,6 +112,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
               variant="ghost"
               size="icon"
               onClick={onMenuClick}
+              aria-label="Abrir menú"
               className={cn(
                 "lg:hidden",
                 isEmergencyMode && "hover:bg-destructive-foreground/10"
