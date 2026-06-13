@@ -1,4 +1,4 @@
-# Grito Barrio
+# Grito & Barrio
 
 Herramienta de respuesta comunitaria para apoyo en desalojos ilegales en la Ciudad de México.
 
@@ -144,6 +144,6 @@ En caso de emergencia:
 
 ---
 
-**Protocolo CDMX** - Desarrollado con ❤️ para la comunidad de la Ciudad de México
+**Grito & Barrio** - Desarrollado con ❤️ para la comunidad de la Ciudad de México
 
 [![Cloudflare](https://img.shields.io/badge/Powered%20by-Cloudflare-F38020?logo=cloudflare)](https://cloudflare.com)
