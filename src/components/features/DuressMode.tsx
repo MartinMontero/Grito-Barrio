@@ -6,12 +6,13 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { 
-  AlertTriangle, 
-  Shield, 
-  Lock, 
-  Eye, 
-  EyeOff, 
+import { useNavigate } from 'react-router-dom'
+import {
+  AlertTriangle,
+  Shield,
+  Lock,
+  Eye,
+  EyeOff,
   Clock,
   Trash2,
   AlertOctagon,
@@ -44,7 +45,8 @@ import { securityManager } from '@/lib/security'
 // =============================================================================
 
 interface DuressModeProps {
-  onExit: () => void
+  /** Optional exit callback. When omitted, react-router navigates home. */
+  onExit?: () => void
   className?: string
 }
 
@@ -101,6 +103,7 @@ const FAKE_PROTOCOLS = [
 // =============================================================================
 
 export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => {
+  const navigate = useNavigate()
   const [hiddenAccessEnabled, setHiddenAccessEnabled] = useState(false)
   const [showHiddenData, setShowHiddenData] = useState(false)
   const [wipeScheduled, setWipeScheduled] = useState(false)
@@ -134,7 +137,7 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
       setWipeCountdown(prev => {
         if (prev <= 1) {
           // Execute wipe when countdown reaches 0
-          securityManager.executeWipe()
+          void securityManager.executeWipe()
           return 0
         }
         return prev - 1
@@ -190,7 +193,8 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
 
   const confirmExitDuress = () => {
     securityManager.deactivateDuressMode()
-    onExit()
+    if (onExit) onExit()
+    else navigate('/')
   }
 
   // Format countdown
@@ -419,7 +423,7 @@ export const DuressMode: React.FC<DuressModeProps> = ({ onExit, className }) => 
         <Button
           variant="destructive"
           className="w-full"
-          onClick={() => securityManager.executeWipe()}
+          onClick={() => { void securityManager.executeWipe() }}
         >
           <Trash2 className="w-4 h-4 mr-2" />
           Eliminar Datos Inmediatamente

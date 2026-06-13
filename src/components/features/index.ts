@@ -17,7 +17,6 @@ export { LegalPage } from './LegalPage'
 export { LegalResourceDetailPage } from './LegalResourceDetailPage'
 export { ResourcesPage } from './ResourcesPage'
 export { SettingsPage } from './SettingsPage'
-export { Settings } from './Settings'
 
 // Emergency Components
 export { EmergencyDashboard } from './EmergencyDashboard'
@@ -44,7 +43,6 @@ export { QuickDial } from './QuickDial'
 export { MessageTemplates } from './MessageTemplates'
 
 // Aliased re-exports for convenience
-export { Settings as SettingsDefault } from './Settings'
 export { Header as HeaderDefault } from './Header'
 export { HomePage as HomePageDefault } from './HomePage'
 export { default as EmergencyDashboardDefault } from './EmergencyDashboard'

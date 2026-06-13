@@ -24,23 +24,13 @@ export default defineConfig({
         start_url: '/',
         orientation: 'portrait',
         icons: [
-          {
-            src: '/pwa-192x192.svg',
-            sizes: '192x192',
-            type: 'image/svg+xml'
-          },
-          {
-            src: '/pwa-192x192.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml'
-          },
-          {
-            src: '/pwa-192x192.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
-        ]
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/pwa-192x192.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
+        ],
+        lang: 'es-MX',
+        categories: ['utilities', 'social']
       }
     })
   ],

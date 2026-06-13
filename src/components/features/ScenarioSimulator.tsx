@@ -51,8 +51,8 @@ import type { Scenario, ScenarioProgress } from '@/types/training'
 // =============================================================================
 
 interface ScenarioSimulatorProps {
-  scenarios: Scenario[]
-  progress: Record<string, ScenarioProgress>
+  scenarios?: Scenario[]
+  progress?: Record<string, ScenarioProgress>
   onComplete?: (scenarioId: string, score: number, time: number) => void
   className?: string
 }
@@ -280,12 +280,14 @@ const MOCK_SCENARIOS: Scenario[] = [
 
 export const ScenarioSimulator: React.FC<ScenarioSimulatorProps> = ({
   scenarios = MOCK_SCENARIOS,
-  progress = {},
+  progress: initialProgress = {},
   onComplete,
   className
 }) => {
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null)
   const [activeTab, setActiveTab] = useState('available')
+  // Track attempts/results locally so the simulator records progress on its own.
+  const [progress, setProgress] = useState<Record<string, ScenarioProgress>>(initialProgress)
 
   // Filter scenarios
   const availableScenarios = scenarios.filter(s => !progress[s.id]?.completed)
@@ -296,6 +298,20 @@ export const ScenarioSimulator: React.FC<ScenarioSimulatorProps> = ({
   }
 
   const handleCompleteScenario = (scenarioId: string, score: number, time: number) => {
+    setProgress(prev => {
+      const existing = prev[scenarioId]
+      return {
+        ...prev,
+        [scenarioId]: {
+          scenarioId,
+          attempts: (existing?.attempts ?? 0) + 1,
+          bestScore: Math.max(existing?.bestScore ?? 0, score),
+          bestTime: existing?.bestTime ? Math.min(existing.bestTime, time) : time,
+          lastAttemptAt: new Date().toISOString(),
+          completed: true
+        }
+      }
+    })
     onComplete?.(scenarioId, score, time)
     setActiveScenario(null)
   }

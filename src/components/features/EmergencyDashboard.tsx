@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { 
+import { useNavigate } from 'react-router-dom'
+import {
   AlertTriangle, 
   Shield, 
   Users, 
@@ -39,6 +40,8 @@ interface EmergencyDashboardProps {
   onWithdrawalTrigger?: (reason: string) => void
   onDocumentPress?: () => void
   onContactPress?: () => void
+  /** Optional callback fired when the general alert is activated. */
+  onAlertActivated?: () => void
 }
 
 interface TimerState {
@@ -377,14 +380,23 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
   const [expandedPhase, setExpandedPhase] = useState<EmergencyPhase | null>('0-5min')
   const store = useProtocoloStore()
   const currentUser = store.currentUser
-  
+
   const checklist = store.checklists[incidentId] || []
   const progress = store.getProgress(incidentId)
+
+  // Ensure the checklist exists in the store so this section and the standalone
+  // EmergencyChecklist screen render the SAME canonical data (single source of
+  // truth: checklistSlice). Initialize via the action, never mutate directly.
+  useEffect(() => {
+    if (incidentId && !(store.checklists[incidentId]?.length > 0)) {
+      store.initializeChecklist(incidentId)
+    }
+  }, [incidentId, store])
 
   const handleToggleItem = (itemId: string) => {
     if (currentUser) {
       store.toggleItem(incidentId, itemId, currentUser.pseudonym)
-      
+
       // Haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50)
@@ -552,33 +564,46 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({ incidentId }) => {
 interface RoleSpecificPanelProps {
   role: TeamRole
   incident: Incident
+  onNavigate: (path: string) => void
+  onDocument: () => void
+  onContact: () => void
+  onWithdrawal: (reason: string) => void
+  onShareLocation: () => void
 }
 
-const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({ role, incident }) => {
+const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({
+  role,
+  incident,
+  onNavigate,
+  onDocument,
+  onContact,
+  onWithdrawal,
+  onShareLocation
+}) => {
   const store = useProtocoloStore()
 
   const renderLeaderActions = () => (
     <div className="space-y-2">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
         onClick={() => store.setActiveIncident(incident.id)}
       >
         <Users className="w-4 h-4" />
         Gestionar Equipo
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onNavigate('/legal/triage')}
       >
         <Activity className="w-4 h-4" />
         Evaluar Escalación
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={onContact}
       >
         <Phone className="w-4 h-4" />
         Contactar Coalición
@@ -588,26 +613,26 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({ role, incident })
 
   const renderSecurityActions = () => (
     <div className="space-y-2">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2 border-orange-200 dark:border-orange-800"
-        onClick={() => {}}
+        onClick={() => onNavigate('/emergency/checklist')}
       >
         <Shield className="w-4 h-4 text-orange-600" />
         Evaluar Amenazas
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={onShareLocation}
       >
         <MapPin className="w-4 h-4" />
         Identificar Escape
       </Button>
-      <Button 
-        variant="destructive" 
+      <Button
+        variant="destructive"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onWithdrawal('Retirada activada por Seguridad')}
       >
         <LogOut className="w-4 h-4" />
         Activar Retirada
@@ -617,26 +642,26 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({ role, incident })
 
   const renderMedicalActions = () => (
     <div className="space-y-2">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onNavigate('/emergency/pas')}
       >
         <Activity className="w-4 h-4 text-red-600" />
         Iniciar P.A.S.
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onNavigate('/emergency/pas')}
       >
         <Users className="w-4 h-4" />
         Evaluar Heridos
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => { window.location.href = 'tel:911' }}
       >
         <Phone className="w-4 h-4" />
         Llamar Ambulancia
@@ -646,55 +671,55 @@ const RoleSpecificPanel: React.FC<RoleSpecificPanelProps> = ({ role, incident })
 
   const renderLegalActions = () => (
     <div className="space-y-2">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onNavigate('/emergency/evidence')}
       >
         <FileText className="w-4 h-4" />
         Iniciar Cadena Custodia
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={onDocument}
       >
         <Camera className="w-4 h-4" />
         Documentar Evidencia
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onNavigate('/legal/triage')}
       >
         <UserCheck className="w-4 h-4" />
-        Contactar Abogado
+        Triage Legal
       </Button>
     </div>
   )
 
   const renderDispatchActions = () => (
     <div className="space-y-2">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={onContact}
       >
         <Phone className="w-4 h-4" />
         Árbol de Contactos
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={() => onNavigate('/resources')}
       >
         <Navigation className="w-4 h-4" />
-        Coordenar Recursos
+        Coordinar Recursos
       </Button>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full justify-start gap-2"
-        onClick={() => {}}
+        onClick={onShareLocation}
       >
         <Share2 className="w-4 h-4" />
         Compartir Ubicación
@@ -821,17 +846,25 @@ const WithdrawalTriggers: React.FC<WithdrawalTriggersProps> = ({ onTrigger }) =>
 export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
   onWithdrawalTrigger,
   onDocumentPress,
-  onContactPress
+  onContactPress,
+  onAlertActivated
 }) => {
+  const navigate = useNavigate()
   const store = useProtocoloStore()
   const activeIncident = store.getActiveIncident()
   const currentUser = store.currentUser
   const [showIncidentDetails, setShowIncidentDetails] = useState(true)
+  const [alertNotice, setAlertNotice] = useState<string | null>(null)
 
   // Get user's role in current incident
   const userRole = activeIncident?.team.find(
     member => member.pseudonym === currentUser?.pseudonym
   )?.role || 'leader'
+
+  const showNotice = (message: string) => {
+    setAlertNotice(message)
+    setTimeout(() => setAlertNotice(null), 3000)
+  }
 
   const handleWithdrawalTrigger = (reason: string) => {
     if (activeIncident) {
@@ -840,10 +873,63 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
     }
   }
 
+  const handleDocument = () => {
+    if (onDocumentPress) {
+      onDocumentPress()
+    } else {
+      navigate('/emergency/evidence')
+    }
+  }
+
+  const handleContact = () => {
+    if (onContactPress) {
+      onContactPress()
+    } else {
+      navigate('/resources/contacts')
+    }
+  }
+
+  // Share the incident location via the Web Share API, falling back to opening
+  // the coordinates in Google Maps. No-op placeholders are not allowed.
+  const handleShareLocation = async () => {
+    const coords = activeIncident?.location.coordinates
+    const mapsUrl = coords
+      ? `https://maps.google.com/?q=${coords.latitude},${coords.longitude}`
+      : window.location.href
+    const text = activeIncident
+      ? `Ubicación del incidente ${activeIncident.id}: ${activeIncident.location.address}, ${activeIncident.location.colonia}`
+      : 'Ubicación del incidente'
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Ubicación del incidente', text, url: mapsUrl })
+        return
+      } catch {
+        // User cancelled; fall through to the maps fallback.
+      }
+    }
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  // Raise a real alert state on the active incident: escalate the threat level,
+  // move the incident into "responding", record it on the incident, buzz the
+  // device, and notify the parent. No more console.log-only behavior.
   const handleEmergencyAlert = () => {
-    // In a real app, this would trigger the emergency alert flow
-    console.log('Emergency alert activated!')
-    
+    if (activeIncident) {
+      const escalated: ThreatLevel =
+        activeIncident.threatLevel === 'extreme' ? 'extreme' : 'critical'
+      store.updateIncident(activeIncident.id, {
+        threatLevel: escalated,
+        status: 'responding'
+      })
+      store.setActiveIncident(activeIncident.id)
+      showNotice('Alerta general activada para el equipo')
+    } else {
+      showNotice('Alerta activada')
+    }
+
+    onAlertActivated?.()
+
     if (navigator.vibrate) {
       navigator.vibrate([200, 100, 200, 100, 500])
     }
@@ -866,7 +952,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
         </div>
 
         <button
-          onClick={handleEmergencyAlert}
+          onClick={() => navigate('/emergency')}
           className={cn(
             "w-full max-w-sm py-6 px-8 rounded-2xl font-bold text-xl",
             "bg-red-600 hover:bg-red-700 text-white",
@@ -924,6 +1010,16 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
           </div>
         </div>
       </header>
+
+      {/* Inline alert/notice confirmation (replaces console.log) */}
+      {alertNotice && (
+        <div
+          role="status"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium shadow-lg"
+        >
+          {alertNotice}
+        </div>
+      )}
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Emergency Alert Button */}
@@ -1040,7 +1136,16 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2"
-            onClick={() => {}}
+            onClick={() => {
+              // Confirm own presence on scene if part of the team, otherwise
+              // jump to the team-driven response checklist.
+              if (currentUser && activeIncident.team.some(m => m.pseudonym === currentUser.pseudonym)) {
+                store.updateTeamMemberStatus(activeIncident.id, currentUser.pseudonym, 'on_scene')
+                showNotice('Tu estado se actualizó a "En escena"')
+              } else {
+                navigate('/emergency/checklist')
+              }
+            }}
           >
             <Users className="w-6 h-6 text-blue-600" />
             <span className="text-sm font-medium">Verificar Equipo</span>
@@ -1049,7 +1154,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2"
-            onClick={onContactPress}
+            onClick={handleContact}
           >
             <Phone className="w-6 h-6 text-green-600" />
             <span className="text-sm font-medium">Contactar Coalición</span>
@@ -1058,7 +1163,7 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2"
-            onClick={onDocumentPress}
+            onClick={handleDocument}
           >
             <Camera className="w-6 h-6 text-purple-600" />
             <span className="text-sm font-medium">Documentar</span>
@@ -1066,9 +1171,14 @@ export const EmergencyDashboard: React.FC<EmergencyDashboardProps> = ({
         </div>
 
         {/* Role-Specific Panel */}
-        <RoleSpecificPanel 
-          role={userRole} 
+        <RoleSpecificPanel
+          role={userRole}
           incident={activeIncident}
+          onNavigate={navigate}
+          onDocument={handleDocument}
+          onContact={handleContact}
+          onWithdrawal={handleWithdrawalTrigger}
+          onShareLocation={handleShareLocation}
         />
 
         {/* Withdrawal Triggers */}

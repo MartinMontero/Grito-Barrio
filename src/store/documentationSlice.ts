@@ -21,15 +21,48 @@ import {
 // TYPES
 // =============================================================================
 
+/**
+ * A documentation entry as stored by this slice. It is a superset of the
+ * canonical `DocumentationEntry`: it additionally persists the captured media
+ * itself (`fileData`, a data URL) plus a human caption and an evidence
+ * category, so evidence captured in the field can be re-rendered and remains
+ * encrypted at rest alongside its chain-of-custody record. Consumers that only
+ * know about `DocumentationEntry` continue to work because every extra field is
+ * optional.
+ */
+export interface StoredDocumentationEntry extends DocumentationEntry {
+  /** Base64 data URL of the captured media (encrypted at rest with the slice). */
+  fileData?: string
+  /** Short human-readable title for the evidence. */
+  caption?: string
+  /** Evidence category used by the field-collection UI. */
+  category?: string
+}
+
+/**
+ * In-progress draft for a guided protocol (P.A.S., legal triage). Persisting the
+ * draft means partial progress survives navigation/unmount; finalizing writes a
+ * permanent text documentation entry via `addEntry`.
+ */
+export interface ProtocolDraft {
+  /** Stable key, e.g. `pas-<incidentId>` or `triage-<incidentId>`. */
+  key: string
+  /** Arbitrary serializable protocol state. */
+  data: unknown
+  updatedAt: string
+}
+
 export interface DocumentationSlice {
   // State
   entries: DocumentationEntry[]
   currentEntry: DocumentationEntry | null
   isCapturing: boolean
   captureError: string | null
+  /** Drafts of in-progress guided protocols, keyed by draft key. */
+  protocolDrafts: Record<string, ProtocolDraft>
 
   // Actions
-  addEntry: (entryData: Omit<DocumentationEntry, 'id' | 'hash' | 'chainOfCustody' | 'timestamp'>, fileData: string | ArrayBuffer) => Promise<string>
+  addEntry: (entryData: Omit<StoredDocumentationEntry, 'id' | 'hash' | 'chainOfCustody' | 'timestamp'>, fileData: string | ArrayBuffer) => Promise<string>
   updateEntry: (id: string, updates: Partial<DocumentationEntry>) => void
   addToChainOfCustody: (entryId: string, custodyEntry: Omit<CustodyEntry, 'timestamp'>) => void
   getEntriesByIncident: (incidentId: string) => DocumentationEntry[]
@@ -43,6 +76,17 @@ export interface DocumentationSlice {
   verifyIntegrity: (entryId: string) => Promise<boolean>
   deleteEntry: (id: string) => void
   getTotalSize: (incidentId: string) => number
+  // Guided-protocol persistence (P.A.S. / triage)
+  saveProtocolDraft: (key: string, data: unknown) => void
+  getProtocolDraft: <T = unknown>(key: string) => T | undefined
+  clearProtocolDraft: (key: string) => void
+  saveProtocolResult: (params: {
+    incidentId?: string
+    capturedBy: string
+    title: string
+    summary: string
+    location?: import('@/types').IncidentLocation
+  }) => Promise<string>
 }
 
 // =============================================================================
@@ -54,12 +98,14 @@ type DocumentationActions =
   | 'getEntriesByType' | 'getEntryById' | 'exportEntries' | 'importEntries'
   | 'setCurrentEntry' | 'startCapture' | 'endCapture' | 'verifyIntegrity'
   | 'deleteEntry' | 'getTotalSize'
+  | 'saveProtocolDraft' | 'getProtocolDraft' | 'clearProtocolDraft' | 'saveProtocolResult'
 
 const initialDocumentationState: Omit<DocumentationSlice, DocumentationActions> = {
   entries: [],
   currentEntry: null,
   isCapturing: false,
-  captureError: null
+  captureError: null,
+  protocolDrafts: {}
 }
 
 // =============================================================================
@@ -79,7 +125,7 @@ export const createDocumentationSlice: StateCreator<
      * Add a new documentation entry with auto-generated hash
      */
     addEntry: async (
-      entryData: Omit<DocumentationEntry, 'id' | 'hash' | 'chainOfCustody' | 'timestamp'>,
+      entryData: Omit<StoredDocumentationEntry, 'id' | 'hash' | 'chainOfCustody' | 'timestamp'>,
       fileData: string | ArrayBuffer
     ): Promise<string> => {
       const id = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -97,7 +143,7 @@ export const createDocumentationSlice: StateCreator<
         method: entryData.metadata.deviceInfo || 'unknown'
       }
 
-      const newEntry: DocumentationEntry = {
+      const newEntry: StoredDocumentationEntry = {
         ...entryData,
         id,
         timestamp,
@@ -300,6 +346,71 @@ export const createDocumentationSlice: StateCreator<
       return entries.reduce((total, entry) => {
         return total + (entry.metadata.fileSize || 0)
       }, 0)
+    },
+
+    /**
+     * Persist an in-progress guided-protocol draft so partial progress survives
+     * navigation/unmount. Stored encrypted-at-rest with the rest of the slice.
+     */
+    saveProtocolDraft: (key: string, data: unknown) => {
+      set(state => ({
+        protocolDrafts: {
+          ...state.protocolDrafts,
+          [key]: { key, data, updatedAt: getCurrentTimestamp() }
+        }
+      }))
+    },
+
+    /**
+     * Read back a previously saved guided-protocol draft.
+     */
+    getProtocolDraft: <T = unknown>(key: string): T | undefined => {
+      return get().protocolDrafts[key]?.data as T | undefined
+    },
+
+    /**
+     * Remove a guided-protocol draft (e.g. after finalizing or resetting).
+     */
+    clearProtocolDraft: (key: string) => {
+      set(state => {
+        if (!(key in state.protocolDrafts)) return state
+        const next = { ...state.protocolDrafts }
+        delete next[key]
+        return { protocolDrafts: next }
+      })
+    },
+
+    /**
+     * Finalize a guided protocol by writing a permanent text documentation
+     * entry (with chain of custody + hash) summarizing the result.
+     */
+    saveProtocolResult: async (params): Promise<string> => {
+      const location: import('@/types').IncidentLocation = params.location ?? {
+        address: 'Ubicación no especificada',
+        colonia: 'N/D',
+        alcaldia: 'Cuauhtémoc',
+        postalCode: '00000'
+      }
+
+      const entryData: Omit<StoredDocumentationEntry, 'id' | 'hash' | 'chainOfCustody' | 'timestamp'> = {
+        incidentId: params.incidentId ?? 'sin-incidente',
+        type: 'text',
+        capturedBy: params.capturedBy,
+        location,
+        encrypted: true,
+        metadata: {
+          deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+          mimeType: 'text/plain',
+          fileSize: new TextEncoder().encode(params.summary).length,
+          tags: ['protocolo']
+        },
+        description: params.summary,
+        caption: params.title,
+        category: 'documentos',
+        fileData: `data:text/plain;charset=utf-8,${encodeURIComponent(params.summary)}`
+      }
+
+      return get().addEntry(entryData, params.summary)
     }
   })
 )

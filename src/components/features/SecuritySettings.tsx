@@ -1,14 +1,16 @@
 /**
  * Security Settings Component
- * Protocolo CDMX
- * 
- * Comprehensive security configuration UI
+ * Grito & Barrio
+ *
+ * Comprehensive security configuration UI. Self-contained: it reads/writes the
+ * real securityManager + vault directly and routes with react-router, so it can
+ * be mounted as a standalone screen without any props.
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Shield,
-  Lock,
   Eye,
   Clock,
   Trash2,
@@ -21,7 +23,9 @@ import {
   Key,
   Download,
   Upload,
-  AlertOctagon
+  AlertOctagon,
+  ArrowLeft,
+  Loader2
 } from 'lucide-react'
 import {
   Button,
@@ -57,8 +61,10 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { securityManager, type SecurityConfig, type SecurityLog } from '@/lib/security'
-import { exportData, importData } from '@/lib/backup'
+import { changePassphrase } from '@/lib/vault'
+import { repersistPersistedState } from '@/lib/store-helpers'
 import { isCryptoSupported } from '@/lib/crypto'
+import { createComprehensiveBackup, restoreFromComprehensiveBackup } from '@/store'
 
 // =============================================================================
 // TYPES
@@ -68,48 +74,66 @@ interface SecuritySettingsProps {
   className?: string
 }
 
-type SetupStep = 'password' | 'duress' | 'complete'
-
 // =============================================================================
 // COMPONENT
 // =============================================================================
 
 export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className }) => {
+  const navigate = useNavigate()
+
   // State
   const [config, setConfig] = useState<SecurityConfig>(securityManager.getConfig())
   const [hasPassword, setHasPassword] = useState(false)
   const [hasDuress, setHasDuress] = useState(false)
   const [logs, setLogs] = useState<SecurityLog[]>([])
-  const [setupStep, setSetupStep] = useState<SetupStep>('password')
+
+  // Dialogs
   const [showSetupDialog, setShowSetupDialog] = useState(false)
   const [showDuressSetup, setShowDuressSetup] = useState(false)
   const [showWipeDialog, setShowWipeDialog] = useState(false)
+  const [showConfirmWipeDialog, setShowConfirmWipeDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+
+  // Form fields
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [duressPassword, setDuressPassword] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [duressPassword, setDuressPasswordValue] = useState('')
   const [confirmDuress, setConfirmDuress] = useState('')
+  const [exportPass, setExportPass] = useState('')
+  const [importPass, setImportPass] = useState('')
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [wipeMinutes, setWipeMinutes] = useState(10)
+  const [wipeConfirmText, setWipeConfirmText] = useState('')
+
+  // Feedback
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [busy, setBusy] = useState(false)
   const [cryptoSupported, setCryptoSupported] = useState(true)
   const [activeTab, setActiveTab] = useState('general')
 
   // Load initial state
-  useEffect(() => {
+  const refreshState = useCallback(() => {
     setHasPassword(securityManager.hasPassword())
     setHasDuress(securityManager.hasDuressPassword())
-    setLogs(securityManager.getLogs().slice(-50)) // Last 50 logs
-    setCryptoSupported(isCryptoSupported())
+    setLogs(securityManager.getLogs().slice(-50))
+    setConfig(securityManager.getConfig())
   }, [])
 
-  // Clear messages after 3 seconds
+  useEffect(() => {
+    refreshState()
+    setCryptoSupported(isCryptoSupported())
+  }, [refreshState])
+
+  // Clear messages after a few seconds
   useEffect(() => {
     if (success || error) {
       const timer = setTimeout(() => {
         setSuccess('')
         setError('')
-      }, 3000)
+      }, 4000)
       return () => clearTimeout(timer)
     }
   }, [success, error])
@@ -117,165 +141,176 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
   // Update configuration
   const updateSecurityConfig = useCallback((updates: Partial<SecurityConfig>) => {
     securityManager.updateConfig(updates)
-    setConfig({ ...config, ...updates })
+    setConfig(securityManager.getConfig())
     setSuccess('Configuración actualizada')
-  }, [config])
+  }, [])
 
-  // Set up password
+  // Set up master password (creates vault)
   const handleSetupPassword = async () => {
     setError('')
-    
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres')
       return
     }
-    
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden')
       return
     }
-    
+    setBusy(true)
     try {
       await securityManager.setRealPassword(password)
-      setHasPassword(true)
-      setSetupStep('duress')
+      await repersistPersistedState()
+      refreshState()
+      setShowSetupDialog(false)
       setPassword('')
       setConfirmPassword('')
+      setSuccess('Contraseña maestra configurada. Tus datos están protegidos.')
     } catch (err) {
-      setError('Error al configurar contraseña')
+      setError(err instanceof Error ? err.message : 'Error al configurar contraseña')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Change master password (vault already exists)
+  const handleChangePassword = async () => {
+    setError('')
+    if (password.length < 8) {
+      setError('La nueva contraseña debe tener al menos 8 caracteres')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden')
+      return
+    }
+    setBusy(true)
+    try {
+      await changePassphrase(currentPassword, password)
+      setCurrentPassword('')
+      setPassword('')
+      setConfirmPassword('')
+      setSuccess('Contraseña actualizada')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cambiar contraseña')
+    } finally {
+      setBusy(false)
     }
   }
 
   // Set up duress password
   const handleSetupDuress = async () => {
     setError('')
-    
-    if (duressPassword.length < 6) {
-      setError('La contraseña de emergencia debe tener al menos 6 caracteres')
+    if (duressPassword.length < 8) {
+      setError('La contraseña de emergencia debe tener al menos 8 caracteres')
       return
     }
-    
-    if (duressPassword === password) {
-      setError('La contraseña de emergencia debe ser diferente')
-      return
-    }
-    
     if (duressPassword !== confirmDuress) {
       setError('Las contraseñas no coinciden')
       return
     }
-    
+    setBusy(true)
     try {
       await securityManager.setDuressPassword(duressPassword)
-      setHasDuress(true)
-      setSetupStep('complete')
-      setDuressPassword('')
+      refreshState()
+      setShowDuressSetup(false)
+      setDuressPasswordValue('')
       setConfirmDuress('')
-      setSuccess('Configuración de seguridad completada')
+      setSuccess('Contraseña de emergencia configurada')
     } catch (err) {
-      setError('Error al configurar contraseña de emergencia')
+      setError(err instanceof Error ? err.message : 'Error al configurar contraseña de emergencia')
+    } finally {
+      setBusy(false)
     }
   }
 
   // Clear duress password
   const handleClearDuress = () => {
     securityManager.clearDuressPassword()
-    setHasDuress(false)
+    refreshState()
     setSuccess('Contraseña de emergencia eliminada')
   }
 
-  // Change password
-  const handleChangePassword = async () => {
-    setError('')
-    
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
-    
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      return
-    }
-    
-    try {
-      await securityManager.setRealPassword(password)
-      setPassword('')
-      setConfirmPassword('')
-      setSuccess('Contraseña actualizada')
-      setShowSetupDialog(false)
-    } catch (err) {
-      setError('Error al cambiar contraseña')
-    }
+  // Schedule panic wipe
+  const handleScheduleWipe = () => {
+    securityManager.scheduleWipe(wipeMinutes)
+    setShowWipeDialog(false)
+    setSuccess(`Eliminación automática programada en ${wipeMinutes} minutos`)
   }
 
-  // Schedule panic wipe
-  const handleScheduleWipe = (minutes: number) => {
-    securityManager.scheduleWipe(minutes)
-    setShowWipeDialog(false)
-    setSuccess(`Eliminación programada en ${minutes} minutos`)
+  const handleCancelScheduledWipe = () => {
+    securityManager.cancelWipe()
+    setSuccess('Eliminación programada cancelada')
   }
 
   // Execute immediate wipe
   const handleImmediateWipe = () => {
-    if (confirm('¿Está seguro? Esta acción eliminará TODOS los datos permanentemente.')) {
-      securityManager.executeWipe()
-    }
+    void securityManager.executeWipe()
   }
 
-  // Export encrypted backup
+  // Export backup
   const handleExport = async () => {
+    setError('')
+    setBusy(true)
     try {
-      const result = await exportData({
-        encrypt: true
-      })
-      
-      if (result.success) {
-        setSuccess('Copia de seguridad exportada')
-        setShowExportDialog(false)
-      } else {
-        setError(result.error || 'Error al exportar')
-      }
+      const pass = exportPass.trim() ? exportPass : undefined
+      const blob = await createComprehensiveBackup(pass)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const date = new Date().toISOString().split('T')[0]
+      a.download = `grito-barrio-respaldo-${date}.${pass ? 'enc' : 'json'}`
+      a.click()
+      URL.revokeObjectURL(url)
+      setShowExportDialog(false)
+      setExportPass('')
+      setSuccess('Copia de seguridad exportada')
     } catch (err) {
-      setError('Error al exportar datos')
+      setError(err instanceof Error ? err.message : 'Error al exportar datos')
+    } finally {
+      setBusy(false)
     }
   }
 
   // Import from backup
-  const handleImport = async (file: File) => {
+  const handleImport = async () => {
+    if (!importFile) {
+      setError('Selecciona un archivo de respaldo')
+      return
+    }
+    setError('')
+    setBusy(true)
     try {
-      const result = await importData(file, {
-        merge: true,
-        validate: true,
-        backupBeforeImport: true
-      })
-      
-      if (result.success) {
-        setSuccess(`Importados ${result.imported} registros`)
-        setShowImportDialog(false)
-      } else {
-        setError(`Importados: ${result.imported}, Fallidos: ${result.failed}`)
+      const pass = importPass.trim() ? importPass : undefined
+      const ok = await restoreFromComprehensiveBackup(importFile, pass)
+      if (!ok) {
+        setError('No se pudo restaurar. Verifica el archivo y la contraseña.')
+        return
       }
+      setShowImportDialog(false)
+      setImportFile(null)
+      setImportPass('')
+      setSuccess('Datos restaurados correctamente')
     } catch (err) {
-      setError('Error al importar datos')
+      setError(err instanceof Error ? err.message : 'Error al importar datos')
+    } finally {
+      setBusy(false)
     }
   }
 
-  // Clear logs
+  // Logs
   const handleClearLogs = () => {
     securityManager.clearLogs()
     setLogs([])
     setSuccess('Registros borrados')
   }
 
-  // Export logs
   const handleExportLogs = () => {
     const logsJson = securityManager.exportLogs()
     const blob = new Blob([logsJson], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `security_logs_${new Date().toISOString().split('T')[0]}.json`
+    a.download = `registros-seguridad-${new Date().toISOString().split('T')[0]}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -284,6 +319,14 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
     <div className={cn("space-y-6 pb-20", className)}>
       {/* Header */}
       <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          aria-label="Volver"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <Shield className="w-8 h-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Seguridad</h1>
@@ -309,7 +352,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           <AlertDescription className="text-green-800">{success}</AlertDescription>
         </Alert>
       )}
-      
+
       {error && (
         <Alert variant="destructive">
           <X className="w-4 h-4" />
@@ -340,8 +383,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm">Cifrado</span>
-            <Badge variant={config.encryptionEnabled ? "default" : "secondary"}>
-              {config.encryptionEnabled ? 'Activado' : 'Desactivado'}
+            <Badge variant={hasPassword ? "default" : "secondary"}>
+              {hasPassword ? 'Activado' : 'Desactivado'}
             </Badge>
           </div>
         </CardContent>
@@ -375,12 +418,12 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                 <Switch
                   id="autolock"
                   checked={config.autoLockTimeout > 0}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     updateSecurityConfig({ autoLockTimeout: checked ? 5 : 0 })
                   }
                 />
               </div>
-              
+
               {config.autoLockTimeout > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -391,7 +434,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   </div>
                   <Slider
                     value={[config.autoLockTimeout]}
-                    onValueChange={([value]) => 
+                    onValueChange={([value]) =>
                       updateSecurityConfig({ autoLockTimeout: value })
                     }
                     min={1}
@@ -400,32 +443,6 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Encryption Toggle */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Lock className="w-5 h-5" />
-                Cifrado de Datos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Cifrar datos sensibles</p>
-                  <p className="text-sm text-muted-foreground">
-                    Incidentes, documentación y contactos
-                  </p>
-                </div>
-                <Switch
-                  checked={config.encryptionEnabled}
-                  onCheckedChange={(checked) => 
-                    updateSecurityConfig({ encryptionEnabled: checked })
-                  }
-                />
-              </div>
             </CardContent>
           </Card>
 
@@ -447,7 +464,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                 </div>
                 <Switch
                   checked={config.metadataStrippingEnabled}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     updateSecurityConfig({ metadataStrippingEnabled: checked })
                   }
                 />
@@ -473,12 +490,12 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                 </div>
                 <Switch
                   checked={config.locationFuzzingEnabled}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     updateSecurityConfig({ locationFuzzingEnabled: checked })
                   }
                 />
               </div>
-              
+
               {config.locationFuzzingEnabled && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -489,7 +506,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   </div>
                   <Slider
                     value={[config.locationFuzzingRadius]}
-                    onValueChange={([value]) => 
+                    onValueChange={([value]) =>
                       updateSecurityConfig({ locationFuzzingRadius: value })
                     }
                     min={100}
@@ -504,7 +521,6 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
 
         {/* Password Tab */}
         <TabsContent value="password" className="space-y-4">
-          {/* Setup Password */}
           {!hasPassword ? (
             <Card>
               <CardContent className="pt-6">
@@ -512,7 +528,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   <Shield className="w-12 h-12 mx-auto text-primary" />
                   <h3 className="font-semibold">Configurar Seguridad</h3>
                   <p className="text-sm text-muted-foreground">
-                    Establezca una contraseña para proteger sus datos
+                    Establezca una contraseña maestra para cifrar y proteger sus datos
                   </p>
                   <Button onClick={() => setShowSetupDialog(true)}>
                     Configurar Ahora
@@ -525,15 +541,29 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Cambiar Contraseña</CardTitle>
+                  <CardDescription>
+                    Introduce tu contraseña actual y la nueva.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Contraseña actual</Label>
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Contraseña actual"
+                      autoComplete="current-password"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label>Nueva contraseña</Label>
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 8 caracteres"
+                      autoComplete="new-password"
                     />
                   </div>
                   <div className="space-y-2">
@@ -543,10 +573,11 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repita la contraseña"
+                      autoComplete="new-password"
                     />
                   </div>
-                  <Button onClick={handleChangePassword} className="w-full">
-                    <Key className="w-4 h-4 mr-2" />
+                  <Button onClick={handleChangePassword} className="w-full" disabled={busy}>
+                    {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Key className="w-4 h-4 mr-2" />}
                     Cambiar Contraseña
                   </Button>
                 </CardContent>
@@ -560,13 +591,14 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                     Contraseña de Emergencia
                   </CardTitle>
                   <CardDescription>
-                    Active el modo de emergencia si se ve obligado a desbloquear
+                    Si se ve obligado a desbloquear, esta contraseña abre una bóveda señuelo
+                    aislada y programa el borrado de los datos reales.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {!hasDuress ? (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="w-full"
                       onClick={() => setShowDuressSetup(true)}
                     >
@@ -580,8 +612,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                           La contraseña de emergencia está activa
                         </AlertDescription>
                       </Alert>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         className="w-full"
                         onClick={handleClearDuress}
                       >
@@ -609,18 +641,38 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
+              {securityManager.getWipeState().scheduled && (
+                <Alert variant="destructive">
+                  <Clock className="w-4 h-4" />
+                  <AlertDescription>
+                    Eliminación automática programada. Puedes cancelarla.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => setShowWipeDialog(true)}
               >
                 <Clock className="w-4 h-4 mr-2" />
                 Programar Eliminación
               </Button>
-              <Button 
-                variant="destructive" 
+              {securityManager.getWipeState().scheduled && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleCancelScheduledWipe}
+                >
+                  Cancelar Eliminación Programada
+                </Button>
+              )}
+              <Button
+                variant="destructive"
                 className="w-full"
-                onClick={handleImmediateWipe}
+                onClick={() => {
+                  setWipeConfirmText('')
+                  setShowConfirmWipeDialog(true)
+                }}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Eliminar Datos Ahora
@@ -637,16 +689,16 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => setShowExportDialog(true)}
               >
                 <Download className="w-4 h-4 mr-2" />
-                Exportar Datos Cifrados
+                Exportar Datos
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => setShowImportDialog(true)}
               >
@@ -674,7 +726,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                 </div>
                 <Slider
                   value={[config.maxFailedAttempts]}
-                  onValueChange={([value]) => 
+                  onValueChange={([value]) =>
                     updateSecurityConfig({ maxFailedAttempts: value })
                   }
                   min={3}
@@ -682,12 +734,12 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   step={1}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Duración del bloqueo (minutos)</Label>
                 <Select
                   value={String(config.lockoutDuration)}
-                  onValueChange={(value) => 
+                  onValueChange={(value) =>
                     updateSecurityConfig({ lockoutDuration: parseInt(value) })
                   }
                 >
@@ -716,10 +768,10 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                   Registro de Seguridad
                 </CardTitle>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleExportLogs}>
+                  <Button variant="outline" size="sm" onClick={handleExportLogs} aria-label="Exportar registros">
                     <Download className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleClearLogs}>
+                  <Button variant="outline" size="sm" onClick={handleClearLogs} aria-label="Borrar registros">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -739,7 +791,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
                         className="p-3 rounded-lg bg-muted text-sm"
                       >
                         <div className="flex items-center justify-between">
-                          <Badge 
+                          <Badge
                             variant={
                               log.type === 'duress' ? 'destructive' :
                               log.type === 'failed_attempt' ? 'secondary' :
@@ -764,106 +816,265 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ className })
         </TabsContent>
       </Tabs>
 
-      {/* Setup Dialog */}
+      {/* Setup Master Password Dialog */}
       <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {setupStep === 'password' && 'Configurar Contraseña'}
-              {setupStep === 'duress' && 'Configurar Contraseña de Emergencia'}
-              {setupStep === 'complete' && 'Configuración Completada'}
-            </DialogTitle>
+            <DialogTitle>Configurar Contraseña Maestra</DialogTitle>
             <DialogDescription>
-              {setupStep === 'password' && 'Establezca una contraseña segura para proteger sus datos.'}
-              {setupStep === 'duress' && 'Configure una contraseña alternativa que active el modo de emergencia.'}
-              {setupStep === 'complete' && 'Su configuración de seguridad está completa.'}
+              Esta contraseña cifra todos tus datos. Si la olvidas no podrás recuperarlos.
             </DialogDescription>
           </DialogHeader>
-
-          {setupStep === 'password' && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Contraseña</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Confirmar contraseña</Label>
-                <Input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repita la contraseña"
-                />
-              </div>
-            </div>
-          )}
-
-          {setupStep === 'duress' && (
-            <div className="space-y-4">
-              <Alert className="bg-amber-50 border-amber-200">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <AlertDescription className="text-amber-800">
-                  Si ingresa esta contraseña, se activará el modo de emergencia ocultando datos sensibles.
-                </AlertDescription>
+          <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
-              <div className="space-y-2">
-                <Label>Contraseña de emergencia</Label>
-                <Input
-                  type="password"
-                  value={duressPassword}
-                  onChange={(e) => setDuressPassword(e.target.value)}
-                  placeholder="Diferente a la principal"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Confirmar contraseña de emergencia</Label>
-                <Input
-                  type="password"
-                  value={confirmDuress}
-                  onChange={(e) => setConfirmDuress(e.target.value)}
-                  placeholder="Repita la contraseña"
-                />
-              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Contraseña</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="new-password"
+              />
             </div>
-          )}
-
-          {setupStep === 'complete' && (
-            <div className="text-center py-4">
-              <Check className="w-12 h-12 mx-auto text-green-500" />
-              <p className="mt-2">¡Configuración guardada exitosamente!</p>
+            <div className="space-y-2">
+              <Label>Confirmar contraseña</Label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repita la contraseña"
+                autoComplete="new-password"
+              />
             </div>
-          )}
-
+          </div>
           <DialogFooter>
-            {setupStep === 'password' && (
-              <Button onClick={handleSetupPassword}>Continuar</Button>
-            )}
-            {setupStep === 'duress' && (
-              <>
-                <Button variant="outline" onClick={() => setSetupStep('complete')}>
-                  Omitir
-                </Button>
-                <Button onClick={handleSetupDuress}>Guardar</Button>
-              </>
-            )}
-            {setupStep === 'complete' && (
-              <Button onClick={() => {
-                setShowSetupDialog(false)
-                setSetupStep('password')
-              }}>
-                Cerrar
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => setShowSetupDialog(false)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSetupPassword} disabled={busy}>
+              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Other dialogs would be here - keeping code concise */}
+      {/* Setup Duress Dialog */}
+      <Dialog open={showDuressSetup} onOpenChange={setShowDuressSetup}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configurar Contraseña de Emergencia</DialogTitle>
+            <DialogDescription>
+              Al ingresarla se abre una bóveda señuelo y se programa el borrado de los datos reales.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Alert className="bg-amber-50 border-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                Debe ser distinta de tu contraseña principal.
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-2">
+              <Label>Contraseña de emergencia</Label>
+              <Input
+                type="password"
+                value={duressPassword}
+                onChange={(e) => setDuressPasswordValue(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Confirmar contraseña de emergencia</Label>
+              <Input
+                type="password"
+                value={confirmDuress}
+                onChange={(e) => setConfirmDuress(e.target.value)}
+                placeholder="Repita la contraseña"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDuressSetup(false)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSetupDuress} disabled={busy}>
+              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule Wipe Dialog */}
+      <Dialog open={showWipeDialog} onOpenChange={setShowWipeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Programar Eliminación Automática</DialogTitle>
+            <DialogDescription>
+              Todos los datos se eliminarán automáticamente cuando transcurra el tiempo seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between">
+              <Label>Tiempo</Label>
+              <span className="text-sm text-muted-foreground">{wipeMinutes} minutos</span>
+            </div>
+            <Slider
+              value={[wipeMinutes]}
+              onValueChange={([value]) => setWipeMinutes(value)}
+              min={1}
+              max={60}
+              step={1}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWipeDialog(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleScheduleWipe}>
+              Programar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Immediate Wipe Dialog */}
+      <Dialog open={showConfirmWipeDialog} onOpenChange={setShowConfirmWipeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Eliminar Datos Ahora</DialogTitle>
+            <DialogDescription>
+              Esta acción elimina permanentemente TODOS los datos y no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Alert variant="destructive">
+              <AlertOctagon className="w-4 h-4" />
+              <AlertDescription>
+                Escribe <strong>BORRAR</strong> para confirmar.
+              </AlertDescription>
+            </Alert>
+            <Input
+              value={wipeConfirmText}
+              onChange={(e) => setWipeConfirmText(e.target.value)}
+              placeholder="BORRAR"
+              aria-label="Confirmar borrado"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmWipeDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleImmediateWipe}
+              disabled={wipeConfirmText.trim().toUpperCase() !== 'BORRAR'}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Eliminar Todo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Exportar Datos</DialogTitle>
+            <DialogDescription>
+              Opcional: protege el respaldo con una contraseña. Sin contraseña el archivo se
+              guarda como texto plano legible.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label>Contraseña del respaldo (opcional)</Label>
+              <Input
+                type="password"
+                value={exportPass}
+                onChange={(e) => setExportPass(e.target.value)}
+                placeholder="Dejar vacío para texto plano"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button onClick={handleExport} disabled={busy}>
+              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Exportar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importar desde Copia</DialogTitle>
+            <DialogDescription>
+              Selecciona el archivo de respaldo. Si está cifrado, introduce su contraseña.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label>Archivo de respaldo</Label>
+              <Input
+                type="file"
+                accept=".json,.enc,.backup,application/json,application/octet-stream"
+                onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                aria-label="Archivo de respaldo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contraseña del respaldo (si aplica)</Label>
+              <Input
+                type="password"
+                value={importPass}
+                onChange={(e) => setImportPass(e.target.value)}
+                placeholder="Dejar vacío si no tiene contraseña"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button onClick={handleImport} disabled={busy || !importFile}>
+              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Importar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

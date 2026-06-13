@@ -82,15 +82,70 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
   className
 }) => {
   const [activeTab, setActiveTab] = useState('info')
-  const [showEditDialog, setShowEditDialog] = useState(false)
-  const [showActivationDialog, setShowActivationDialog] = useState(false)
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false)
-  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  // Draft occupancy used by the editable capacity controls (canEdit only).
+  const [draftOccupancy, setDraftOccupancy] = useState(safePoint.currentOccupancy)
+
+  const flash = (message: string) => {
+    setStatusMessage(message)
+    window.setTimeout(() => setStatusMessage(null), 3000)
+  }
+
+  // Share the safe point via the Web Share API, falling back to the clipboard.
+  const handleShare = async () => {
+    const text = `${safePoint.name} - ${safePoint.address}, ${safePoint.colonia}, ${safePoint.alcaldia}. Tel: ${safePoint.contactPhone}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: safePoint.name, text })
+      } else {
+        await navigator.clipboard.writeText(text)
+        flash('Información copiada al portapapeles')
+      }
+    } catch {
+      /* user cancelled share — no action needed */
+    }
+  }
+
+  // Trigger a quick activation request for this safe point.
+  const handleActivate = () => {
+    onActivate?.(safePoint.id, {
+      peopleCount: 0,
+      eta: '30 minutos',
+      needs: [],
+      status: 'pending'
+    })
+    flash(`Solicitud de activación enviada a ${safePoint.contactName}`)
+  }
+
+  // Append a history note (records the activation/visit in the log).
+  const handleAddHistory = () => {
+    onAddHistory?.(safePoint.id, {
+      type: 'note',
+      description: 'Nota registrada por el operador',
+      userName: 'Operador'
+    })
+    flash('Nota agregada al historial')
+  }
 
   const typeInfo = SAFE_POINT_TYPES[safePoint.type]
   const capacityPercent = (safePoint.currentOccupancy / safePoint.totalCapacity) * 100
   const isNearFull = capacityPercent > 80
   const isFull = safePoint.availableSpots === 0
+
+  const adjustDraftOccupancy = (delta: number) => {
+    setDraftOccupancy(prev =>
+      Math.max(0, Math.min(safePoint.totalCapacity, prev + delta))
+    )
+  }
+
+  const handleSaveCapacity = () => {
+    onEdit?.({
+      ...safePoint,
+      currentOccupancy: draftOccupancy,
+      availableSpots: Math.max(0, safePoint.totalCapacity - draftOccupancy),
+      lastUpdated: new Date().toISOString()
+    })
+  }
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -128,7 +183,7 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowEditDialog(true)}
+                    onClick={() => onEdit?.(safePoint)}
                   >
                     <Edit2 className="w-5 h-5" />
                   </Button>
@@ -226,7 +281,7 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                     <Button 
                       variant="outline" 
                       size="icon"
-                      onClick={() => setShowShareDialog(true)}
+                      onClick={handleShare}
                     >
                       <Share2 className="w-4 h-4" />
                     </Button>
@@ -376,7 +431,7 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {safePoint.activationHistory.slice(-5).reverse().map((activation, index) => (
+                    {safePoint.activationHistory.slice(-5).reverse().map((activation) => (
                       <div key={activation.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                         <div>
                           <p className="font-medium">
@@ -417,28 +472,36 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="icon"
-                        onClick={() => {/* Decrease occupancy */}}
+                        onClick={() => adjustDraftOccupancy(-5)}
                       >
                         -5
                       </Button>
-                      <Input 
-                        type="number" 
-                        value={safePoint.currentOccupancy}
+                      <Input
+                        type="number"
+                        value={draftOccupancy}
+                        onChange={(e) =>
+                          setDraftOccupancy(
+                            Math.max(0, Math.min(safePoint.totalCapacity, parseInt(e.target.value) || 0))
+                          )
+                        }
                         className="text-center"
-                        readOnly
                       />
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="icon"
-                        onClick={() => {/* Increase occupancy */}}
+                        onClick={() => adjustDraftOccupancy(5)}
                       >
                         +5
                       </Button>
                     </div>
-                    <Button className="w-full">
+                    <Button
+                      className="w-full"
+                      onClick={handleSaveCapacity}
+                      disabled={draftOccupancy === safePoint.currentOccupancy}
+                    >
                       Actualizar Capacidad
                     </Button>
                   </CardContent>
@@ -541,7 +604,7 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold">Historial de Actividad</h3>
                 {canEdit && (
-                  <Button size="sm" onClick={() => setShowHistoryDialog(true)}>
+                  <Button size="sm" onClick={handleAddHistory}>
                     <Plus className="w-4 h-4 mr-2" />
                     Agregar nota
                   </Button>
@@ -606,17 +669,18 @@ export const SafePointDetail: React.FC<SafePointDetailProps> = ({
               Direcciones
             </Button>
             {safePoint.isActive && !isFull && (
-              <Button 
+              <Button
                 className="flex-1"
-                onClick={() => setShowActivationDialog(true)}
+                onClick={handleActivate}
               >
                 Activar Punto
               </Button>
             )}
           </div>
+          {statusMessage && (
+            <p className="mt-3 text-sm text-center text-green-600">{statusMessage}</p>
+          )}
         </div>
-
-        {/* Dialogs would go here - keeping code concise */}
       </div>
     </TooltipProvider>
   )

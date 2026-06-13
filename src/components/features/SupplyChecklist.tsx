@@ -5,7 +5,7 @@
  * Inventory management with pre-defined and custom checklists
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   ClipboardCheck,
   Plus,
@@ -172,20 +172,112 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | 'all'>('all')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showChecklistDetail, setShowChecklistDetail] = useState<string | null>(null)
-  const [editingChecklist, setEditingChecklist] = useState<string | null>(null)
   const [expandedChecklists, setExpandedChecklists] = useState<Set<string>>(new Set())
 
-  // Merge predefined with custom checklists
-  const allChecklists = useMemo(() => {
+  // Seed local, editable state from the predefined templates merged with any
+  // checklists provided by the parent. This keeps the screen fully functional
+  // (toggle / quantity / create / delete / duplicate / export) without an
+  // external store: the predefined kits become live, mutable inventories.
+  const [checklists, setChecklists] = useState<SupplyChecklistType[]>(() => {
     const predefined = PREDEFINED_CHECKLISTS.map((template, index) => ({
       ...template,
       id: `template-${index}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })) as SupplyChecklistType[]
-    
+
     return [...predefined, ...propChecklists]
-  }, [propChecklists])
+  })
+
+  const allChecklists = checklists
+
+  // Toggle a single item's completion state
+  const handleToggleItem = useCallback((checklistId: string, itemId: string, completed: boolean) => {
+    setChecklists(prev => prev.map(cl => {
+      if (cl.id !== checklistId) return cl
+      const updated: SupplyChecklistType = {
+        ...cl,
+        items: cl.items.map(it =>
+          it.id !== itemId ? it : {
+            ...it,
+            isCompleted: completed,
+            completedAt: completed ? new Date().toISOString() : undefined
+          }
+        ),
+        updatedAt: new Date().toISOString()
+      }
+      onUpdateChecklist?.(checklistId, updated)
+      return updated
+    }))
+    onToggleItem?.(checklistId, itemId, completed)
+  }, [onToggleItem, onUpdateChecklist])
+
+  // Update an item's quantity
+  const handleUpdateItemQuantity = useCallback((checklistId: string, itemId: string, quantity: number) => {
+    setChecklists(prev => prev.map(cl => {
+      if (cl.id !== checklistId) return cl
+      const updated: SupplyChecklistType = {
+        ...cl,
+        items: cl.items.map(it => it.id === itemId ? { ...it, quantity } : it),
+        updatedAt: new Date().toISOString()
+      }
+      onUpdateChecklist?.(checklistId, updated)
+      return updated
+    }))
+    onUpdateItemQuantity?.(checklistId, itemId, quantity)
+  }, [onUpdateItemQuantity, onUpdateChecklist])
+
+  // Create a new custom checklist
+  const handleCreateChecklist = useCallback((data: Omit<SupplyChecklistType, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date().toISOString()
+    const newChecklist: SupplyChecklistType = {
+      ...data,
+      id: `custom-${Date.now()}`,
+      createdAt: now,
+      updatedAt: now
+    }
+    setChecklists(prev => [...prev, newChecklist])
+    onCreateChecklist?.(data)
+  }, [onCreateChecklist])
+
+  // Delete a custom checklist
+  const handleDeleteChecklist = useCallback((checklistId: string) => {
+    setChecklists(prev => prev.filter(cl => cl.id !== checklistId))
+    onDeleteChecklist?.(checklistId)
+  }, [onDeleteChecklist])
+
+  // Duplicate a checklist (always produces an editable custom copy)
+  const handleDuplicateChecklist = useCallback((checklistId: string) => {
+    setChecklists(prev => {
+      const source = prev.find(cl => cl.id === checklistId)
+      if (!source) return prev
+      const now = new Date().toISOString()
+      const copy: SupplyChecklistType = {
+        ...source,
+        id: `custom-${Date.now()}`,
+        name: `${source.name} (copia)`,
+        isDefault: false,
+        isCustom: true,
+        items: source.items.map(it => ({ ...it, isCompleted: false, completedAt: undefined })),
+        createdAt: now,
+        updatedAt: now
+      }
+      return [...prev, copy]
+    })
+  }, [])
+
+  // Export a single checklist as JSON
+  const handleExportChecklist = useCallback((checklistId: string) => {
+    const checklist = checklists.find(cl => cl.id === checklistId)
+    if (!checklist) return
+    const blob = new Blob([JSON.stringify(checklist, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `lista_${checklist.name.replace(/\s+/g, '_').toLowerCase()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [checklists])
 
   // Filter checklists
   const filteredChecklists = useMemo(() => {
@@ -389,22 +481,22 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
                                     Ver detalles
                                   </DropdownMenuItem>
                                   {!checklist.isDefault && (
-                                    <DropdownMenuItem onClick={() => setEditingChecklist(checklist.id)}>
+                                    <DropdownMenuItem onClick={() => setShowChecklistDetail(checklist.id)}>
                                       <Edit className="w-4 h-4 mr-2" />
                                       Editar
                                     </DropdownMenuItem>
                                   )}
-                                  <DropdownMenuItem onClick={() => {/* Duplicate */}}>
+                                  <DropdownMenuItem onClick={() => handleDuplicateChecklist(checklist.id)}>
                                     <Copy className="w-4 h-4 mr-2" />
                                     Duplicar
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => {/* Export */}}>
+                                  <DropdownMenuItem onClick={() => handleExportChecklist(checklist.id)}>
                                     <Download className="w-4 h-4 mr-2" />
                                     Exportar
                                   </DropdownMenuItem>
                                   {!checklist.isDefault && (
-                                    <DropdownMenuItem 
-                                      onClick={() => onDeleteChecklist?.(checklist.id)}
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteChecklist(checklist.id)}
                                       className="text-destructive"
                                     >
                                       <Trash2 className="w-4 h-4 mr-2" />
@@ -448,10 +540,10 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
                                     item.isCompleted ? "bg-green-50" : "bg-gray-50"
                                   )}
                                 >
-                                  <Checkbox 
+                                  <Checkbox
                                     checked={item.isCompleted}
-                                    onCheckedChange={(checked) => 
-                                      onToggleItem?.(checklist.id, item.id, checked as boolean)
+                                    onCheckedChange={(checked) =>
+                                      handleToggleItem(checklist.id, item.id, checked as boolean)
                                     }
                                   />
                                   <div className="flex-1">
@@ -473,7 +565,7 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7"
-                                      onClick={() => onUpdateItemQuantity?.(checklist.id, item.id, Math.max(1, item.quantity - 1))}
+                                      onClick={() => handleUpdateItemQuantity(checklist.id, item.id, Math.max(1, item.quantity - 1))}
                                     >
                                       <Minus className="w-3 h-3" />
                                     </Button>
@@ -482,7 +574,7 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7"
-                                      onClick={() => onUpdateItemQuantity?.(checklist.id, item.id, item.quantity + 1)}
+                                      onClick={() => handleUpdateItemQuantity(checklist.id, item.id, item.quantity + 1)}
                                     >
                                       <Plus className="w-3 h-3" />
                                     </Button>
@@ -514,7 +606,7 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
         <CreateChecklistDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
-          onCreate={onCreateChecklist}
+          onCreate={handleCreateChecklist}
         />
 
         {/* Detail Dialog */}
@@ -523,8 +615,9 @@ export const SupplyChecklist: React.FC<SupplyChecklistProps> = ({
             open={!!showChecklistDetail}
             onOpenChange={(open) => !open && setShowChecklistDetail(null)}
             checklist={allChecklists.find(c => c.id === showChecklistDetail)!}
-            onToggleItem={onToggleItem}
-            onUpdateItemQuantity={onUpdateItemQuantity}
+            onToggleItem={handleToggleItem}
+            onUpdateItemQuantity={handleUpdateItemQuantity}
+            onExport={handleExportChecklist}
           />
         )}
       </div>
@@ -799,6 +892,7 @@ interface ChecklistDetailDialogProps {
   checklist: SupplyChecklistType
   onToggleItem?: (checklistId: string, itemId: string, completed: boolean) => void
   onUpdateItemQuantity?: (checklistId: string, itemId: string, quantity: number) => void
+  onExport?: (checklistId: string) => void
 }
 
 const ChecklistDetailDialog: React.FC<ChecklistDetailDialogProps> = ({
@@ -806,7 +900,8 @@ const ChecklistDetailDialog: React.FC<ChecklistDetailDialogProps> = ({
   onOpenChange,
   checklist,
   onToggleItem,
-  onUpdateItemQuantity
+  onUpdateItemQuantity,
+  onExport
 }) => {
   const category = checklist.category ? RESOURCE_CATEGORIES[checklist.category] : null
   const progress = checklist.items.filter(i => i.isCompleted).length
@@ -922,7 +1017,7 @@ const ChecklistDetailDialog: React.FC<ChecklistDetailDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>
-          <Button>
+          <Button onClick={() => onExport?.(checklist.id)}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>

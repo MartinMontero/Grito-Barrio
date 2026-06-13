@@ -5,7 +5,7 @@
  * Guides legal observers through decision tree for appropriate legal response
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Scale,
   ChevronRight,
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { useProtocoloStore } from '@/store'
 
 // =============================================================================
 // TYPES
@@ -285,9 +286,23 @@ function getPriorityLabel(priority: PriorityLevel): string {
 // =============================================================================
 
 export const LegalTriageWizard: React.FC<{ incidentId?: string }> = ({ incidentId }) => {
-  const [state, setState] = useState<TriageState>(INITIAL_STATE)
+  const store = useProtocoloStore()
+  const currentUser = store.currentUser
+  const draftKey = `triage-${incidentId || 'global'}`
+
+  const [state, setState] = useState<TriageState>(() => {
+    // Restore an in-progress draft so answers survive navigation/unmount.
+    const draft = store.getProtocolDraft<TriageState>(draftKey)
+    return draft ?? INITIAL_STATE
+  })
   const [isComplete, setIsComplete] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // Persist answers on every change (debounced) so they are not lost on unmount.
+  useEffect(() => {
+    const t = setTimeout(() => store.saveProtocolDraft(draftKey, state), 300)
+    return () => clearTimeout(t)
+  }, [state, draftKey, store])
 
   // Calculate recommendations based on state
   const recommendations = useMemo((): LegalRecommendation[] => {
@@ -392,24 +407,11 @@ export const LegalTriageWizard: React.FC<{ incidentId?: string }> = ({ incidentI
     setState(INITIAL_STATE)
     setIsComplete(false)
     setSaved(false)
+    store.clearProtocolDraft(draftKey)
   }
 
-  const handleSave = () => {
-    // Save to localStorage
-    const triageData = {
-      incidentId,
-      timestamp: new Date().toISOString(),
-      state,
-      recommendations
-    }
-    localStorage.setItem(`triage-${incidentId || Date.now()}`, JSON.stringify(triageData))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
-
-  const handleExport = () => {
-    const content = `
-TRIAGE LEGAL - PROTOCOLO CDMX
+  // Build a human-readable summary of the triage result.
+  const buildSummary = (): string => `TRIAGE LEGAL - PROTOCOLO CDMX
 ==============================
 
 Incidente: ${incidentId || 'N/A'}
@@ -419,13 +421,11 @@ RESULTADOS DEL TRIAGE
 ---------------------
 
 1. Orden Judicial: ${state.judicialOrder.present === 'present' ? 'SÍ' : 'NO'}
-${state.judicialOrder.details ? `
-   Tribunal: ${state.judicialOrder.details.tribunalName}
+${state.judicialOrder.details ? `   Tribunal: ${state.judicialOrder.details.tribunalName}
    Fecha: ${state.judicialOrder.details.date}
    Expediente: ${state.judicialOrder.details.caseNumber}
    Firmada: ${state.judicialOrder.details.judgeSigned ? 'SÍ' : 'NO'}
 ` : ''}
-
 2. Categoría de Ocupante: ${state.occupantCategory ? OCCUPANT_PROTECTIOS[state.occupantCategory].title : 'N/A'}
 
 3. Violencia/Amenazas: ${state.violenceType ? VIOLENCE_PATHS[state.violenceType].dhPath : 'N/A'}
@@ -435,23 +435,35 @@ RECOMENDACIONES
 
 Prioridad: ${getPriorityLabel(highestPriority).toUpperCase()}
 
-${recommendations.map((rec, i) => `
-${i + 1}. ${rec.title}
+${recommendations.map((rec, i) => `${i + 1}. ${rec.title}
    ${rec.description}
    Artículo: ${rec.article || 'N/A'}
-   
-   Acciones:
-   ${rec.actions.map(a => `   - ${a}`).join('\n')}
-   
-   Contactos:
-   ${rec.contacts.map(c => `   - ${c.name}: ${c.phone}`).join('\n')}
-`).join('\n')}
 
+   Acciones:
+${rec.actions.map(a => `   - ${a}`).join('\n')}
+
+   Contactos:
+${rec.contacts.map(c => `   - ${c.name}: ${c.phone}`).join('\n')}
+`).join('\n')}
 ==============================
-Generado por Protocolo CDMX
-    `
-    
-    const blob = new Blob([content], { type: 'text/plain' })
+Generado por Protocolo CDMX`
+
+  // Persist the triage result as a permanent text documentation entry (with
+  // hash + chain of custody), replacing the previous localStorage write.
+  const handleSave = async () => {
+    await store.saveProtocolResult({
+      incidentId,
+      capturedBy: currentUser?.pseudonym || 'Operador',
+      title: `Triage legal ${incidentId ? `- ${incidentId}` : ''}`.trim(),
+      summary: buildSummary()
+    })
+    store.clearProtocolDraft(draftKey)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleExport = () => {
+    const blob = new Blob([buildSummary()], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -947,7 +959,7 @@ Generado por Protocolo CDMX
           </Button>
           <Button
             variant="outline"
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             className="flex items-center gap-2"
           >
             <Save className="w-4 h-4" />

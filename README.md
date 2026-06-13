@@ -104,14 +104,18 @@ grito-barrio/
 
 Esta aplicación implementa las siguientes medidas de seguridad:
 
-- **Cifrado AES-256-GCM**: Para datos sensibles
-- **Web Crypto API**: Implementación nativa del navegador
-- **Modo de coerción (Duress)**: Protección ante amenazas
-- **Autodestrucción**: Borrado remoto de datos
-- **Almacenamiento local**: Sin dependencia de servidores
-- **Pseudónimos**: Sin nombres reales en el sistema
+- **Cifrado AES-256-GCM**: Para datos sensibles (incidentes, evidencia, documentación)
+- **Bóveda de claves**: Clave derivada de tu contraseña (PBKDF2, 600k iteraciones)
+  y mantenida **solo en memoria**; nunca se guarda en disco
+- **Web Crypto API**: Criptografía nativa del navegador (sin dependencias frágiles)
+- **Modo de coerción (Duress)**: Bóveda señuelo independiente + borrado de pánico
+- **Borrado de pánico local y durable**: elimina todos los datos del dispositivo
+  (no requiere conexión; no hay borrado remoto)
+- **Almacenamiento 100% local**: sin servidores, sin telemetría, sin rastreadores
+- **Seudónimos**: sin nombres reales en el sistema
 
-Para más detalles, ver [SECURITY.md](./docs/SECURITY.md).
+Para el modelo de amenazas, garantías y **limitaciones conocidas**, ver
+[docs/SECURITY.md](./docs/SECURITY.md).
 
 ---
 

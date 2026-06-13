@@ -15,6 +15,7 @@ import type { StateCreator, StoreApi } from 'zustand'
  * initial, pre-unlock load).
  */
 const persistedLoaders = new Set<() => Promise<void>>()
+const persistedSavers = new Set<() => Promise<void>>()
 
 /**
  * Re-load every persisted slice from storage. Call after a successful unlock so
@@ -23,6 +24,16 @@ const persistedLoaders = new Set<() => Promise<void>>()
 export async function hydratePersistedState(): Promise<void> {
   for (const load of persistedLoaders) {
     await load()
+  }
+}
+
+/**
+ * Re-write every persisted slice to storage. Call right after the vault is
+ * created so data written while encryption was off gets re-saved as ciphertext.
+ */
+export async function repersistPersistedState(): Promise<void> {
+  for (const save of persistedSavers) {
+    await save()
   }
 }
 
@@ -52,6 +63,7 @@ export function persistToIndexedDB<T extends object>(
       }
 
       persistedLoaders.add(loadPersistedState)
+      persistedSavers.add(() => storeData(storeName, get(), encrypt).then(() => undefined))
       void loadPersistedState()
 
       // Wrap set to persist changes

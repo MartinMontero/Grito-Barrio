@@ -1,742 +1,93 @@
 /**
- * Database Unit Tests
- * Protocolo CDMX
- * 
- * Tests for IndexedDB operations, CRUD, queries, and migrations
+ * Database unit tests — exercise the REAL IndexedDBWrapper (src/lib/db.ts)
+ * against an in-memory IndexedDB (fake-indexeddb, installed in test setup).
+ *
+ * (The previous version mocked IndexedDB and asserted on the mocks.)
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createMockIncident } from '../setup'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { db } from '@/lib/db'
+import * as vault from '@/lib/vault'
 
-// Mock IndexedDB
-const mockIndex = {
-  get: vi.fn(),
-  getAll: vi.fn(),
-  openCursor: vi.fn(),
-  count: vi.fn(),
-}
+beforeEach(async () => {
+  vault.lock()
+  localStorage.clear()
+  // Start each test from a clean database.
+  await db.deleteDatabase().catch(() => undefined)
+})
 
-const mockObjectStore = {
-  add: vi.fn(),
-  put: vi.fn(),
-  get: vi.fn(),
-  delete: vi.fn(),
-  getAll: vi.fn(),
-  getAllKeys: vi.fn(),
-  index: vi.fn(() => mockIndex),
-  openCursor: vi.fn(),
-  count: vi.fn(),
-}
-
-const mockTransaction = {
-  objectStore: vi.fn(() => mockObjectStore),
-  oncomplete: null as any,
-  onerror: null as any,
-  commit: vi.fn(),
-  abort: vi.fn(),
-}
-
-const mockDB = {
-  createObjectStore: vi.fn(() => mockObjectStore),
-  deleteObjectStore: vi.fn(),
-  transaction: vi.fn(() => mockTransaction),
-  objectStoreNames: {
-    contains: vi.fn(),
-  },
-  close: vi.fn(),
-  version: 1,
-}
-
-const mockOpenRequest = {
-  onsuccess: null as any,
-  onerror: null as any,
-  onupgradeneeded: null as any,
-  result: mockDB,
-}
-
-global.indexedDB = {
-  open: vi.fn(() => mockOpenRequest),
-  deleteDatabase: vi.fn(),
-  databases: vi.fn(),
-} as any
-
-describe('Database - Connection', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+describe('db: CRUD on a non-encrypted store', () => {
+  it('put + get round-trips', async () => {
+    await db.put('safePoints', { id: 'sp1', alcaldia: 'Cuauhtémoc', isActive: true })
+    const res = await db.get<{ id: string; alcaldia: string }>('safePoints', 'sp1')
+    expect(res.success).toBe(true)
+    expect(res.data?.alcaldia).toBe('Cuauhtémoc')
   })
 
-  it('should open database connection', async () => {
-    const dbName = 'protocolo_cdmx'
-    const version = 1
+  it('getAll returns everything; delete removes one; count reflects it', async () => {
+    await db.put('contacts', { id: 'c1', role: 'legal', priority: 1 })
+    await db.put('contacts', { id: 'c2', role: 'medical', priority: 2 })
+    const all = await db.getAll<{ id: string }>('contacts')
+    expect(all.data?.length).toBe(2)
 
-    const openPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName, version)
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
-
-    // Simulate success
-    setTimeout(() => {
-      mockOpenRequest.onsuccess?.({ target: mockOpenRequest } as any)
-    }, 0)
-
-    const db = await openPromise
-
-    expect(indexedDB.open).toHaveBeenCalledWith(dbName, version)
-    expect(db).toBeDefined()
+    await db.delete('contacts', 'c1')
+    const count = await db.count('contacts')
+    expect(count.data).toBe(1)
   })
 
-  it('should handle connection error', async () => {
-    const openPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open('test', 1)
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(new Error('Connection failed'))
-    })
-
-    // Simulate error
-    setTimeout(() => {
-      mockOpenRequest.onerror?.({ target: mockOpenRequest } as any)
-    }, 0)
-
-    await expect(openPromise).rejects.toThrow('Connection failed')
-  })
-
-  it('should upgrade database on version change', async () => {
-    const upgradePromise = new Promise((resolve) => {
-      const request = indexedDB.open('test', 2)
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result
-        resolve(db)
-      }
-    })
-
-    // Simulate upgrade
-    setTimeout(() => {
-      mockOpenRequest.onupgradeneeded?.({ 
-        target: { ...mockOpenRequest, result: mockDB },
-        oldVersion: 1,
-        newVersion: 2,
-      } as any)
-    }, 0)
-
-    const db = await upgradePromise
-    expect(db.createObjectStore).toBeDefined()
-  })
-
-  it('should close database connection', () => {
-    mockDB.close()
-    expect(mockDB.close).toHaveBeenCalled()
+  it('getByIndex queries an index', async () => {
+    await db.put('contacts', { id: 'c1', role: 'legal', priority: 1, isAvailable: true })
+    await db.put('contacts', { id: 'c2', role: 'legal', priority: 2, isAvailable: true })
+    await db.put('contacts', { id: 'c3', role: 'medical', priority: 1, isAvailable: true })
+    const legal = await db.getByIndex<{ id: string }>('contacts', 'role', 'legal')
+    expect(legal.data?.length).toBe(2)
   })
 })
 
-describe('Database - CRUD Operations', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockObjectStore.add.mockReset()
-    mockObjectStore.put.mockReset()
-    mockObjectStore.get.mockReset()
-    mockObjectStore.delete.mockReset()
-    mockObjectStore.getAll.mockReset()
-  })
+describe('db: encrypted stores are ciphertext-only at rest', () => {
+  it('stores ONLY {keyPath, __encrypted} — no plaintext fields leak', async () => {
+    await vault.createVault('master-pass-123')
+    await db.put('incidents', { id: 'INC-1', threatLevel: 'critical', location: { colonia: 'Centro' }, notes: 'desalojo en curso' })
 
-  describe('Create', () => {
-    it('should add incident to database', async () => {
-      const incident = createMockIncident()
-      
-      mockObjectStore.add.mockImplementation((data, key) => {
-        const request = {
-          onsuccess: null as any,
-          onerror: null as any,
-          result: key || data.id,
+    // Read the raw record straight out of IndexedDB, bypassing decryption.
+    const raw = await new Promise<Record<string, unknown>>((resolve, reject) => {
+      const open = indexedDB.open('ProtocoloCDMX')
+      open.onsuccess = () => {
+        const database = open.result
+        const tx = database.transaction(['incidents'], 'readonly')
+        const req = tx.objectStore('incidents').get('INC-1')
+        req.onsuccess = () => {
+          const value = req.result
+          database.close() // release the connection so deleteDatabase() won't block
+          resolve(value)
         }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.add(incident)
-      
-      expect(mockObjectStore.add).toHaveBeenCalledWith(incident)
-    })
-
-    it('should reject duplicate keys', async () => {
-      mockObjectStore.add.mockImplementation(() => {
-        const request = {
-          onsuccess: null as any,
-          onerror: null as any,
-          error: new Error('Key already exists'),
+        req.onerror = () => {
+          database.close()
+          reject(req.error)
         }
-        setTimeout(() => request.onerror?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.add({ id: 'duplicate' })
-      
-      // Error would be thrown
-      expect(mockObjectStore.add).toHaveBeenCalled()
-    })
-
-    it('should auto-generate keys when not provided', async () => {
-      mockObjectStore.add.mockImplementation((data) => {
-        const request = {
-          onsuccess: null as any,
-          result: 1,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const data = { name: 'Test' }
-      const request = mockObjectStore.add(data)
-      
-      expect(mockObjectStore.add).toHaveBeenCalledWith(data)
-    })
-  })
-
-  describe('Read', () => {
-    it('should retrieve incident by ID', async () => {
-      const incident = createMockIncident()
-      
-      mockObjectStore.get.mockImplementation((id) => {
-        const request = {
-          onsuccess: null as any,
-          result: incident,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.get(incident.id)
-      
-      expect(mockObjectStore.get).toHaveBeenCalledWith(incident.id)
-    })
-
-    it('should return undefined for non-existent record', async () => {
-      mockObjectStore.get.mockImplementation(() => {
-        const request = {
-          onsuccess: null as any,
-          result: undefined,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.get('non-existent')
-      
-      expect(mockObjectStore.get).toHaveBeenCalledWith('non-existent')
-    })
-
-    it('should get all records', async () => {
-      const incidents = [createMockIncident(), createMockIncident()]
-      
-      mockObjectStore.getAll.mockImplementation(() => {
-        const request = {
-          onsuccess: null as any,
-          result: incidents,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.getAll()
-      
-      expect(mockObjectStore.getAll).toHaveBeenCalled()
-    })
-
-    it('should get all keys', async () => {
-      const keys = ['key1', 'key2', 'key3']
-      
-      mockObjectStore.getAllKeys.mockImplementation(() => {
-        const request = {
-          onsuccess: null as any,
-          result: keys,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.getAllKeys()
-      
-      expect(mockObjectStore.getAllKeys).toHaveBeenCalled()
-    })
-  })
-
-  describe('Update', () => {
-    it('should update existing record', async () => {
-      const incident = createMockIncident()
-      const updates = { status: 'resolved' }
-      
-      mockObjectStore.put.mockImplementation((data) => {
-        const request = {
-          onsuccess: null as any,
-          result: data.id,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const updatedIncident = { ...incident, ...updates }
-      const request = mockObjectStore.put(updatedIncident)
-      
-      expect(mockObjectStore.put).toHaveBeenCalledWith(updatedIncident)
-    })
-
-    it('should create record if key does not exist', async () => {
-      const newData = { id: 'new-id', name: 'New Record' }
-      
-      mockObjectStore.put.mockImplementation((data) => {
-        const request = {
-          onsuccess: null as any,
-          result: data.id,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.put(newData)
-      
-      expect(mockObjectStore.put).toHaveBeenCalledWith(newData)
-    })
-  })
-
-  describe('Delete', () => {
-    it('should delete record by key', async () => {
-      const key = 'INC-2025-001'
-      
-      mockObjectStore.delete.mockImplementation(() => {
-        const request = {
-          onsuccess: null as any,
-          result: undefined,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.delete(key)
-      
-      expect(mockObjectStore.delete).toHaveBeenCalledWith(key)
-    })
-
-    it('should handle delete of non-existent key', async () => {
-      mockObjectStore.delete.mockImplementation(() => {
-        const request = {
-          onsuccess: null as any,
-          result: undefined,
-        }
-        setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-        return request
-      })
-
-      const request = mockObjectStore.delete('non-existent')
-      
-      expect(mockObjectStore.delete).toHaveBeenCalledWith('non-existent')
-    })
-  })
-})
-
-describe('Database - Index Queries', () => {
-  const mockIndex = {
-    get: vi.fn(),
-    getAll: vi.fn(),
-    getAllKeys: vi.fn(),
-    openCursor: vi.fn(),
-    count: vi.fn(),
-  }
-
-  beforeEach(() => {
-    mockObjectStore.index.mockReturnValue(mockIndex)
-    vi.clearAllMocks()
-  })
-
-  it('should query by index', async () => {
-    const incidents = [createMockIncident(), createMockIncident()]
-    
-    mockIndex.getAll.mockImplementation(() => {
-      const request = {
-        onsuccess: null as any,
-        result: incidents,
       }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-      return request
+      open.onerror = () => reject(open.error)
     })
 
-    const index = mockObjectStore.index('status')
-    const request = index.getAll('responding')
-    
-    expect(mockObjectStore.index).toHaveBeenCalledWith('status')
-    expect(mockIndex.getAll).toHaveBeenCalledWith('responding')
+    expect(raw.id).toBe('INC-1')
+    expect(typeof raw.__encrypted).toBe('string')
+    // None of the sensitive plaintext fields may be present.
+    expect(raw.notes).toBeUndefined()
+    expect(raw.threatLevel).toBeUndefined()
+    expect(raw.location).toBeUndefined()
+    expect(JSON.stringify(raw)).not.toContain('desalojo en curso')
   })
 
-  it('should query by compound index', async () => {
-    mockIndex.getAll.mockImplementation(() => {
-      const request = {
-        onsuccess: null as any,
-        result: [],
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-      return request
-    })
-
-    const index = mockObjectStore.index('alcaldia-status')
-    const request = index.getAll(['Cuauhtémoc', 'active'])
-    
-    expect(mockObjectStore.index).toHaveBeenCalledWith('alcaldia-status')
+  it('decrypts back to the original when unlocked', async () => {
+    await vault.createVault('master-pass-123')
+    await db.put('incidents', { id: 'INC-2', threatLevel: 'high', location: { colonia: 'Roma' }, notes: 'secreto' })
+    const res = await db.get<{ id: string; notes: string }>('incidents', 'INC-2')
+    expect(res.data?.notes).toBe('secreto')
   })
 
-  it('should count records by index', async () => {
-    mockIndex.count.mockImplementation(() => {
-      const request = {
-        onsuccess: null as any,
-        result: 5,
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-      return request
-    })
-
-    const index = mockObjectStore.index('status')
-    const request = index.count('responding')
-    
-    expect(mockIndex.count).toHaveBeenCalledWith('responding')
-  })
-
-  it('should iterate with cursor', async () => {
-    const records = [createMockIncident(), createMockIncident()]
-    let cursorIndex = 0
-    
-    mockIndex.openCursor.mockImplementation(() => {
-      const request = {
-        onsuccess: null as any,
-        result: cursorIndex < records.length ? {
-          value: records[cursorIndex],
-          continue: () => {
-            cursorIndex++
-            request.onsuccess?.({ target: request } as any)
-          },
-        } : null,
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-      return request
-    })
-
-    const index = mockObjectStore.index('timestamp')
-    const request = index.openCursor()
-    
-    expect(mockIndex.openCursor).toHaveBeenCalled()
-  })
-
-  it('should use key range for queries', async () => {
-    mockIndex.getAll.mockImplementation(() => {
-      const request = {
-        onsuccess: null as any,
-        result: [],
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-      return request
-    })
-
-    const IDBKeyRange = {
-      lowerBound: (value: any) => ({ lower: value }),
-      upperBound: (value: any) => ({ upper: value }),
-      bound: (lower: any, upper: any) => ({ lower, upper }),
-      only: (value: any) => ({ only: value }),
-    }
-
-    const index = mockObjectStore.index('timestamp')
-    const range = IDBKeyRange.lowerBound('2025-01-01')
-    const request = index.getAll(range)
-    
-    expect(mockIndex.getAll).toHaveBeenCalledWith(expect.any(Object))
-  })
-})
-
-describe('Database - Transactions', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('should create readwrite transaction', () => {
-    const storeNames = ['incidents', 'checklists']
-    
-    mockDB.transaction.mockReturnValue(mockTransaction)
-    
-    const transaction = mockDB.transaction(storeNames, 'readwrite')
-    
-    expect(mockDB.transaction).toHaveBeenCalledWith(storeNames, 'readwrite')
-    expect(transaction).toBeDefined()
-  })
-
-  it('should create readonly transaction', () => {
-    const storeNames = ['incidents']
-    
-    mockDB.transaction.mockReturnValue(mockTransaction)
-    
-    const transaction = mockDB.transaction(storeNames, 'readonly')
-    
-    expect(mockDB.transaction).toHaveBeenCalledWith(storeNames, 'readonly')
-  })
-
-  it('should commit transaction', async () => {
-    mockDB.transaction.mockReturnValue(mockTransaction)
-    
-    const transaction = mockDB.transaction(['incidents'], 'readwrite')
-    transaction.commit()
-    
-    expect(mockTransaction.commit).toHaveBeenCalled()
-  })
-
-  it('should abort transaction', () => {
-    mockDB.transaction.mockReturnValue(mockTransaction)
-    
-    const transaction = mockDB.transaction(['incidents'], 'readwrite')
-    transaction.abort()
-    
-    expect(mockTransaction.abort).toHaveBeenCalled()
-  })
-
-  it('should handle transaction error', async () => {
-    const errorPromise = new Promise((resolve, reject) => {
-      mockTransaction.onerror = (error: any) => reject(error)
-      
-      setTimeout(() => {
-        mockTransaction.onerror?.(new Error('Transaction failed'))
-      }, 0)
-    })
-
-    await expect(errorPromise).rejects.toThrow('Transaction failed')
-  })
-
-  it('should complete transaction', async () => {
-    const completePromise = new Promise((resolve) => {
-      mockTransaction.oncomplete = () => resolve(undefined)
-      
-      setTimeout(() => {
-        mockTransaction.oncomplete?.()
-      }, 0)
-    })
-
-    await expect(completePromise).resolves.toBeUndefined()
-  })
-})
-
-describe('Database - Migrations', () => {
-  it('should create object store during upgrade', () => {
-    const storeName = 'incidents'
-    const options = { keyPath: 'id' }
-    
-    mockDB.createObjectStore.mockReturnValue(mockObjectStore)
-    
-    const store = mockDB.createObjectStore(storeName, options)
-    
-    expect(mockDB.createObjectStore).toHaveBeenCalledWith(storeName, options)
-    expect(store).toBeDefined()
-  })
-
-  it('should create index during upgrade', () => {
-    const indexName = 'status'
-    const keyPath = 'status'
-    const options = { unique: false }
-    
-    mockObjectStore.createIndex = vi.fn()
-    
-    mockDB.createObjectStore.mockReturnValue(mockObjectStore)
-    
-    const store = mockDB.createObjectStore('incidents', { keyPath: 'id' })
-    store.createIndex(indexName, keyPath, options)
-    
-    expect(mockObjectStore.createIndex).toHaveBeenCalledWith(indexName, keyPath, options)
-  })
-
-  it('should delete object store during upgrade', () => {
-    const storeName = 'old_store'
-    
-    mockDB.deleteObjectStore(storeName)
-    
-    expect(mockDB.deleteObjectStore).toHaveBeenCalledWith(storeName)
-  })
-
-  it('should handle multiple version upgrades', async () => {
-    const migrations = [
-      { version: 1, stores: ['incidents'] },
-      { version: 2, stores: ['incidents', 'checklists'] },
-      { version: 3, stores: ['incidents', 'checklists', 'documentation'] },
-    ]
-
-    migrations.forEach(migration => {
-      expect(migration.stores.length).toBeGreaterThan(0)
-    })
-
-    expect(migrations).toHaveLength(3)
-  })
-
-  it('should preserve data during migration', async () => {
-    const oldData = { id: '1', name: 'Old Data' }
-    
-    // Simulate migration that preserves data
-    const migratedData = { ...oldData, version: 2 }
-    
-    expect(migratedData.id).toBe(oldData.id)
-    expect(migratedData.name).toBe(oldData.name)
-    expect(migratedData.version).toBe(2)
-  })
-})
-
-describe('Database - Error Handling', () => {
-  it('should handle quota exceeded error', async () => {
-    mockObjectStore.add.mockImplementation(() => {
-      const request = {
-        onerror: null as any,
-        error: { name: 'QuotaExceededError' },
-      }
-      setTimeout(() => request.onerror?.({ target: request } as any), 0)
-      return request
-    })
-
-    const request = mockObjectStore.add({ data: 'large data' })
-    
-    expect(mockObjectStore.add).toHaveBeenCalled()
-  })
-
-  it('should handle constraint error (duplicate key)', async () => {
-    mockObjectStore.add.mockImplementation(() => {
-      const request = {
-        onerror: null as any,
-        error: { name: 'ConstraintError' },
-      }
-      setTimeout(() => request.onerror?.({ target: request } as any), 0)
-      return request
-    })
-
-    const request = mockObjectStore.add({ id: 'duplicate' })
-    
-    expect(mockObjectStore.add).toHaveBeenCalled()
-  })
-
-  it('should handle transaction inactive error', async () => {
-    mockTransaction.objectStore.mockImplementation(() => {
-      throw new Error('TransactionInactiveError')
-    })
-
-    expect(() => mockTransaction.objectStore('incidents')).toThrow('TransactionInactiveError')
-  })
-
-  it('should handle read-only transaction write attempt', async () => {
-    mockTransaction.objectStore.mockReturnValue(mockObjectStore)
-    mockDB.transaction.mockReturnValue(mockTransaction)
-
-    const transaction = mockDB.transaction(['incidents'], 'readonly')
-    const store = transaction.objectStore('incidents')
-    
-    // Attempting to write to readonly transaction should fail
-    mockObjectStore.add.mockImplementation(() => {
-      throw new Error('ReadOnlyError')
-    })
-
-    expect(() => mockObjectStore.add({})).toThrow('ReadOnlyError')
-  })
-
-  it('should handle version change blocking', async () => {
-    const blockedPromise = new Promise((_, reject) => {
-      mockOpenRequest.onblocked = () => reject(new Error('Database blocked'))
-      
-      setTimeout(() => {
-        mockOpenRequest.onblocked?.()
-      }, 0)
-    })
-
-    await expect(blockedPromise).rejects.toThrow('Database blocked')
-  })
-})
-
-describe('Database - Data Integrity', () => {
-  it('should validate data before storage', async () => {
-    const invalidData = { id: 'test', status: 'invalid_status' }
-    
-    const isValid = ['detected', 'verifying', 'confirmed', 'responding', 'withdrawal', 'resolved', 'escalated', 'closed']
-      .includes(invalidData.status)
-    
-    expect(isValid).toBe(false)
-  })
-
-  it('should maintain referential integrity', async () => {
-    const incident = createMockIncident()
-    const checklist = {
-      id: 'chk-001',
-      incidentId: incident.id,
-      items: [],
-    }
-    
-    // Checklist references incident
-    expect(checklist.incidentId).toBe(incident.id)
-  })
-
-  it('should handle concurrent writes safely', async () => {
-    const updates = [
-      { id: '1', field: 'value1' },
-      { id: '1', field: 'value2' },
-      { id: '1', field: 'value3' },
-    ]
-
-    // Simulate concurrent updates
-    mockObjectStore.put.mockImplementation((data) => {
-      const request = {
-        onsuccess: null as any,
-        result: data.id,
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), Math.random() * 10)
-      return request
-    })
-
-    // All updates should be processed
-    const results = await Promise.all(updates.map(u => mockObjectStore.put(u)))
-    
-    expect(results).toHaveLength(3)
-  })
-})
-
-describe('Database - Performance', () => {
-  it('should handle bulk inserts efficiently', async () => {
-    const incidents = Array.from({ length: 100 }, (_, i) => 
-      createMockIncident({ id: `INC-${i}` })
-    )
-
-    mockObjectStore.add.mockImplementation(() => {
-      const request = {
-        onsuccess: null as any,
-        result: 1,
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 1)
-      return request
-    })
-
-    const start = Date.now()
-    await Promise.all(incidents.map(inc => mockObjectStore.add(inc)))
-    const duration = Date.now() - start
-
-    expect(duration).toBeLessThan(1000)
-  })
-
-  it('should use indexes for efficient queries', async () => {
-    mockObjectStore.index.mockReturnValue(mockIndex)
-    
-    const index = mockObjectStore.index('status')
-    index.getAll('responding')
-    
-    expect(mockObjectStore.index).toHaveBeenCalledWith('status')
-  })
-
-  it('should limit query results', async () => {
-    mockIndex.getAll.mockImplementation((query, count) => {
-      const request = {
-        onsuccess: null as any,
-        result: Array(Math.min(10, count || 10)).fill(createMockIncident()),
-      }
-      setTimeout(() => request.onsuccess?.({ target: request } as any), 0)
-      return request
-    })
-
-    const index = mockObjectStore.index('timestamp')
-    const request = index.getAll(null, 10)
-    
-    // Should request limited results
-    expect(mockIndex.getAll).toHaveBeenCalledWith(null, 10)
+  it('refuses to write an encrypted store while the vault is locked (fail-closed)', async () => {
+    await vault.createVault('master-pass-123')
+    vault.lock()
+    await expect(db.put('incidents', { id: 'INC-3', notes: 'x' })).rejects.toBeTruthy()
   })
 })

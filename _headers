@@ -28,11 +28,6 @@
   Content-Type: application/manifest+json
   X-Content-Type-Options: nosniff
 
-/manifest.json
-  Cache-Control: public, max-age=3600, must-revalidate
-  Content-Type: application/manifest+json
-  X-Content-Type-Options: nosniff
-
 # ============================================
 # STATIC ASSETS - LONG CACHE
 # Hashed files can be cached forever
@@ -122,7 +117,14 @@
   
   # Strict transport security (HTTPS only)
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  
+
+  # Cross-origin isolation (defense in depth)
+  Cross-Origin-Opener-Policy: same-origin
+  X-Permitted-Cross-Domain-Policies: none
+
   # Content Security Policy (CSP)
-  # Strict CSP for security - adjust if needed
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; media-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';
+  # Notes: 'unsafe-eval' is intentionally NOT allowed (the Vite production build
+  # does not need it). 'unsafe-inline' is required only for inline style
+  # attributes (React style={{}}). The app is offline-first and talks to no
+  # backend, so connect-src is limited to 'self'.
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;

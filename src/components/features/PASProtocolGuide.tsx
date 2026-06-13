@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Shield,
   Phone,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { useProtocoloStore } from '@/store'
 
 type PASStep = 'proteger' | 'avisar' | 'socorrer'
 type EmergencyContact = 'c5' | 'erum' | 'cruz-roja'
@@ -24,13 +25,11 @@ type EmergencyContact = 'c5' | 'erum' | 'cruz-roja'
 interface PASProtocolGuideProps {
   onComplete?: () => void
   onEmergencyCall?: (contact: EmergencyContact) => void
+  /** Optional incident to associate the persisted P.A.S. summary/draft with. */
+  incidentId?: string
 }
 
-interface ChecklistItem {
-  id: string
-  text: string
-  checked: boolean
-}
+type PASChecklist = typeof INITIAL_CHECKLIST
 
 const EMERGENCY_CONTACTS = [
   { id: 'c5' as EmergencyContact, name: 'C5', number: '55-5533-5533', alt: '911', color: 'bg-red-600' },
@@ -122,11 +121,26 @@ const REFERENCE_CARDS = {
 
 export const PASProtocolGuide: React.FC<PASProtocolGuideProps> = ({
   onComplete,
-  onEmergencyCall
+  onEmergencyCall,
+  incidentId
 }) => {
+  const store = useProtocoloStore()
+  const currentUser = store.currentUser
+  const draftKey = `pas-${incidentId || 'global'}`
+
   const [currentStep, setCurrentStep] = useState<PASStep>('proteger')
-  const [checklist, setChecklist] = useState(INITIAL_CHECKLIST)
+  const [checklist, setChecklist] = useState<PASChecklist>(() => {
+    // Restore an in-progress draft so progress survives navigation/unmount.
+    const draft = store.getProtocolDraft<PASChecklist>(draftKey)
+    return draft ?? INITIAL_CHECKLIST
+  })
   const [expandedRef, setExpandedRef] = useState<string | null>(null)
+
+  // Persist the checklist on every change (debounced) so it is not lost.
+  useEffect(() => {
+    const t = setTimeout(() => store.saveProtocolDraft(draftKey, checklist), 300)
+    return () => clearTimeout(t)
+  }, [checklist, draftKey, store])
 
   const stepConfig = STEP_CONTENT[currentStep]
   const stepNumber = currentStep === 'proteger' ? 1 : currentStep === 'avisar' ? 2 : 3
@@ -163,6 +177,42 @@ export const PASProtocolGuide: React.FC<PASProtocolGuideProps> = ({
     onEmergencyCall?.(contactId)
     const contact = EMERGENCY_CONTACTS.find(c => c.id === contactId)
     if (contact) window.location.href = `tel:${contact.number.replace(/-/g, '')}`
+  }
+
+  // Build a human-readable summary of the P.A.S. checklist for the record.
+  const buildSummary = useMemo(() => () => {
+    const sectionTitle: Record<PASStep, string> = {
+      proteger: 'PROTEGER',
+      avisar: 'AVISAR',
+      socorrer: 'SOCORRER'
+    }
+    const lines: string[] = [
+      'PROTOCOLO P.A.S. - PROTOCOLO CDMX',
+      `Incidente: ${incidentId || 'N/A'}`,
+      `Fecha: ${new Date().toLocaleString('es-MX')}`,
+      `Progreso: ${progress}%`,
+      ''
+    ];
+    (['proteger', 'avisar', 'socorrer'] as PASStep[]).forEach(step => {
+      lines.push(`${sectionTitle[step]}`)
+      checklist[step].forEach(item => {
+        lines.push(`  [${item.checked ? 'X' : ' '}] ${item.text}`)
+      })
+      lines.push('')
+    })
+    return lines.join('\n')
+  }, [checklist, incidentId, progress])
+
+  // Finalize: persist a permanent summary entry, clear the draft, then notify.
+  const handleComplete = async () => {
+    await store.saveProtocolResult({
+      incidentId,
+      capturedBy: currentUser?.pseudonym || 'Operador',
+      title: `Resumen P.A.S. ${incidentId ? `- ${incidentId}` : ''}`.trim(),
+      summary: buildSummary()
+    })
+    store.clearProtocolDraft(draftKey)
+    onComplete?.()
   }
 
   return (
@@ -359,7 +409,7 @@ export const PASProtocolGuide: React.FC<PASProtocolGuideProps> = ({
           </Button>
           <Button
             className={cn("flex-1", c.bg)}
-            onClick={() => currentStep === 'socorrer' ? onComplete?.() : navigateStep('next')}
+            onClick={() => currentStep === 'socorrer' ? void handleComplete() : navigateStep('next')}
           >
             {currentStep === 'socorrer' ? 'Completar' : 'Siguiente'}
             <ChevronRight className="w-4 h-4 ml-2" />

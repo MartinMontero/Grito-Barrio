@@ -46,8 +46,32 @@ export interface ChecklistSlice {
 // DEFAULT CHECKLIST ITEMS
 // =============================================================================
 
+/**
+ * Canonical checklist template for an illegal-eviction rapid response.
+ *
+ * IMPORTANT: the ID for each item is derived from its INDEX in this array as
+ * `${incidentId}-item-${index}` (see initializeChecklist). This is the SINGLE
+ * canonical id scheme used by every component (EmergencyDashboard checklist
+ * section, EmergencyChecklist, etc.). Do not reorder items without
+ * understanding that completion records are keyed by index-derived ids.
+ *
+ * Phases follow the CDMX 60-minute protocol:
+ *   - 0-5min   : Primeros 5 minutos (activación / seguridad inmediata)
+ *   - 5-20min  : Llegada y evaluación en escena
+ *   - 20-45min : Documentación y escalación legal
+ *   - 45-60min : Soporte sostenido y retirada/seguimiento
+ */
 const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
-  // Phase 0-5min: Immediate Response
+  // ===========================================================================
+  // Fase 0-5min: Primeros 5 minutos — Activación inmediata
+  // ===========================================================================
+  {
+    text: 'Confirmar la alerta (ubicación, hora y naturaleza de la amenaza)',
+    completed: false,
+    category: 'communication',
+    timeWindow: '0-5min',
+    mandatory: true
+  },
   {
     text: 'Verificar seguridad de la escena - Evaluar riesgos inmediatos',
     completed: false,
@@ -56,7 +80,7 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
     mandatory: true
   },
   {
-    text: 'Activar protocolo de respuesta rápida',
+    text: 'Designar líder de incidente y activar protocolo de respuesta rápida',
     completed: false,
     category: 'communication',
     timeWindow: '0-5min',
@@ -84,7 +108,30 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
     mandatory: false
   },
 
-  // Phase 5-20min: Initial Stabilization
+  // ===========================================================================
+  // Fase 5-20min: Llegada y evaluación en escena
+  // ===========================================================================
+  {
+    text: 'Iniciar protocolo P.A.S. (Proteger, Avisar, Socorrer)',
+    completed: false,
+    category: 'safety',
+    timeWindow: '5-20min',
+    mandatory: true
+  },
+  {
+    text: 'Evaluar presencia de actores armados y autoridades',
+    completed: false,
+    category: 'safety',
+    timeWindow: '5-20min',
+    mandatory: true
+  },
+  {
+    text: 'Evaluar desencadenantes de retirada controlada',
+    completed: false,
+    category: 'safety',
+    timeWindow: '5-20min',
+    mandatory: true
+  },
   {
     text: 'Contactar abogado de guardia',
     completed: false,
@@ -107,21 +154,23 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
     mandatory: true
   },
   {
+    text: 'Localizar testigos (mínimo 2 identificados)',
+    completed: false,
+    category: 'documentation',
+    timeWindow: '5-20min',
+    mandatory: false
+  },
+  {
     text: 'Preparar punto seguro de evacuación',
     completed: false,
     category: 'logistics',
     timeWindow: '5-20min',
     mandatory: false
   },
-  {
-    text: 'Documentar testimonios iniciales',
-    completed: false,
-    category: 'documentation',
-    timeWindow: '5-20min',
-    mandatory: false
-  },
 
-  // Phase 20-45min: Legal and Documentation
+  // ===========================================================================
+  // Fase 20-45min: Documentación y escalación legal
+  // ===========================================================================
   {
     text: 'Realizar triage legal completo',
     completed: false,
@@ -130,9 +179,23 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
     mandatory: true
   },
   {
-    text: 'Documentar toda evidencia disponible',
+    text: 'Documentar toda evidencia disponible (cadena de custodia)',
     completed: false,
     category: 'documentation',
+    timeWindow: '20-45min',
+    mandatory: true
+  },
+  {
+    text: 'Determinar ruta de queja de DH (CDHCM / CNDH)',
+    completed: false,
+    category: 'legal',
+    timeWindow: '20-45min',
+    mandatory: true
+  },
+  {
+    text: 'Verificar consentimiento informado del sobreviviente',
+    completed: false,
+    category: 'legal',
     timeWindow: '20-45min',
     mandatory: true
   },
@@ -151,7 +214,9 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
     mandatory: false
   },
 
-  // Phase 45-60min: Sustained Support
+  // ===========================================================================
+  // Fase 45-60min: Soporte sostenido, retirada y seguimiento
+  // ===========================================================================
   {
     text: 'Revisar progreso y ajustar estrategia',
     completed: false,
@@ -160,21 +225,28 @@ const defaultChecklistItems: Omit<ChecklistItem, 'id'>[] = [
     mandatory: true
   },
   {
-    text: 'Confirmar plan de seguimiento',
+    text: 'Confirmar plan de seguimiento y acompañamiento',
     completed: false,
     category: 'follow_up',
     timeWindow: '45-60min',
     mandatory: true
   },
   {
-    text: 'Documentar resolución o estado actual',
+    text: 'Documentar resolución o estado actual del incidente',
     completed: false,
     category: 'documentation',
     timeWindow: '45-60min',
     mandatory: true
   },
   {
-    text: 'Briefing con equipo completo',
+    text: 'Confirmar retirada segura del equipo (si aplica)',
+    completed: false,
+    category: 'safety',
+    timeWindow: '45-60min',
+    mandatory: false
+  },
+  {
+    text: 'Briefing de cierre con el equipo completo',
     completed: false,
     category: 'follow_up',
     timeWindow: '45-60min',

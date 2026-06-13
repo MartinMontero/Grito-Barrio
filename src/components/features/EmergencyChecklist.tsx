@@ -417,12 +417,43 @@ const PHASES_DATA: PhaseData[] = [
 ]
 
 // =============================================================================
+// CANONICAL ITEM-ID SCHEME
+// =============================================================================
+//
+// The single source of truth for checklist data is checklistSlice. Every item
+// is keyed as `${incidentId}-item-${index}` where `index` is the position in
+// the slice's default template (see store/checklistSlice.ts). This component
+// renders the slice's items and overlays presentation-only metadata (critical
+// flag, recommended roles, long description) by matching the item TEXT, which
+// is stable across the template.
+//
+// The local PHASES_DATA above is kept ONLY as a presentation-metadata source;
+// it is no longer used to seed/mutate the store.
+
+interface ItemMeta {
+  isCritical?: boolean
+  role?: TeamRole[]
+  description?: string
+}
+
+const ITEM_META_BY_TEXT: Record<string, ItemMeta> = PHASES_DATA
+  .flatMap(phase => phase.items)
+  .reduce<Record<string, ItemMeta>>((acc, item) => {
+    acc[item.text] = {
+      isCritical: item.isCritical,
+      role: item.role,
+      description: item.description
+    }
+    return acc
+  }, {})
+
+function getItemMeta(item: ChecklistItem): ItemMeta {
+  return ITEM_META_BY_TEXT[item.text] ?? {}
+}
+
+// =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
-
-function generateItemId(phaseId: string, index: number): string {
-  return `${phaseId}-item-${index}`
-}
 
 function getCategoryIcon(category: ChecklistItem['category']) {
   const icons: Record<ChecklistItem['category'], React.ReactNode> = {
@@ -486,27 +517,16 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
   const [uncheckReason, setUncheckReason] = useState('')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'pending'>('synced')
+  const [shareNotice, setShareNotice] = useState<string | null>(null)
 
-  // Checklist state from store
+  // Checklist state from store (single source of truth: checklistSlice)
   const checklist = store.checklists[incidentId] || []
   const progress = store.getProgress(incidentId)
 
-  // Initialize checklist if needed
+  // Initialize checklist via the store action (never mutate store directly).
   useEffect(() => {
-    if (!store.checklists[incidentId]) {
-      // Initialize with our data structure
-      const initialItems: ChecklistItem[] = PHASES_DATA.flatMap(phase =>
-        phase.items.map((item, index) => ({
-          ...item,
-          id: generateItemId(phase.id, index),
-          completed: false,
-          category: item.category,
-          timeWindow: item.timeWindow,
-          mandatory: item.mandatory
-        }))
-      )
-      
-      store.checklists[incidentId] = initialItems
+    if (incidentId && !(store.checklists[incidentId]?.length > 0)) {
+      store.initializeChecklist(incidentId)
     }
   }, [incidentId, store])
 
@@ -524,23 +544,15 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
     }
   }, [])
 
-  // Get items for a specific phase
+  // Get items for a specific phase. The store's checklist is the source of
+  // truth; we only overlay presentation metadata (critical/role/description).
   const getPhaseItems = useCallback((phaseId: EmergencyPhase): ChecklistItemData[] => {
-    const phaseData = PHASES_DATA.find(p => p.id === phaseId)
-    if (!phaseData) return []
-
-    const storedItems = checklist.filter(item => item.timeWindow === phaseId)
-    
-    return phaseData.items.map((templateItem, index) => {
-      const storedItem = storedItems.find(si => si.id === generateItemId(phaseId, index))
-      return {
-        ...templateItem,
-        id: generateItemId(phaseId, index),
-        completed: storedItem?.completed || false,
-        timestamp: storedItem?.timestamp,
-        completedBy: storedItem?.completedBy
-      }
-    })
+    return checklist
+      .filter(item => item.timeWindow === phaseId)
+      .map(item => ({
+        ...item,
+        ...getItemMeta(item)
+      }))
   }, [checklist])
 
   // Filter items
@@ -610,14 +622,11 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
   const stats = useMemo(() => {
     const total = checklist.length
     const completed = checklist.filter(i => i.completed).length
-    const critical = checklist.filter(i => {
-      const template = PHASES_DATA.flatMap(p => p.items).find(ti => ti.id === i.id)
-      return template?.isCritical && !i.completed
-    }).length
+    const critical = checklist.filter(i => getItemMeta(i).isCritical && !i.completed).length
     const mandatory = checklist.filter(i => i.mandatory && !i.completed).length
 
-    return { total, completed, critical, mandatory, progress: total > 0 ? Math.round((completed / total) * 100) : 0 }
-  }, [checklist])
+    return { total, completed, critical, mandatory, progress: progress }
+  }, [checklist, progress])
 
   // Navigate to next/prev phase
   const navigatePhase = (direction: 'next' | 'prev') => {
@@ -654,18 +663,33 @@ export const EmergencyChecklist: React.FC<EmergencyChecklistProps> = ({
     if (navigator.share) {
       try {
         await navigator.share(shareData)
-      } catch (err) {
-        console.log('Share cancelled')
+      } catch {
+        // User cancelled the native share sheet; nothing else to do.
       }
     } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`)
-      alert('Enlace copiado al portapapeles')
+      // Fallback: copy to clipboard and show an inline confirmation.
+      try {
+        await navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`)
+        setShareNotice('Enlace copiado al portapapeles')
+      } catch {
+        setShareNotice('No se pudo copiar el enlace')
+      }
+      setTimeout(() => setShareNotice(null), 2500)
     }
   }
 
   return (
     <div className="bg-white dark:bg-gray-900 min-h-screen">
+      {/* Inline share/copy confirmation (replaces alert()) */}
+      {shareNotice && (
+        <div
+          role="status"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-lg bg-gray-900 text-white text-sm shadow-lg"
+        >
+          {shareNotice}
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-lg mx-auto px-4 py-4">

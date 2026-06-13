@@ -94,22 +94,24 @@ El sistema se bloquea automáticamente después de un período de inactividad co
 #### Cifrado en Reposo
 
 - **Algoritmo**: AES-256-GCM
-- **Derivación de claves**: PBKDF2 con 100,000 iteraciones
+- **Derivación de claves**: PBKDF2 con 600,000 iteraciones
 - **Salt**: 32 bytes aleatorios
 - **IV**: 12 bytes único por operación
 
-#### Cifrado en Transito
+#### Transmisión de datos
 
-- Datos sincronizados utilizan cifrado TLS 1.3
-- No se envían datos sin cifrado
-- Verificación de certificados
+Grito & Barrio es **offline-first y no tiene servidor central**: los datos de
+incidentes **no salen del dispositivo**. No hay sincronización en la nube ni
+telemetría. La única forma de mover datos entre dispositivos es exportar un
+**respaldo cifrado con contraseña** (AES-256-GCM) y restaurarlo manualmente.
 
 ### 2.3 Gestión de Sesiones
 
-- Sesiones de 30 minutos de duración máxima
-- Renovación automática de claves de sesión
-- Invalidación remota posible
-- Limpieza automática de datos temporales
+- La clave de cifrado vive **solo en memoria** mientras la app está desbloqueada.
+- Autobloqueo por inactividad (configurable; 5 min por defecto): vuelve a pedir
+  la contraseña y descarta la clave de memoria.
+- Al recargar o cerrar la app, la clave se pierde y hay que volver a desbloquear.
+- **No existe "invalidación remota"** (no hay servidor): la protección es local.
 
 ### 2.4 Auditoría de Seguridad
 
@@ -135,7 +137,7 @@ Datos Sensibles
       ↓
 [TextEncoder] → ArrayBuffer
       ↓
-[PBKDF2] Derivar clave (100,000 iteraciones)
+[PBKDF2] Derivar clave (600,000 iteraciones)
       ↓
 [AES-256-GCM] Cifrar con IV aleatorio
       ↓
@@ -148,7 +150,7 @@ Datos Sensibles
 const CRYPTO_CONSTANTS = {
   ALGORITHM: 'AES-GCM',
   KEY_LENGTH: 256,        // bits
-  ITERATIONS: 100000,     // PBKDF2
+  ITERATIONS: 600000,     // PBKDF2
   SALT_LENGTH: 32,        // bytes
   IV_LENGTH: 12,          // bytes
   TAG_LENGTH: 128,        // bits
@@ -207,40 +209,39 @@ Usuario ingresa contraseña
     Acceso denegado
 ```
 
-### 4.3 Características del Modo Coerción
+### 4.3 Cómo funciona realmente
 
-- **Datos Falsos**: Muestra información ficticia preconfigurada
-- **Acceso Oculto**: Permite acceso a funciones ocultas con gestos especiales
-- **Eliminación Programada**: Puede programar eliminación de datos reales después de un tiempo
-- **Alerta Silenciosa**: Opción de enviar alerta a contactos de confianza
+La contraseña de coerción desbloquea una **bóveda señuelo independiente**, con su
+propia clave de cifrado. No es "los mismos datos ocultos": es un espacio
+**separado y vacío/ficticio**, de modo que los datos reales permanecen cifrados e
+inaccesibles con esa contraseña.
+
+- **Aislamiento criptográfico real**: la clave de coerción no puede descifrar la
+  bóveda real (son DEK distintas envueltas en ranuras separadas).
+- **Negación plausible**: el registro en disco no marca cuál ranura es "coerción";
+  no revela que exista una contraseña de coerción.
+- **Borrado automático**: al desbloquear con la contraseña de coerción se
+  **programa un borrado de pánico** (con un retraso configurable) que es
+  **durable**: sobrevive a recargas y al cierre de la app, y se ejecuta al
+  reabrir si venció el plazo.
 
 ### 4.4 Configuración
 
 ```typescript
-// Configurar contraseña de coerción
+// Crear la bóveda real (primera contraseña)
+await securityManager.setRealPassword('mi-contraseña-fuerte')
+
+// Añadir una contraseña de coerción (crea la bóveda señuelo)
 await securityManager.setDuressPassword('clave-coercion-123')
-
-// Configurar datos falsos
-await securityManager.setFakeData({
-  incidents: [...],  // Incidentes ficticios
-  contacts: [...],   // Contactos inocuos
-  user: { ... }      // Perfil falso
-})
-
-// Activar alerta silenciosa
-securityManager.configureSilentAlert({
-  enabled: true,
-  contacts: ['coordinador1', 'coordinador2'],
-  message: 'Usuario en modo coerción'
-})
 ```
 
 ### 4.5 Uso del Modo de Coerción
 
-1. **Activación**: Ingresar contraseña de coerción en lugar de la real
-2. **Funcionamiento Normal**: La app funciona normalmente pero con datos falsos
-3. **Acceso Oculto**: Doble toque en el logo + gesto secreto para acceso real
-4. **Eliminación**: Después del tiempo configurado, los datos reales se eliminan
+1. **Activación**: introducir la contraseña de coerción en la pantalla de bloqueo.
+2. **Apariencia**: la app abre la bóveda señuelo (sin tus datos reales).
+3. **Borrado programado**: se arma un borrado de pánico durable de TODOS los datos.
+4. **Recuperación**: si fue un falso positivo, cancela el borrado desde Seguridad
+   antes de que venza el plazo.
 
 ---
 
@@ -252,11 +253,11 @@ securityManager.configureSilentAlert({
 |---------|---------|--------------|------------|
 | **Acceso físico al dispositivo** | Alto | Alta | Bloqueo, cifrado, autobloqueo |
 | **Coerción para obtener contraseña** | Alto | Media | Modo de coerción |
-| **Extracción de datos forense** | Alto | Baja | Cifrado, eliminación remota |
-| **Malware en dispositivo** | Medio | Media | Sin permisos innecesarios |
-| **Interceptación de comunicaciones** | Alto | Baja | E2E encryption, TLS |
+| **Extracción de datos forense** | Alto | Baja | Cifrado AES-256-GCM, clave solo en memoria |
+| **Malware en dispositivo** | Medio | Media | Sin permisos innecesarios, sin servidor |
+| **Interceptación de comunicaciones** | Bajo | Baja | No hay transmisión: los datos no salen del dispositivo |
 | **Ingeniería social** | Alto | Media | Capacitación, UX segura |
-| **Acceso por parte de autoridades** | Alto | Media | Modo coerción, eliminación |
+| **Acceso por parte de autoridades** | Alto | Media | Modo coerción, borrado de pánico local |
 
 ### 5.2 Vector de Ataque: Dispositivo Perdido/Robado
 
@@ -264,12 +265,12 @@ securityManager.configureSilentAlert({
 
 **Defensas**:
 1. Bloqueo biométrico/PIN del sistema operativo
-2. Cifrado de todo el almacenamiento
-3. Autobloqueo de la app
-4. Contraseña de coerción
-5. Eliminación remota posible (si hay conexión)
+2. Cifrado AES-256-GCM de los datos sensibles (incidentes, evidencia)
+3. Autobloqueo de la app y clave de cifrado solo en memoria
+4. Contraseña de coerción (bóveda señuelo)
+5. Borrado de pánico **local** y durable (no requiere conexión)
 
-**Mitigación**: Los datos están cifrados y protegidos por múltiples capas.
+**Mitigación**: sin la contraseña, los datos cifrados son irrecuperables.
 
 ### 5.3 Vector de Ataque: Coerción Física
 
@@ -307,7 +308,8 @@ Si descubres una vulnerabilidad de seguridad, por favor sigue este proceso:
 
 ### 6.2 Proceso de Reporte
 
-1. **Email**: Envía un correo a `security@protocolo-cdmx.org`
+1. **GitHub Security Advisory**: usa "Report a vulnerability" en la pestaña
+   *Security* del repositorio (privado hasta su resolución coordinada).
 2. **Asunto**: `[SECURITY] Breve descripción de la vulnerabilidad`
 3. **Contenido**:
    - Descripción detallada del problema
@@ -331,27 +333,40 @@ Los investigadores de seguridad que reporten vulnerabilidades válidas serán re
 
 ---
 
-## 7. Auditorías de Seguridad
+## 7. Estado de Seguridad y Limitaciones
 
-### 7.1 Auditorías Internas
+### 7.1 Estado actual
 
-| Fecha | Alcance | Resultado |
-|-------|---------|-----------|
-| 2025-01-15 | Cifrado y almacenamiento | ✅ Aprobado |
-| 2025-01-20 | Autenticación y sesiones | ✅ Aprobado |
-| 2025-01-25 | Módulo de coerción | ✅ Aprobado |
+- El núcleo criptográfico (AES-256-GCM, PBKDF2 600k, bóveda de claves, borrado de
+  pánico, coerción) está implementado y cubierto por **pruebas reales** que
+  ejercitan el código de producción (cifrado/descifrado, contraseña incorrecta,
+  aislamiento de la bóveda señuelo, persistencia fail-closed).
+- **Aún no se ha realizado** una auditoría de seguridad externa independiente.
+  Antes de un despliegue de alto riesgo, recomendamos una revisión por terceros.
 
-### 7.2 Auditorías Externas (Planificadas)
+### 7.2 Limitaciones conocidas (importante)
 
-- **Q2 2025**: Auditoría de seguridad completa por firma externa
-- **Q3 2025**: Pentesting de aplicación móvil
-- **Q4 2025**: Revisión de código por especialistas
+Sé honesto sobre lo que esta herramienta **no** puede hacer:
 
-### 7.3 Reportes de Vulnerabilidades
+- **Crypto en el navegador**: la seguridad depende del navegador/SO y de la Web
+  Crypto API. Un dispositivo comprometido (malware, keylogger, root) puede
+  capturar la contraseña o la memoria mientras la app está desbloqueada.
+- **Datos en uso**: mientras la app está desbloqueada, la clave está en memoria y
+  los datos son legibles. El autobloqueo reduce, pero no elimina, esta ventana.
+- **Metadatos / sistema operativo**: el SO, las copias de seguridad del sistema y
+  los servicios del navegador pueden retener rastros fuera del control de la app.
+  El borrado de pánico limpia el almacenamiento de la app, no copias del SO.
+- **Sin borrado remoto**: no hay servidor; no se puede borrar a distancia.
+- **Perfil/ajustes locales**: el seudónimo y los ajustes se guardan en
+  `localStorage` (no cifrado). Los datos sensibles (incidentes, evidencia,
+  documentación) sí se cifran cuando defines una contraseña.
+- **Coacción sofisticada**: la negación plausible ayuda, pero un adversario que
+  sepa que existe esta app puede exigir explícitamente una segunda contraseña.
 
-| CVE | Descripción | Severidad | Estado |
-|-----|-------------|-----------|--------|
-| Ninguna reportada | - | - | - |
+### 7.3 Reporte de vulnerabilidades
+
+Usa los **GitHub Security Advisories** del repositorio (Security → Report a
+vulnerability) en lugar de abrir un issue público.
 
 ---
 
@@ -425,9 +440,9 @@ Los investigadores de seguridad que reporten vulnerabilidades válidas serán re
 
 ## Contacto de Seguridad
 
-- **Email**: security@protocolo-cdmx.org
-- **PGP Key**: [Descargar clave pública](./security-pgp-key.asc)
-- **Respuesta esperada**: 24-72 horas
+- **Reporte privado**: GitHub Security Advisories del repositorio
+  (`Security` → `Report a vulnerability`).
+- **Respuesta esperada**: lo antes posible (proyecto comunitario, sin SLA formal).
 
 ---
 
