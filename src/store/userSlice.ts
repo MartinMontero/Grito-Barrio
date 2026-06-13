@@ -43,6 +43,7 @@ export interface UserSlice {
   getUserByPseudonym: (pseudonym: string) => ExtendedUserProfile | null
   hasCompletedTraining: (moduleId: string) => boolean
   isTrainingValid: (moduleId: string) => boolean
+  ensureLocalUser: () => void
 }
 
 // =============================================================================
@@ -354,6 +355,32 @@ export const createUserSlice: StateCreator<
       }
 
       return true
+    },
+
+    /**
+     * Ensure a local operator profile exists. This app is local-first and
+     * single-operator: authentication is the vault passphrase, while
+     * `currentUser` is just the local operator's profile (pseudonym, role,
+     * certification). Bootstrapping a default profile on first run lets
+     * incident/checklist features (which gate on `currentUser`) work, and the
+     * pseudonym/role can be customised later in Settings.
+     */
+    ensureLocalUser: () => {
+      if (get().currentUser) return
+      set({
+        currentUser: {
+          pseudonym: 'Operador',
+          role: 'observer',
+          certificationLevel: 1,
+          trainingCompleted: [],
+          contactInfo: { secureContact: '', preferredMethod: 'signal' },
+          operationalStatus: 'active',
+          lastActive: getCurrentTimestamp(),
+          languages: ['es'],
+          specializations: []
+        },
+        isAuthenticated: true
+      })
     }
   })
 )

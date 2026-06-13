@@ -1,363 +1,263 @@
 /**
- * Main Application Component
- * Protocolo CDMX
+ * Application root — Grito & Barrio
+ *
+ * Boot sequence:
+ *  1. Re-arm any panic wipe scheduled before the last reload (durable).
+ *  2. Ensure a local operator profile exists (incident/checklist features need it).
+ *  3. Gate the app behind the vault lock screen when a vault exists and is locked.
+ *     After unlock the encrypted slices are re-hydrated (the data key is in-memory
+ *     only and unavailable before unlock).
+ *
+ * Navigation uses react-router with the AppShell layout (header, drawer, bottom
+ * nav, panic overlay). Detail screens resolve their data from the route param.
  */
 
-import React, { useState, useCallback } from 'react'
-import { Header } from '@/components/features/Header'
-import { BottomNavigation } from '@/components/features/BottomNavigation'
+import React, { useEffect, useState } from 'react'
+import { useRoutes, useNavigate, useParams, Navigate } from 'react-router-dom'
+
+import { AppShell } from '@/components/layout/AppShell'
+import { LockScreen } from '@/components/auth/LockScreen'
+
 import { HomePage } from '@/components/features/HomePage'
 import { ProtocolsPage } from '@/components/features/ProtocolsPage'
 import { ProtocolDetailPage } from '@/components/features/ProtocolDetailPage'
 import { LegalPage } from '@/components/features/LegalPage'
 import { LegalResourceDetailPage } from '@/components/features/LegalResourceDetailPage'
+import { LegalTriageWizard } from '@/components/features/LegalTriageWizard'
 import { ResourcesPage } from '@/components/features/ResourcesPage'
 import { SettingsPage } from '@/components/features/SettingsPage'
 import { EmergencyModal } from '@/components/features/EmergencyModal'
 import { EmergencyDashboard } from '@/components/features/EmergencyDashboard'
 import { EmergencyChecklist } from '@/components/features/EmergencyChecklist'
 import { PASProtocolGuide } from '@/components/features/PASProtocolGuide'
-import { LegalTriageWizard } from '@/components/features/LegalTriageWizard'
 import { EvidenceCollection } from '@/components/features/EvidenceCollection'
 import { RoleSelector } from '@/components/features/RoleSelector'
 import { RoleDashboard } from '@/components/features/RoleDashboard'
-import { QuickActions } from '@/components/features/QuickActions'
-import { useProtocoloStore } from '@/store'
-import type { Protocol, LegalResource, TeamRole, Incident } from '@/types'
 
-type ViewState = 
-  | { type: 'home' }
-  | { type: 'protocols' }
-  | { type: 'protocol-detail', protocol: Protocol }
-  | { type: 'legal' }
-  | { type: 'legal-detail', resource: LegalResource }
-  | { type: 'legal-triage', occupantCategory?: 'primary' | 'family' | 'worker' | 'unauthorized' }
-  | { type: 'resources' }
-  | { type: 'settings' }
-  | { type: 'emergency-dashboard' }
-  | { type: 'emergency-checklist', incidentId?: string }
-  | { type: 'pas-protocol' }
-  | { type: 'evidence-collection', incidentId?: string }
-  | { type: 'role-selection' }
-  | { type: 'role-dashboard' }
+import { useProtocoloStore } from '@/store'
+import { hydratePersistedState } from '@/lib/store-helpers'
+import { getVaultState, onUnlockChange } from '@/lib/vault'
+import { securityManager } from '@/lib/security'
+import { protocols, legalResources } from '@/data/protocols'
+import type { TeamRole } from '@/types'
+import { featureRoutes } from '@/routes/featureRoutes'
+
+// =============================================================================
+// Route wrappers — adapt router params/navigation to component prop APIs
+// =============================================================================
+
+function HomeRoute() {
+  const navigate = useNavigate()
+  return (
+    <HomePage
+      onEmergencyPress={() => navigate('/emergency')}
+      onNavigate={(tab) => navigate(tab === 'home' ? '/' : `/${tab}`)}
+    />
+  )
+}
+
+function ProtocolsRoute() {
+  const navigate = useNavigate()
+  return <ProtocolsPage onProtocolSelect={(p) => navigate(`/protocols/${p.id}`)} />
+}
+
+function ProtocolDetailRoute() {
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const protocol = protocols.find((p) => p.id === id)
+  if (!protocol) return <Navigate to="/protocols" replace />
+  return <ProtocolDetailPage protocol={protocol} onBack={() => navigate('/protocols')} />
+}
+
+function LegalRoute() {
+  const navigate = useNavigate()
+  return <LegalPage onResourceSelect={(r) => navigate(`/legal/${r.id}`)} />
+}
+
+function LegalDetailRoute() {
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const resource = legalResources.find((r) => r.id === id)
+  if (!resource) return <Navigate to="/legal" replace />
+  return <LegalResourceDetailPage resource={resource} onBack={() => navigate('/legal')} />
+}
+
+function SettingsRoute() {
+  const navigate = useNavigate()
+  return <SettingsPage onNavigate={(tab) => navigate(tab === 'home' ? '/' : `/${tab}`)} />
+}
+
+function EmergencyEntryRoute() {
+  const navigate = useNavigate()
+  const activeIncident = useProtocoloStore((s) => s.getActiveIncident())
+  if (activeIncident) {
+    return (
+      <EmergencyDashboard
+        onWithdrawalTrigger={() => navigate('/')}
+        onDocumentPress={() => navigate('/emergency/evidence')}
+        onContactPress={() => navigate('/resources/contacts')}
+      />
+    )
+  }
+  return (
+    <EmergencyModal
+      isOpen
+      onClose={() => navigate('/')}
+      onIncidentCreate={() => navigate('/emergency')}
+    />
+  )
+}
+
+function EmergencyChecklistRoute() {
+  const activeIncident = useProtocoloStore((s) => s.getActiveIncident())
+  return <EmergencyChecklist incidentId={activeIncident?.id || ''} />
+}
+
+function EvidenceRoute() {
+  const activeIncident = useProtocoloStore((s) => s.getActiveIncident())
+  const currentUser = useProtocoloStore((s) => s.currentUser)
+  return (
+    <EvidenceCollection
+      incidentId={activeIncident?.id || ''}
+      collectorPseudonym={currentUser?.pseudonym || 'Anónimo'}
+    />
+  )
+}
+
+function PASProtocolRoute() {
+  const navigate = useNavigate()
+  return <PASProtocolGuide onComplete={() => navigate(-1)} />
+}
+
+function LegalTriageRoute() {
+  const activeIncident = useProtocoloStore((s) => s.getActiveIncident())
+  return <LegalTriageWizard incidentId={activeIncident?.id} />
+}
+
+function RoleSelectorRoute() {
+  const navigate = useNavigate()
+  const currentUser = useProtocoloStore((s) => s.currentUser)
+  return (
+    <RoleSelector
+      onRoleSelect={(roles: TeamRole[]) => roles[0] && navigate(`/roles/${roles[0]}`)}
+      userCertificationLevel={currentUser?.certificationLevel || 1}
+    />
+  )
+}
+
+function RoleDashboardRoute() {
+  const navigate = useNavigate()
+  const { role } = useParams()
+  const currentUser = useProtocoloStore((s) => s.currentUser)
+  const activeIncident = useProtocoloStore((s) => s.getActiveIncident())
+  const incidents = useProtocoloStore((s) => s.incidents)
+
+  if (!role) return <Navigate to="/roles" replace />
+
+  return (
+    <RoleDashboard
+      role={role as TeamRole}
+      userCertificationLevel={currentUser?.certificationLevel || 1}
+      userPseudonym={currentUser?.pseudonym || 'Operador'}
+      activeIncident={activeIncident}
+      teamMembers={activeIncident?.team || []}
+      recentActivity={incidents.slice(0, 5).map((inc) => ({
+        id: inc.id,
+        type: 'incident',
+        description: `${inc.threatLevel === 'critical' ? 'Incidente crítico' : 'Incidente'} en ${inc.location.colonia}`,
+        timestamp: inc.timestamp,
+        actor: (inc as { reporterPseudonym?: string }).reporterPseudonym || 'Operador',
+      }))}
+      onActionClick={(actionId: string) => {
+        switch (actionId) {
+          case 'create_incident':
+            navigate('/emergency')
+            break
+          case 'update_checklist':
+            navigate('/emergency/checklist')
+            break
+          case 'collect_evidence':
+            navigate('/emergency/evidence')
+            break
+          case 'pas_protocol':
+            navigate('/emergency/pas')
+            break
+          case 'legal_triage':
+            navigate('/legal/triage')
+            break
+        }
+      }}
+      onQuickAccessClick={() => {}}
+    />
+  )
+}
+
+// =============================================================================
+// Route table
+// =============================================================================
+
+function AppRoutes() {
+  return useRoutes([
+    {
+      element: <AppShell />,
+      children: [
+        { index: true, element: <HomeRoute /> },
+        { path: 'protocols', element: <ProtocolsRoute /> },
+        { path: 'protocols/:id', element: <ProtocolDetailRoute /> },
+        { path: 'legal', element: <LegalRoute /> },
+        { path: 'legal/triage', element: <LegalTriageRoute /> },
+        { path: 'legal/:id', element: <LegalDetailRoute /> },
+        { path: 'resources', element: <ResourcesPage /> },
+        { path: 'settings', element: <SettingsRoute /> },
+        { path: 'emergency', element: <EmergencyEntryRoute /> },
+        { path: 'emergency/checklist', element: <EmergencyChecklistRoute /> },
+        { path: 'emergency/evidence', element: <EvidenceRoute /> },
+        { path: 'emergency/pas', element: <PASProtocolRoute /> },
+        { path: 'incident/:id', element: <EmergencyEntryRoute /> },
+        { path: 'roles', element: <RoleSelectorRoute /> },
+        { path: 'roles/:role', element: <RoleDashboardRoute /> },
+        ...featureRoutes,
+        { path: '*', element: <Navigate to="/" replace /> },
+      ],
+    },
+  ])
+}
+
+// =============================================================================
+// Root
+// =============================================================================
 
 function App() {
-  const [currentView, setCurrentView] = useState<ViewState>({ type: 'home' })
-  const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false)
-  
-  // Store selectors
-  const currentUser = useProtocoloStore((state) => state.currentUser)
-  const activeIncident = useProtocoloStore((state) => state.getActiveIncident())
-  const incidents = useProtocoloStore((state) => state.incidents)
-  const checklists = useProtocoloStore((state) => state.checklists)
-  const getProgress = useProtocoloStore((state) => state.getProgress)
-  const [userRole, setUserRole] = useState<TeamRole | null>(null)
-  
-  // Derived state
-  const activeChecklist = activeIncident ? checklists[activeIncident.id] : null
-  const checklistProgress = activeIncident ? getProgress(activeIncident.id) : 0
-  
-  const handleTabChange = useCallback((tab: string) => {
-    switch (tab) {
-      case 'home':
-        setCurrentView({ type: 'home' })
-        break
-      case 'protocols':
-        setCurrentView({ type: 'protocols' })
-        break
-      case 'legal':
-        setCurrentView({ type: 'legal' })
-        break
-      case 'resources':
-        setCurrentView({ type: 'resources' })
-        break
-      case 'settings':
-        setCurrentView({ type: 'settings' })
-        break
-    }
-  }, [])
-  
-  const handleEmergencyPress = useCallback(() => {
-    setIsEmergencyModalOpen(true)
-  }, [])
-  
-  const handleCloseEmergency = useCallback(() => {
-    setIsEmergencyModalOpen(false)
-  }, [])
-  
-  const handleProtocolSelect = useCallback((protocol: Protocol) => {
-    setCurrentView({ type: 'protocol-detail', protocol })
-  }, [])
-  
-  const handleLegalResourceSelect = useCallback((resource: LegalResource) => {
-    setCurrentView({ type: 'legal-detail', resource })
-  }, [])
-  
-  const handleBack = useCallback(() => {
-    switch (currentView.type) {
-      case 'protocol-detail':
-        setCurrentView({ type: 'protocols' })
-        break
-      case 'legal-detail':
-      case 'legal-triage':
-        setCurrentView({ type: 'legal' })
-        break
-      case 'emergency-checklist':
-      case 'evidence-collection':
-        setCurrentView({ type: 'emergency-dashboard' })
-        break
-      case 'pas-protocol':
-        setCurrentView(activeIncident ? { type: 'emergency-dashboard' } : { type: 'home' })
-        break
-      case 'role-dashboard':
-        setCurrentView({ type: 'home' })
-        break
-      default:
-        setCurrentView({ type: 'home' })
-    }
-  }, [currentView.type, activeIncident])
-  
-  const handleRoleSelect = useCallback((role: TeamRole) => {
-    setUserRole(role)
-    setCurrentView({ type: 'role-dashboard' })
-  }, [setUserRole])
-  
-  const handleEmergencyIncidentCreate = useCallback((incident: Incident) => {
-    setCurrentView({ type: 'emergency-dashboard' })
-    setIsEmergencyModalOpen(false)
-  }, [])
-  
-  // Determine active tab based on current view
-  const getActiveTab = () => {
-    switch (currentView.type) {
-      case 'home':
-      case 'role-selection':
-      case 'role-dashboard':
-        return 'home'
-      case 'protocols':
-      case 'protocol-detail':
-        return 'protocols'
-      case 'legal':
-      case 'legal-detail':
-      case 'legal-triage':
-        return 'legal'
-      case 'resources':
-        return 'resources'
-      case 'settings':
-        return 'settings'
-      default:
-        return 'home'
-    }
-  }
-  
-  // Render current view
-  const renderView = () => {
-    switch (currentView.type) {
-      case 'home':
-        return (
-          <HomePage 
-            onEmergencyPress={handleEmergencyPress}
-            onNavigate={handleTabChange}
-          />
-        )
-      
-      case 'protocols':
-        return (
-          <ProtocolsPage 
-            onProtocolSelect={handleProtocolSelect}
-          />
-        )
-      
-      case 'protocol-detail':
-        return (
-          <ProtocolDetailPage 
-            protocol={currentView.protocol}
-            onBack={handleBack}
-          />
-        )
-      
-      case 'legal':
-        return (
-          <LegalPage 
-            onResourceSelect={handleLegalResourceSelect}
-          />
-        )
-      
-      case 'legal-detail':
-        return (
-          <LegalResourceDetailPage 
-            resource={currentView.resource}
-            onBack={handleBack}
-          />
-        )
-      
-      case 'legal-triage':
-        return (
-          <LegalTriageWizard
-            incidentId={activeIncident?.id}
-          />
-        )
-      
-      case 'resources':
-        return (
-          <ResourcesPage />
-        )
-      
-      case 'settings':
-        return (
-          <SettingsPage 
-            onNavigate={handleTabChange}
-          />
-        )
-      
-      case 'emergency-dashboard':
-        return (
-          <EmergencyDashboard
-            onWithdrawalTrigger={(reason: string) => setCurrentView({ type: 'home' })}
-            onDocumentPress={() => setCurrentView({ type: 'evidence-collection', incidentId: activeIncident?.id })}
-            onContactPress={() => {}}
-          />
-        )
-      
-      case 'emergency-checklist':
-        return (
-          <EmergencyChecklist
-            incidentId={currentView.incidentId || activeIncident?.id || ''}
-          />
-        )
-      
-      case 'pas-protocol':
-        return (
-          <PASProtocolGuide
-            onComplete={handleBack}
-          />
-        )
-      
-      case 'evidence-collection':
-        return (
-          <EvidenceCollection
-            incidentId={currentView.incidentId || activeIncident?.id || ''}
-            collectorPseudonym={currentUser?.pseudonym || 'Anónimo'}
-          />
-        )
-      
-      case 'role-selection':
-        return (
-          <RoleSelector
-            onRoleSelect={(roles: TeamRole[]) => { if (roles[0]) handleRoleSelect(roles[0]) }}
-            userCertificationLevel={currentUser?.certificationLevel || 1}
-          />
-        )
-      
-      case 'role-dashboard':
-        if (!userRole) {
-          return (
-            <RoleSelector
-              onRoleSelect={(roles: TeamRole[]) => { if (roles[0]) handleRoleSelect(roles[0]) }}
-              userCertificationLevel={currentUser?.certificationLevel || 1}
-            />
-          )
-        }
-        return (
-          <RoleDashboard 
-            role={userRole}
-            userCertificationLevel={currentUser?.certificationLevel || 1}
-            userPseudonym={currentUser?.pseudonym || 'Usuario'}
-            activeIncident={activeIncident}
-            teamMembers={[]}
-            recentActivity={incidents.slice(0, 5).map(inc => ({
-              id: inc.id,
-              type: 'incident',
-              description: `${inc.threatLevel === 'critical' ? 'Incidente crítico' : 'Incidente'} en ${inc.location.colonia}`,
-              timestamp: inc.timestamp,
-              actor: (inc as any).reporterPseudonym || 'Desconocido'
-            }))}
-            onActionClick={(actionId) => {
-              switch (actionId) {
-                case 'create_incident':
-                  handleEmergencyPress()
-                  break
-                case 'update_checklist':
-                  setCurrentView({ type: 'emergency-checklist', incidentId: activeIncident?.id })
-                  break
-                case 'collect_evidence':
-                  setCurrentView({ type: 'evidence-collection', incidentId: activeIncident?.id })
-                  break
-                case 'pas_protocol':
-                  setCurrentView({ type: 'pas-protocol' })
-                  break
-                case 'legal_triage':
-                  setCurrentView({ type: 'legal-triage' })
-                  break
-              }
-            }}
-            onQuickAccessClick={(itemId) => {
-              // Handle quick access items
-            }}
-          />
-        )
-      
-      default:
-        return null
-    }
-  }
-  
-  // Check if we should show bottom navigation
-  const showBottomNav = ![
-    'protocol-detail', 
-    'legal-detail', 
-    'emergency-dashboard',
-    'emergency-checklist',
-    'evidence-collection',
-    'pas-protocol',
-    'legal-triage'
-  ].includes(currentView.type)
-  
-  // Check if we should show quick actions
-  const showQuickActions = ['home', 'role-dashboard'].includes(currentView.type)
-  
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <Header onEmergencyPress={handleEmergencyPress} />
-      
-      {/* Main Content */}
-      <main className={`
-        pt-14 
-        ${showBottomNav ? 'pb-20' : 'pb-4'}
-        min-h-screen
-        max-w-lg
-        mx-auto
-      `}>
-        {renderView()}
-      </main>
-      
-      {/* Bottom Navigation */}
-      {showBottomNav && (
-        <BottomNavigation 
-          activeTab={getActiveTab()}
-          onTabChange={handleTabChange}
-        />
-      )}
-      
-      {/* Quick Actions FAB */}
-      {showQuickActions && (
-        <QuickActions 
-          role={userRole || 'leader'}
-          onEmergencyPress={handleEmergencyPress}
-          onCameraPress={() => setCurrentView({ type: 'evidence-collection' })}
-          onReportPress={() => setCurrentView({ type: 'role-selection' })}
-        />
-      )}
-      
-      {/* Emergency Modal */}
-      <EmergencyModal 
-        isOpen={isEmergencyModalOpen}
-        onClose={handleCloseEmergency}
-        onIncidentCreate={handleEmergencyIncidentCreate}
+  const ensureLocalUser = useProtocoloStore((s) => s.ensureLocalUser)
+  const [locked, setLocked] = useState<boolean>(() => getVaultState() === 'locked')
+  const [booted, setBooted] = useState(false)
+
+  useEffect(() => {
+    // Re-arm a wipe scheduled before the last reload/close (durable deadline).
+    securityManager.armScheduledWipeOnStartup()
+    // Bootstrap the local operator profile.
+    ensureLocalUser()
+    setBooted(true)
+    // Keep the lock gate in sync with vault unlock/lock events.
+    const off = onUnlockChange((unlocked) => setLocked(!unlocked && getVaultState() === 'locked'))
+    return off
+  }, [ensureLocalUser])
+
+  if (!booted) return null
+
+  if (locked) {
+    return (
+      <LockScreen
+        onUnlocked={async () => {
+          // The data key is in memory now; load the encrypted slices.
+          await hydratePersistedState()
+          setLocked(false)
+        }}
       />
-    </div>
-  )
+    )
+  }
+
+  return <AppRoutes />
 }
 
 export default App
