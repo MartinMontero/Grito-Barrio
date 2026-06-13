@@ -12,27 +12,30 @@
  * nav, panic overlay). Detail screens resolve their data from the route param.
  */
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, lazy } from 'react'
 import { useRoutes, useNavigate, useParams, Navigate } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { LockScreen } from '@/components/auth/LockScreen'
 
+// Lightweight, frequently-visited pages load eagerly.
 import { HomePage } from '@/components/features/HomePage'
 import { ProtocolsPage } from '@/components/features/ProtocolsPage'
-import { ProtocolDetailPage } from '@/components/features/ProtocolDetailPage'
 import { LegalPage } from '@/components/features/LegalPage'
-import { LegalResourceDetailPage } from '@/components/features/LegalResourceDetailPage'
-import { LegalTriageWizard } from '@/components/features/LegalTriageWizard'
 import { ResourcesPage } from '@/components/features/ResourcesPage'
-import { SettingsPage } from '@/components/features/SettingsPage'
-import { EmergencyModal } from '@/components/features/EmergencyModal'
-import { EmergencyDashboard } from '@/components/features/EmergencyDashboard'
-import { EmergencyChecklist } from '@/components/features/EmergencyChecklist'
-import { PASProtocolGuide } from '@/components/features/PASProtocolGuide'
-import { EvidenceCollection } from '@/components/features/EvidenceCollection'
-import { RoleSelector } from '@/components/features/RoleSelector'
-import { RoleDashboard } from '@/components/features/RoleDashboard'
+
+// Heavier / less-common screens are code-split (Suspense lives in AppShell).
+const ProtocolDetailPage = lazy(() => import('@/components/features/ProtocolDetailPage').then((m) => ({ default: m.ProtocolDetailPage })))
+const LegalResourceDetailPage = lazy(() => import('@/components/features/LegalResourceDetailPage').then((m) => ({ default: m.LegalResourceDetailPage })))
+const LegalTriageWizard = lazy(() => import('@/components/features/LegalTriageWizard').then((m) => ({ default: m.LegalTriageWizard })))
+const SettingsPage = lazy(() => import('@/components/features/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const EmergencyModal = lazy(() => import('@/components/features/EmergencyModal').then((m) => ({ default: m.EmergencyModal })))
+const EmergencyDashboard = lazy(() => import('@/components/features/EmergencyDashboard').then((m) => ({ default: m.EmergencyDashboard })))
+const EmergencyChecklist = lazy(() => import('@/components/features/EmergencyChecklist').then((m) => ({ default: m.EmergencyChecklist })))
+const PASProtocolGuide = lazy(() => import('@/components/features/PASProtocolGuide').then((m) => ({ default: m.PASProtocolGuide })))
+const EvidenceCollection = lazy(() => import('@/components/features/EvidenceCollection').then((m) => ({ default: m.EvidenceCollection })))
+const RoleSelector = lazy(() => import('@/components/features/RoleSelector').then((m) => ({ default: m.RoleSelector })))
+const RoleDashboard = lazy(() => import('@/components/features/RoleDashboard').then((m) => ({ default: m.RoleDashboard })))
 
 import { useProtocoloStore } from '@/store'
 import { hydratePersistedState } from '@/lib/store-helpers'

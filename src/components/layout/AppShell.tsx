@@ -7,7 +7,7 @@
  * Theme support and accessibility features
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { TopHeader } from './TopHeader'
 import { BottomNavigation } from './BottomNavigation'
@@ -109,7 +109,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
           largeText && "max-w-full"
         )}>
-          {children || <Outlet />}
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center min-h-[50vh]" role="status" aria-label="Cargando">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            }
+          >
+            {children || <Outlet />}
+          </Suspense>
         </div>
       </main>
       

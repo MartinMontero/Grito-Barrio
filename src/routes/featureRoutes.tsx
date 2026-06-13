@@ -15,7 +15,7 @@
  * route param.
  */
 
-import { useState } from 'react'
+import { useState, lazy } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import type { RouteObject } from 'react-router-dom'
 
@@ -23,22 +23,25 @@ import { useProtocoloStore } from '@/store'
 import type { TeamRole, UserRole } from '@/types'
 import { isTeamRole } from '@/types'
 
-import { TrainingDashboard } from '@/components/features/TrainingDashboard'
-import { TrainingModuleViewer } from '@/components/features/TrainingModule'
-import { CertificationTracker } from '@/components/features/CertificationTracker'
-import { ScenarioSimulator } from '@/components/features/ScenarioSimulator'
-import { ContactDirectory } from '@/components/features/ContactDirectory'
-import { ContactTree } from '@/components/features/ContactTree'
-import { SafePointsMap } from '@/components/features/SafePointsMap'
-import { SafePointDetail } from '@/components/features/SafePointDetail'
-import { SupplyChecklist } from '@/components/features/SupplyChecklist'
-import { FormFiller } from '@/components/features/FormFiller'
-import { FormViewer } from '@/components/features/FormViewer'
-import { MessageTemplates } from '@/components/features/MessageTemplates'
-import { QuickDial } from '@/components/features/QuickDial'
-import { RoleSwitcher } from '@/components/features/RoleSwitcher'
-import { SecuritySettings } from '@/components/features/SecuritySettings'
-import { DuressMode } from '@/components/features/DuressMode'
+// Secondary feature screens are code-split (lazy) so they stay out of the
+// initial bundle — important for users on slow mobile connections. The
+// AppShell provides the <Suspense> boundary with a loading fallback.
+const TrainingDashboard = lazy(() => import('@/components/features/TrainingDashboard').then((m) => ({ default: m.TrainingDashboard })))
+const TrainingModuleViewer = lazy(() => import('@/components/features/TrainingModule').then((m) => ({ default: m.TrainingModuleViewer })))
+const CertificationTracker = lazy(() => import('@/components/features/CertificationTracker').then((m) => ({ default: m.CertificationTracker })))
+const ScenarioSimulator = lazy(() => import('@/components/features/ScenarioSimulator').then((m) => ({ default: m.ScenarioSimulator })))
+const ContactDirectory = lazy(() => import('@/components/features/ContactDirectory').then((m) => ({ default: m.ContactDirectory })))
+const ContactTree = lazy(() => import('@/components/features/ContactTree').then((m) => ({ default: m.ContactTree })))
+const SafePointsMap = lazy(() => import('@/components/features/SafePointsMap').then((m) => ({ default: m.SafePointsMap })))
+const SafePointDetail = lazy(() => import('@/components/features/SafePointDetail').then((m) => ({ default: m.SafePointDetail })))
+const SupplyChecklist = lazy(() => import('@/components/features/SupplyChecklist').then((m) => ({ default: m.SupplyChecklist })))
+const FormFiller = lazy(() => import('@/components/features/FormFiller').then((m) => ({ default: m.FormFiller })))
+const FormViewer = lazy(() => import('@/components/features/FormViewer').then((m) => ({ default: m.FormViewer })))
+const MessageTemplates = lazy(() => import('@/components/features/MessageTemplates').then((m) => ({ default: m.MessageTemplates })))
+const QuickDial = lazy(() => import('@/components/features/QuickDial').then((m) => ({ default: m.QuickDial })))
+const RoleSwitcher = lazy(() => import('@/components/features/RoleSwitcher').then((m) => ({ default: m.RoleSwitcher })))
+const SecuritySettings = lazy(() => import('@/components/features/SecuritySettings').then((m) => ({ default: m.SecuritySettings })))
+const DuressMode = lazy(() => import('@/components/features/DuressMode').then((m) => ({ default: m.DuressMode })))
 
 import type { Contact } from '@/types/contacts'
 import type { SafePoint } from '@/types/resources'
