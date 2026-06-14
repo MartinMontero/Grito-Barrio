@@ -1,57 +1,89 @@
 /**
  * Store Helper Utilities
  * Protocolo CDMX
- * 
+ *
  * Middleware for persistence, encryption, and shared store functionality
  */
 
-import { generateSecureRandomId as generateSecureId, encryptObject, decryptObject } from '@/lib/encryption'
-import { storeData, getData } from '@/lib/storage'
-import type { StateCreator, StoreApi } from 'zustand'
+import { encryptObject, decryptObject } from "@/lib/encryption";
+import { storeData, getData } from "@/lib/storage";
+import type { StateCreator, StoreApi } from "zustand";
+
+/**
+ * Registry of slice loaders, so the app can re-hydrate every persisted slice
+ * after the vault is unlocked (the DEK is memory-only and unavailable at the
+ * initial, pre-unlock load).
+ */
+const persistedLoaders = new Set<() => Promise<void>>();
+const persistedSavers = new Set<() => Promise<void>>();
+
+/**
+ * Re-load every persisted slice from storage. Call after a successful unlock so
+ * encrypted slices that returned empty at startup get their decrypted data.
+ */
+export async function hydratePersistedState(): Promise<void> {
+  for (const load of persistedLoaders) {
+    await load();
+  }
+}
+
+/**
+ * Re-write every persisted slice to storage. Call right after the vault is
+ * created so data written while encryption was off gets re-saved as ciphertext.
+ */
+export async function repersistPersistedState(): Promise<void> {
+  for (const save of persistedSavers) {
+    await save();
+  }
+}
 
 /**
  * Middleware for persisting store state to IndexedDB
  */
 export function persistToIndexedDB<T extends object>(
   storeName: string,
-  encrypt: boolean = true
+  encrypt: boolean = true,
 ) {
   return (config: StateCreator<T>) => {
     return (
-      set: StoreApi<T>['setState'],
-      get: StoreApi<T>['getState'],
-      api: StoreApi<T>
+      set: StoreApi<T>["setState"],
+      get: StoreApi<T>["getState"],
+      api: StoreApi<T>,
     ) => {
-      // Load persisted state on initialization
+      // Load persisted state (may return nothing until the vault is unlocked)
       const loadPersistedState = async () => {
         try {
-          const persisted = await getData<Partial<T>>(storeName, encrypt)
+          const persisted = await getData<Partial<T>>(storeName);
           if (persisted) {
-            set(persisted as T, false)
+            set(persisted as T, false);
           }
         } catch (error) {
-          console.error(`Error loading ${storeName} from storage:`, error)
+          console.error(`Error loading ${storeName} from storage:`, error);
         }
-      }
+      };
 
-      // Load persisted state
-      loadPersistedState()
+      persistedLoaders.add(loadPersistedState);
+      persistedSavers.add(() =>
+        storeData(storeName, get(), encrypt).then(() => undefined),
+      );
+      void loadPersistedState();
 
       // Wrap set to persist changes
-      const originalSet = set
+      const originalSet = set;
       const persistSet: typeof set = (partial, replace) => {
-        originalSet(partial, replace)
-        
-        // Persist to IndexedDB
-        const state = get()
-        storeData(storeName, state, encrypt).catch(error => {
-          console.error(`Error persisting ${storeName}:`, error)
-        })
-      }
+        originalSet(partial, replace);
 
-      return config(persistSet, get, api)
-    }
-  }
+        // Persist to IndexedDB. Errors (e.g. fail-closed when locked) are
+        // logged but never crash the UI.
+        const state = get();
+        storeData(storeName, state, encrypt).catch((error) => {
+          console.error(`Error persisting ${storeName}:`, error);
+        });
+      };
+
+      return config(persistSet, get, api);
+    };
+  };
 }
 
 /**
@@ -60,84 +92,89 @@ export function persistToIndexedDB<T extends object>(
 export function persistToLocalStorage<T extends object>(storeName: string) {
   return (config: StateCreator<T>) => {
     return (
-      set: StoreApi<T>['setState'],
-      get: StoreApi<T>['getState'],
-      api: StoreApi<T>
+      set: StoreApi<T>["setState"],
+      get: StoreApi<T>["getState"],
+      api: StoreApi<T>,
     ) => {
       // Load persisted state on initialization
       const loadPersistedState = () => {
         try {
-          const persisted = localStorage.getItem(storeName)
+          const persisted = localStorage.getItem(storeName);
           if (persisted) {
-            const parsed = JSON.parse(persisted)
-            set(parsed as T, false)
+            const parsed = JSON.parse(persisted);
+            set(parsed as T, false);
           }
         } catch (error) {
-          console.error(`Error loading ${storeName} from localStorage:`, error)
+          console.error(`Error loading ${storeName} from localStorage:`, error);
         }
-      }
+      };
 
       // Load persisted state
-      loadPersistedState()
+      loadPersistedState();
 
       // Wrap set to persist changes
-      const originalSet = set
+      const originalSet = set;
       const persistSet: typeof set = (partial, replace) => {
-        originalSet(partial, replace)
-        
-        // Persist to localStorage
-        const state = get()
-        try {
-          localStorage.setItem(storeName, JSON.stringify(state))
-        } catch (error) {
-          console.error(`Error persisting ${storeName} to localStorage:`, error)
-        }
-      }
+        originalSet(partial, replace);
 
-      return config(persistSet, get, api)
-    }
-  }
+        // Persist to localStorage
+        const state = get();
+        try {
+          localStorage.setItem(storeName, JSON.stringify(state));
+        } catch (error) {
+          console.error(
+            `Error persisting ${storeName} to localStorage:`,
+            error,
+          );
+        }
+      };
+
+      return config(persistSet, get, api);
+    };
+  };
 }
 
 /**
  * Generate incident ID with format: CDMX-YYYY-MM-DD-HHMM-###
  */
 export function generateIncidentId(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0')
-  
-  return `CDMX-${year}-${month}-${day}-${hours}${minutes}-${random}`
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const random = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+
+  return `CDMX-${year}-${month}-${day}-${hours}${minutes}-${random}`;
 }
 
 /**
  * Generate SHA-256 hash for documentation
  */
-export async function generateSHA256(data: string | ArrayBuffer): Promise<string> {
-  const encoder = new TextEncoder()
-  const dataBuffer = typeof data === 'string' ? encoder.encode(data) : data
-  
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+export async function generateSHA256(
+  data: string | ArrayBuffer,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  const dataBuffer = typeof data === "string" ? encoder.encode(data) : data;
+
+  const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
  * Get current ISO timestamp
  */
 export function getCurrentTimestamp(): string {
-  return new Date().toISOString()
+  return new Date().toISOString();
 }
 
 /**
  * Deep clone an object
  */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj))
+  return JSON.parse(JSON.stringify(obj));
 }
 
 /**
@@ -146,11 +183,9 @@ export function deepClone<T>(obj: T): T {
 export function updateInArray<T extends { id: string }>(
   array: T[],
   id: string,
-  updates: Partial<T>
+  updates: Partial<T>,
 ): T[] {
-  return array.map(item =>
-    item.id === id ? { ...item, ...updates } : item
-  )
+  return array.map((item) => (item.id === id ? { ...item, ...updates } : item));
 }
 
 /**
@@ -158,9 +193,9 @@ export function updateInArray<T extends { id: string }>(
  */
 export function removeFromArray<T extends { id: string }>(
   array: T[],
-  id: string
+  id: string,
 ): T[] {
-  return array.filter(item => item.id !== id)
+  return array.filter((item) => item.id !== id);
 }
 
 /**
@@ -168,40 +203,47 @@ export function removeFromArray<T extends { id: string }>(
  */
 export function findById<T extends { id: string }>(
   array: T[],
-  id: string
+  id: string,
 ): T | undefined {
-  return array.find(item => item.id === id)
+  return array.find((item) => item.id === id);
 }
 
 /**
  * Validate incident ID format
  */
 export function isValidIncidentId(id: string): boolean {
-  const pattern = /^CDMX-\d{4}-\d{2}-\d{2}-\d{4}-\d{3}$/
-  return pattern.test(id)
+  const pattern = /^CDMX-\d{4}-\d{2}-\d{2}-\d{4}-\d{3}$/;
+  return pattern.test(id);
 }
 
 /**
- * Encrypt sensitive data if encryption is enabled
+ * Encrypt data for a PORTABLE export/backup using a user-supplied password.
+ * When no password is given the data is serialized as plaintext JSON.
  */
-export async function encryptIfEnabled<T>(data: T, encryptionEnabled: boolean): Promise<string> {
-  if (encryptionEnabled) {
-    return encryptObject(data as object)
+export async function encryptIfEnabled<T>(
+  data: T,
+  password?: string,
+): Promise<string> {
+  if (password) {
+    return encryptObject(data as object, password);
   }
-  return JSON.stringify(data)
+  return JSON.stringify(data);
 }
 
 /**
- * Decrypt data if it was encrypted
+ * Inverse of `encryptIfEnabled`. Pass the same password used to export.
  */
-export async function decryptIfNeeded<T>(data: string, encryptionEnabled: boolean): Promise<T | null> {
-  if (encryptionEnabled) {
-    return decryptObject<T & object>(data)
+export async function decryptIfNeeded<T>(
+  data: string,
+  password?: string,
+): Promise<T | null> {
+  if (password) {
+    return decryptObject<T & object>(data, password);
   }
   try {
-    return JSON.parse(data) as T
+    return JSON.parse(data) as T;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -209,8 +251,8 @@ export async function decryptIfNeeded<T>(data: string, encryptionEnabled: boolea
  * Calculate checklist progress percentage
  */
 export function calculateProgress(completed: number, total: number): number {
-  if (total === 0) return 0
-  return Math.round((completed / total) * 100)
+  if (total === 0) return 0;
+  return Math.round((completed / total) * 100);
 }
 
 /**
@@ -218,11 +260,11 @@ export function calculateProgress(completed: number, total: number): number {
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null
+  let timeout: NodeJS.Timeout | null = null;
   return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
 }

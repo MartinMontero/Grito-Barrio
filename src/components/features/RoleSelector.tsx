@@ -1,77 +1,79 @@
 /**
  * Role Selector Component
  * Protocolo CDMX
- * 
+ *
  * First-time role selection with certification requirements
  */
 
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
   Check,
   ChevronRight,
-  Shield,
-  Users,
-  Heart,
-  Scale,
-  Radio,
-  Package,
   AlertCircle,
   Award,
   Info,
   Lock,
-  Unlock,
   ArrowRight,
   UserCheck,
-  GraduationCap
-} from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { TeamRole, CertificationLevel } from '@/types'
-import { 
-  ROLE_DEFINITIONS, 
+  GraduationCap,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type { TeamRole, CertificationLevel } from "@/types";
+import {
   AVAILABLE_ROLES,
   ROLE_CERTIFICATION_LABELS,
   checkCertificationLevel,
   getRoleDefinition,
-  type CertificationLevel as RoleCertLevel
-} from '@/lib/roles'
+  type CertificationLevel as RoleCertLevel,
+} from "@/lib/roles";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface RoleSelectorProps {
-  userCertificationLevel: CertificationLevel
-  currentRoles?: TeamRole[]
-  onRoleSelect: (roles: TeamRole[]) => void
-  onComplete?: () => void
-  allowMultiple?: boolean
-  isInitialSetup?: boolean
+  userCertificationLevel: CertificationLevel;
+  currentRoles?: TeamRole[];
+  onRoleSelect: (roles: TeamRole[]) => void;
+  onComplete?: () => void;
+  allowMultiple?: boolean;
+  isInitialSetup?: boolean;
 }
 
 interface RoleCardProps {
-  role: TeamRole
-  isSelected: boolean
-  isDisabled: boolean
-  userCertLevel: CertificationLevel
-  onSelect: () => void
+  role: TeamRole;
+  isSelected: boolean;
+  isDisabled: boolean;
+  userCertLevel: CertificationLevel;
+  onSelect: () => void;
 }
 
 // =============================================================================
 // SUB-COMPONENT: Role Card
 // =============================================================================
 
-const RoleCard: React.FC<RoleCardProps> = ({ 
-  role, 
-  isSelected, 
-  isDisabled, 
+const RoleCard: React.FC<RoleCardProps> = ({
+  role,
+  isSelected,
+  isDisabled,
   userCertLevel,
-  onSelect 
+  onSelect,
 }) => {
-  const definition = getRoleDefinition(role)
-  const RoleIcon = definition.icon
-  const meetsCertification = checkCertificationLevel(userCertLevel, definition.certificationRequired)
-  
+  const definition = getRoleDefinition(role);
+  const RoleIcon = definition.icon;
+  const meetsCertification = checkCertificationLevel(
+    userCertLevel,
+    definition.certificationRequired,
+  );
+
   return (
     <button
       onClick={onSelect}
@@ -80,29 +82,36 @@ const RoleCard: React.FC<RoleCardProps> = ({
         "relative w-full text-left rounded-xl border-2 transition-all duration-200",
         "p-4 sm:p-5",
         isSelected
-          ? cn(definition.borderColor, definition.bgColor.replace('bg-', 'bg-opacity-10'))
+          ? cn(
+              definition.borderColor,
+              definition.bgColor.replace("bg-", "bg-opacity-10"),
+            )
           : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
         isDisabled && "opacity-50 cursor-not-allowed",
-        !meetsCertification && "opacity-60"
+        !meetsCertification && "opacity-60",
       )}
     >
       {/* Selection Indicator */}
-      <div className={cn(
-        "absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-        isSelected
-          ? cn(definition.bgColor, "border-transparent text-white")
-          : "border-gray-300 dark:border-gray-600"
-      )}>
+      <div
+        className={cn(
+          "absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+          isSelected
+            ? cn(definition.bgColor, "border-transparent text-white")
+            : "border-gray-300 dark:border-gray-600",
+        )}
+      >
         {isSelected && <Check className="w-4 h-4" />}
       </div>
 
       <div className="flex items-start gap-4">
         {/* Icon */}
-        <div className={cn(
-          "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0",
-          definition.bgColor.replace('600', '100'),
-          definition.textColor
-        )}>
+        <div
+          className={cn(
+            "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0",
+            definition.bgColor.replace("600", "100"),
+            definition.textColor,
+          )}
+        >
           <RoleIcon className="w-7 h-7" />
         </div>
 
@@ -116,30 +125,34 @@ const RoleCard: React.FC<RoleCardProps> = ({
               <Lock className="w-4 h-4 text-orange-500" />
             )}
           </div>
-          
+
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             {definition.description}
           </p>
 
           {/* Certification Badge */}
           <div className="flex items-center gap-2">
-            <Badge 
+            <Badge
               variant={meetsCertification ? "default" : "secondary"}
               className={cn(
                 "text-xs",
-                meetsCertification 
+                meetsCertification
                   ? definition.bgColor + " text-white"
-                  : "bg-gray-200 text-gray-600"
+                  : "bg-gray-200 text-gray-600",
               )}
             >
               <GraduationCap className="w-3 h-3 mr-1" />
               Nivel {definition.certificationRequired} Requerido
             </Badge>
-            
+
             {isSelected && (
-              <Badge 
-                variant="outline" 
-                className={cn("text-xs", definition.textColor, definition.borderColor)}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs",
+                  definition.textColor,
+                  definition.borderColor,
+                )}
               >
                 Seleccionado
               </Badge>
@@ -153,7 +166,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
             </p>
             <div className="flex flex-wrap gap-1">
               {definition.features.slice(0, 3).map((feature, i) => (
-                <span 
+                <span
                   key={i}
                   className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded"
                 >
@@ -173,16 +186,16 @@ const RoleCard: React.FC<RoleCardProps> = ({
             <div className="mt-3 flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
               <Info className="w-4 h-4" />
               <span>
-                Requieres certificación nivel {definition.certificationRequired}. 
-                Tu nivel actual: {userCertLevel}
+                Requieres certificación nivel {definition.certificationRequired}
+                . Tu nivel actual: {userCertLevel}
               </span>
             </div>
           )}
         </div>
       </div>
     </button>
-  )
-}
+  );
+};
 
 // =============================================================================
 // MAIN COMPONENT
@@ -194,54 +207,60 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
   onRoleSelect,
   onComplete,
   allowMultiple = true,
-  isInitialSetup = true
+  isInitialSetup = true,
 }) => {
-  const [selectedRoles, setSelectedRoles] = useState<TeamRole[]>(currentRoles)
-  const [step, setStep] = useState<'selection' | 'confirmation'>('selection')
-  const [showHelp, setShowHelp] = useState(false)
+  const [selectedRoles, setSelectedRoles] = useState<TeamRole[]>(currentRoles);
+  const [step, setStep] = useState<"selection" | "confirmation">("selection");
+  const [showHelp, setShowHelp] = useState(false);
 
   const toggleRole = (role: TeamRole) => {
-    const definition = getRoleDefinition(role)
-    const meetsCert = checkCertificationLevel(userCertificationLevel, definition.certificationRequired)
-    
-    if (!meetsCert) return
+    const definition = getRoleDefinition(role);
+    const meetsCert = checkCertificationLevel(
+      userCertificationLevel,
+      definition.certificationRequired,
+    );
 
-    setSelectedRoles(prev => {
+    if (!meetsCert) return;
+
+    setSelectedRoles((prev) => {
       if (allowMultiple) {
         // Multiple selection mode
         if (prev.includes(role)) {
-          return prev.filter(r => r !== role)
+          return prev.filter((r) => r !== role);
         }
-        return [...prev, role]
+        return [...prev, role];
       } else {
         // Single selection mode
-        return prev.includes(role) ? [] : [role]
+        return prev.includes(role) ? [] : [role];
       }
-    })
-  }
+    });
+  };
 
   const handleContinue = () => {
     if (selectedRoles.length > 0) {
-      setStep('confirmation')
+      setStep("confirmation");
     }
-  }
+  };
 
   const handleConfirm = () => {
-    onRoleSelect(selectedRoles)
-    onComplete?.()
-  }
+    onRoleSelect(selectedRoles);
+    onComplete?.();
+  };
 
   const handleBack = () => {
-    setStep('selection')
-  }
+    setStep("selection");
+  };
 
-  const availableCount = AVAILABLE_ROLES.filter(role => {
-    const def = getRoleDefinition(role)
-    return checkCertificationLevel(userCertificationLevel, def.certificationRequired)
-  }).length
+  const availableCount = AVAILABLE_ROLES.filter((role) => {
+    const def = getRoleDefinition(role);
+    return checkCertificationLevel(
+      userCertificationLevel,
+      def.certificationRequired,
+    );
+  }).length;
 
   // Selection Step
-  if (step === 'selection') {
+  if (step === "selection") {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
         {/* Header */}
@@ -274,17 +293,16 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
 
             {/* User Level Indicator */}
             <div className="mt-6 flex items-center justify-center gap-2">
-              <Badge 
-                variant="outline" 
-                className="px-3 py-1"
-              >
+              <Badge variant="outline" className="px-3 py-1">
                 <Award className="w-4 h-4 mr-1 text-yellow-500" />
-                Tu nivel: {ROLE_CERTIFICATION_LABELS[userCertificationLevel as RoleCertLevel]}
+                Tu nivel:{" "}
+                {
+                  ROLE_CERTIFICATION_LABELS[
+                    userCertificationLevel as RoleCertLevel
+                  ]
+                }
               </Badge>
-              <Badge 
-                variant="secondary" 
-                className="px-3 py-1"
-              >
+              <Badge variant="secondary" className="px-3 py-1">
                 {availableCount} roles disponibles
               </Badge>
             </div>
@@ -299,7 +317,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
             className="w-full mb-4 flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <Info className="w-4 h-4" />
-            {showHelp ? 'Ocultar ayuda' : '¿Cómo elegir un rol?'}
+            {showHelp ? "Ocultar ayuda" : "¿Cómo elegir un rol?"}
           </button>
 
           {showHelp && (
@@ -309,11 +327,16 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                   Guía de Selección
                 </h3>
                 <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
-                  <li>• Puedes seleccionar {allowMultiple ? 'varios roles' : 'un solo rol'}</li>
+                  <li>
+                    • Puedes seleccionar{" "}
+                    {allowMultiple ? "varios roles" : "un solo rol"}
+                  </li>
                   <li>• Algunos roles requieren certificación avanzada</li>
                   <li>• Elige según tu capacitación y experiencia</li>
                   <li>• Los roles bloqueados 🔒 requieren nivel superior</li>
-                  <li>• Podrás cambiar de rol durante la respuesta si es necesario</li>
+                  <li>
+                    • Podrás cambiar de rol durante la respuesta si es necesario
+                  </li>
                 </ul>
               </CardContent>
             </Card>
@@ -323,7 +346,9 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
           {allowMultiple && selectedRoles.length > 0 && (
             <div className="mb-4 flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <span className="text-sm font-medium text-purple-900 dark:text-purple-200">
-                {selectedRoles.length} rol{selectedRoles.length !== 1 ? 'es' : ''} seleccionado{selectedRoles.length !== 1 ? 's' : ''}
+                {selectedRoles.length} rol
+                {selectedRoles.length !== 1 ? "es" : ""} seleccionado
+                {selectedRoles.length !== 1 ? "s" : ""}
               </span>
               <button
                 onClick={() => setSelectedRoles([])}
@@ -336,7 +361,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
 
           {/* Role Cards */}
           <div className="space-y-4">
-            {AVAILABLE_ROLES.map(role => (
+            {AVAILABLE_ROLES.map((role) => (
               <RoleCard
                 key={role}
                 role={role}
@@ -355,21 +380,21 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                 Roles Seleccionados:
               </h3>
               <div className="flex flex-wrap gap-2">
-                {selectedRoles.map(role => {
-                  const def = getRoleDefinition(role)
-                  const Icon = def.icon
+                {selectedRoles.map((role) => {
+                  const def = getRoleDefinition(role);
+                  const Icon = def.icon;
                   return (
                     <Badge
                       key={role}
                       className={cn(
                         "px-3 py-1 flex items-center gap-1",
-                        def.bgColor + " text-white"
+                        def.bgColor + " text-white",
                       )}
                     >
                       <Icon className="w-3 h-3" />
                       {def.name}
                     </Badge>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -388,7 +413,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
               Continuar
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            
+
             {selectedRoles.length === 0 && (
               <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Selecciona al menos un rol para continuar
@@ -397,7 +422,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Confirmation Step
@@ -413,7 +438,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
             <ChevronRight className="w-5 h-5 rotate-180" />
             Volver
           </button>
-          
+
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Confirmar Selección
@@ -428,22 +453,28 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
       {/* Main Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
         <div className="space-y-4">
-          {selectedRoles.map(role => {
-            const definition = getRoleDefinition(role)
-            const Icon = definition.icon
-            
+          {selectedRoles.map((role) => {
+            const definition = getRoleDefinition(role);
+            const Icon = definition.icon;
+
             return (
-              <Card 
+              <Card
                 key={role}
                 className={cn("overflow-hidden", definition.borderColor)}
               >
-                <CardHeader className={cn(definition.bgColor.replace('bg-', 'bg-opacity-10'))}>
+                <CardHeader
+                  className={cn(
+                    definition.bgColor.replace("bg-", "bg-opacity-10"),
+                  )}
+                >
                   <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg flex items-center justify-center",
-                      definition.bgColor,
-                      "text-white"
-                    )}>
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-lg flex items-center justify-center",
+                        definition.bgColor,
+                        "text-white",
+                      )}
+                    >
                       <Icon className="w-6 h-6" />
                     </div>
                     <div>
@@ -451,7 +482,12 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                         {definition.name}
                       </CardTitle>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Nivel {definition.certificationRequired} • {ROLE_CERTIFICATION_LABELS[definition.certificationRequired as RoleCertLevel]}
+                        Nivel {definition.certificationRequired} •{" "}
+                        {
+                          ROLE_CERTIFICATION_LABELS[
+                            definition.certificationRequired as RoleCertLevel
+                          ]
+                        }
                       </p>
                     </div>
                   </div>
@@ -460,7 +496,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                   <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                     {definition.description}
                   </p>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase mb-2">
@@ -468,7 +504,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                       </p>
                       <ul className="space-y-1">
                         {definition.features.map((feature, i) => (
-                          <li 
+                          <li
                             key={i}
                             className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
                           >
@@ -481,7 +517,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                   </div>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
 
@@ -495,9 +531,9 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
                   Importante
                 </p>
                 <p className="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
-                  Solo asume roles para los que estás capacitado. La seguridad del equipo 
-                  y de los sobrevivientes depende de que cada persona cumpla su función 
-                  correctamente.
+                  Solo asume roles para los que estás capacitado. La seguridad
+                  del equipo y de los sobrevivientes depende de que cada persona
+                  cumpla su función correctamente.
                 </p>
               </div>
             </div>
@@ -508,26 +544,18 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
       {/* Footer Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4">
         <div className="max-w-lg mx-auto space-y-3">
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={handleConfirm}
-          >
+          <Button className="w-full" size="lg" onClick={handleConfirm}>
             <Check className="w-5 h-5 mr-2" />
             Confirmar y Continuar
           </Button>
-          
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleBack}
-          >
+
+          <Button variant="outline" className="w-full" onClick={handleBack}>
             Modificar Selección
           </Button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default RoleSelector
+export default RoleSelector;

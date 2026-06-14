@@ -2,10 +2,10 @@
  * shadcn/ui Component Utils
  */
 
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
 // Button Component
 const buttonVariants = cva(
@@ -34,30 +34,31 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+  asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+    const Comp = asChild ? Slot : "button";
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />
-    )
-  }
-)
-Button.displayName = "Button"
+    );
+  },
+);
+Button.displayName = "Button";
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };
 
 // Card Component
 const Card = React.forwardRef<
@@ -68,12 +69,12 @@ const Card = React.forwardRef<
     ref={ref}
     className={cn(
       "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
+      className,
     )}
     {...props}
   />
-))
-Card.displayName = "Card"
+));
+Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<
   HTMLDivElement,
@@ -84,8 +85,8 @@ const CardHeader = React.forwardRef<
     className={cn("flex flex-col space-y-1.5 p-6", className)}
     {...props}
   />
-))
-CardHeader.displayName = "CardHeader"
+));
+CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<
   HTMLParagraphElement,
@@ -95,12 +96,12 @@ const CardTitle = React.forwardRef<
     ref={ref}
     className={cn(
       "text-2xl font-semibold leading-none tracking-tight",
-      className
+      className,
     )}
     {...props}
   />
-))
-CardTitle.displayName = "CardTitle"
+));
+CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -111,16 +112,16 @@ const CardDescription = React.forwardRef<
     className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
-))
-CardDescription.displayName = "CardDescription"
+));
+CardDescription.displayName = "CardDescription";
 
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-))
-CardContent.displayName = "CardContent"
+));
+CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<
   HTMLDivElement,
@@ -131,10 +132,17 @@ const CardFooter = React.forwardRef<
     className={cn("flex items-center p-6 pt-0", className)}
     {...props}
   />
-))
-CardFooter.displayName = "CardFooter"
+));
+CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+};
 
 // Badge Component
 const badgeVariants = cva(
@@ -154,20 +162,21 @@ const badgeVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
     <div className={cn(badgeVariants({ variant }), className)} {...props} />
-  )
+  );
 }
 
-export { Badge, badgeVariants }
+export { Badge, badgeVariants };
 
 // Alert Component
 const Alert = React.forwardRef<
@@ -179,15 +188,15 @@ const Alert = React.forwardRef<
     role="alert"
     className={cn(
       "relative w-full rounded-lg border p-4",
-      variant === "destructive" 
-        ? "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive" 
+      variant === "destructive"
+        ? "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive"
         : "bg-background text-foreground",
-      className
+      className,
     )}
     {...props}
   />
-))
-Alert.displayName = "Alert"
+));
+Alert.displayName = "Alert";
 
 const AlertTitle = React.forwardRef<
   HTMLHeadingElement,
@@ -198,8 +207,8 @@ const AlertTitle = React.forwardRef<
     className={cn("mb-1 font-medium leading-none tracking-tight", className)}
     {...props}
   />
-))
-AlertTitle.displayName = "AlertTitle"
+));
+AlertTitle.displayName = "AlertTitle";
 
 const AlertDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -210,13 +219,13 @@ const AlertDescription = React.forwardRef<
     className={cn("text-sm [&_p]:leading-relaxed", className)}
     {...props}
   />
-))
-AlertDescription.displayName = "AlertDescription"
+));
+AlertDescription.displayName = "AlertDescription";
 
-export { Alert, AlertTitle, AlertDescription }
+export { Alert, AlertTitle, AlertDescription };
 
 // Separator Component
-import * as SeparatorPrimitive from "@radix-ui/react-separator"
+import * as SeparatorPrimitive from "@radix-ui/react-separator";
 
 const Separator = React.forwardRef<
   React.ElementRef<typeof SeparatorPrimitive.Root>,
@@ -224,7 +233,7 @@ const Separator = React.forwardRef<
 >(
   (
     { className, orientation = "horizontal", decorative = true, ...props },
-    ref
+    ref,
   ) => (
     <SeparatorPrimitive.Root
       ref={ref}
@@ -233,21 +242,26 @@ const Separator = React.forwardRef<
       className={cn(
         "shrink-0 bg-border",
         orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
-        className
+        className,
       )}
       {...props}
     />
-  )
-)
-Separator.displayName = SeparatorPrimitive.Root.displayName
+  ),
+);
+Separator.displayName = SeparatorPrimitive.Root.displayName;
 
-export { Separator }
+export { Separator };
 
 // Re-export all components from Input.tsx
-export { Input } from './Input'
-export type { InputProps } from './Input'
-export { Switch } from './Input'
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './Input'
+export { Input } from "./Input";
+export type { InputProps } from "./Input";
+export { Switch } from "./Input";
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "./Input";
 export {
   Dialog,
   DialogPortal,
@@ -259,16 +273,16 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from './Input'
+} from "./Input";
 
 // Re-export all components from extra.tsx
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './extra'
-export { Label } from './extra'
-export { Textarea } from './extra'
-export type { TextareaProps } from './extra'
-export { Skeleton } from './extra'
-export { ScrollArea, ScrollBar } from './extra'
-export { Avatar, AvatarImage, AvatarFallback } from './extra'
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./extra";
+export { Label } from "./extra";
+export { Textarea } from "./extra";
+export type { TextareaProps } from "./extra";
+export { Skeleton } from "./extra";
+export { ScrollArea, ScrollBar } from "./extra";
+export { Avatar, AvatarImage, AvatarFallback } from "./extra";
 
 // Re-export Radix Select components (overrides basic Select from extra.tsx)
 export {
@@ -282,12 +296,17 @@ export {
   SelectLabel,
   SelectItem,
   SelectSeparator,
-} from './select-components'
-export { Checkbox } from './checkbox'
-export { Progress } from './progress'
-export { RadioGroup, RadioGroupItem } from './radio-group'
-export { Slider } from './slider'
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
+} from "./select-components";
+export { Checkbox } from "./checkbox";
+export { Progress } from "./progress";
+export { RadioGroup, RadioGroupItem } from "./radio-group";
+export { Slider } from "./slider";
+export {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "./tooltip";
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -304,4 +323,4 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
-} from './dropdown-menu'
+} from "./dropdown-menu";

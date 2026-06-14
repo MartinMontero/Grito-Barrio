@@ -1,4 +1,4 @@
-# Código de Conducta - Protocolo CDMX
+# Código de Conducta - Grito & Barrio
 
 ## Nuestro Compromiso
 
@@ -120,7 +120,7 @@ El equipo revisará las apelaciones en un plazo de 14 días.
 
 ### Consideraciones de Seguridad
 
-Dado que Protocolo CDMX es una herramienta de respuesta de emergencia:
+Dado que Grito & Barrio es una herramienta de respuesta de emergencia:
 
 - **Respetar la privacidad**: Nunca compartir información personal de usuarios
 - **Seguridad primero**: Priorizar reportes relacionados con vulnerabilidades de seguridad
@@ -192,4 +192,4 @@ Este Código de Conducta puede ser modificado por el equipo de mantenimiento del
 
 ---
 
-Al contribuir a Protocolo CDMX, aceptas cumplir con este Código de Conducta. Gracias por ayudarnos a mantener una comunidad acogedora y productiva para todos.
+Al contribuir a Grito & Barrio, aceptas cumplir con este Código de Conducta. Gracias por ayudarnos a mantener una comunidad acogedora y productiva para todos.

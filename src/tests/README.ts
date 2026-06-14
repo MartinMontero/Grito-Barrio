@@ -1,6 +1,6 @@
 /**
  * Test Suite - Protocolo CDMX
- * 
+ *
  * Comprehensive testing strategy for high-stakes emergency response application
  */
 
@@ -50,16 +50,16 @@
 /**
  * Run all tests:
  * $ npm test
- * 
+ *
  * Run specific test suite:
  * $ npm test -- src/tests/unit/store.test.ts
- * 
+ *
  * Run with coverage:
  * $ npm test -- --coverage
- * 
+ *
  * Run in watch mode:
  * $ npm test -- --watch
- * 
+ *
  * Run specific category:
  * $ npm test -- --testNamePattern="Incident"
  */
@@ -70,19 +70,19 @@
 
 /**
  * 1. UNIT TESTS (Fast, Isolated)
- * 
+ *
  * Store Tests:
  * - State mutations
  * - Action dispatching
  * - Selector memoization
  * - State persistence
- * 
+ *
  * Crypto Tests:
  * - Encryption/decryption roundtrip
  * - Key generation
  * - Hash verification
  * - Performance under load
- * 
+ *
  * DB Tests:
  * - CRUD operations
  * - Index queries
@@ -92,7 +92,7 @@
 
 /**
  * 2. INTEGRATION TESTS (Medium, Connected)
- * 
+ *
  * Flow Tests:
  * - Complete emergency response workflow
  * - Team coordination
@@ -102,7 +102,7 @@
 
 /**
  * 3. E2E TESTS (Slow, Full System)
- * 
+ *
  * Emergency Scenarios:
  * - User onboarding
  * - Alert activation
@@ -113,7 +113,7 @@
 
 /**
  * 4. ACCESSIBILITY TESTS
- * 
+ *
  * WCAG 2.1 Level AA Compliance:
  * - Screen reader compatibility
  * - Keyboard navigation
@@ -124,7 +124,7 @@
 
 /**
  * 5. PERFORMANCE TESTS
- * 
+ *
  * Benchmarks:
  * - App startup time (< 3s)
  * - Checklist response (< 100ms)
@@ -135,7 +135,7 @@
 
 /**
  * 6. SECURITY TESTS
- * 
+ *
  * Protection Features:
  * - Duress mode activation
  * - Data encryption
@@ -146,7 +146,7 @@
 
 /**
  * 7. OFFLINE TESTS
- * 
+ *
  * Resilience:
  * - Full functionality without network
  * - Data persistence
@@ -163,7 +163,7 @@
  * - createMockIncident(): Generate test incidents
  * - createMockTeamMember(): Generate test team members
  * - createMockFormData(): Generate test forms
- * 
+ *
  * Helpers:
  * - wait(ms): Async delay
  * - mockFetchResponse(): Mock API responses
@@ -180,7 +180,7 @@
  * - Functions: 80%
  * - Branches: 70%
  * - Statements: 80%
- * 
+ *
  * Critical Paths (100% coverage required):
  * - Incident creation
  * - Emergency checklist
@@ -197,22 +197,22 @@
  *    - Each test should be independent
  *    - Clean up state after each test
  *    - Use beforeEach/afterEach hooks
- * 
+ *
  * 2. Meaningful Assertions
  *    - Test behavior, not implementation
  *    - Use descriptive assertion messages
  *    - Test edge cases
- * 
+ *
  * 3. Accessibility First
  *    - Test keyboard navigation
  *    - Verify ARIA attributes
  *    - Check color contrast
- * 
+ *
  * 4. Performance Awareness
  *    - Set appropriate timeouts
  *    - Mock slow operations
  *    - Test under resource constraints
- * 
+ *
  * 5. Security Validation
  *    - Never use real credentials in tests
  *    - Test both success and failure paths
@@ -231,7 +231,7 @@
  * 4. Accessibility audit
  * 5. Security scan
  * 6. Coverage report
- * 
+ *
  * Deployment Gates:
  * - All tests passing
  * - Coverage thresholds met
@@ -249,7 +249,7 @@
  * - Monitor flaky tests
  * - Update mocks for new APIs
  * - Refactor tests for clarity
- * 
+ *
  * Quarterly Review:
  * - Coverage analysis
  * - Performance regression check
@@ -257,4 +257,4 @@
  * - Accessibility compliance
  */
 
-export {}
+export {};

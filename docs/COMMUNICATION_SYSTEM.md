@@ -1,6 +1,6 @@
 # Contact and Communication Management System
 
-Protocolo CDMX features a comprehensive contact management and communication system for rapid coordination during incidents.
+Grito & Barrio features a comprehensive contact management and communication system for rapid coordination during incidents.
 
 ## Overview
 

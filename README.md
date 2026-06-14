@@ -2,14 +2,14 @@
 
 Herramienta de respuesta comunitaria para apoyo en desalojos ilegales en la Ciudad de México.
 
-[![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://protocolo-cdmx.pages.dev)
+[![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://grito-barrio.pages.dev)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 
 Una PWA (Progressive Web App) desarrollada con React, TypeScript y Vite.
 
-🌐 **Live Demo:** [https://protocolo-cdmx.pages.dev](https://protocolo-cdmx.pages.dev)
+🌐 **Live Demo:** [https://grito-barrio.pages.dev](https://grito-barrio.pages.dev)
 
 ---
 
@@ -32,15 +32,15 @@ El proyecto está configurado para desplegarse automáticamente en **Cloudflare 
 
 ### URLs del Proyecto
 
-- 🌐 **Producción:** [https://protocolo-cdmx.pages.dev](https://protocolo-cdmx.pages.dev)
-- 🔧 **Repositorio:** [https://github.com/MartinMontero/MXMutalAid](https://github.com/MartinMontero/MXMutalAid)
+- 🌐 **Producción:** [https://grito-barrio.pages.dev](https://grito-barrio.pages.dev)
+- 🔧 **Repositorio:** [https://github.com/MartinMontero/grito-barrio](https://github.com/MartinMontero/grito-barrio)
 
 ### Configuración Rápida
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/MartinMontero/MXMutalAid.git
-cd MXMutalAid
+git clone https://github.com/MartinMontero/grito-barrio.git
+cd grito-barrio
 
 # Instalar dependencias
 npm install
@@ -59,7 +59,7 @@ Para instrucciones detalladas de despliegue, ver [DEPLOY.md](./DEPLOY.md).
 ## 📁 Estructura del Proyecto
 
 ```
-protocolo-cdmx/
+grito-barrio/
 ├── src/
 │   ├── components/
 │   │   ├── ui/          # Componentes reutilizables
@@ -104,14 +104,18 @@ protocolo-cdmx/
 
 Esta aplicación implementa las siguientes medidas de seguridad:
 
-- **Cifrado AES-256-GCM**: Para datos sensibles
-- **Web Crypto API**: Implementación nativa del navegador
-- **Modo de coerción (Duress)**: Protección ante amenazas
-- **Autodestrucción**: Borrado remoto de datos
-- **Almacenamiento local**: Sin dependencia de servidores
-- **Pseudónimos**: Sin nombres reales en el sistema
+- **Cifrado AES-256-GCM**: Para datos sensibles (incidentes, evidencia, documentación)
+- **Bóveda de claves**: Clave derivada de tu contraseña (PBKDF2, 600k iteraciones)
+  y mantenida **solo en memoria**; nunca se guarda en disco
+- **Web Crypto API**: Criptografía nativa del navegador (sin dependencias frágiles)
+- **Modo de coerción (Duress)**: Bóveda señuelo independiente + borrado de pánico
+- **Borrado de pánico local y durable**: elimina todos los datos del dispositivo
+  (no requiere conexión; no hay borrado remoto)
+- **Almacenamiento 100% local**: sin servidores, sin telemetría, sin rastreadores
+- **Seudónimos**: sin nombres reales en el sistema
 
-Para más detalles, ver [SECURITY.md](./docs/SECURITY.md).
+Para el modelo de amenazas, garantías y **limitaciones conocidas**, ver
+[docs/SECURITY.md](./docs/SECURITY.md).
 
 ---
 

@@ -1,6 +1,6 @@
-# Cómo Contribuir - Protocolo CDMX
+# Cómo Contribuir - Grito & Barrio
 
-¡Gracias por tu interés en contribuir a Protocolo CDMX! Este documento proporciona las pautas y el proceso para contribuir al proyecto.
+¡Gracias por tu interés en contribuir a Grito & Barrio! Este documento proporciona las pautas y el proceso para contribuir al proyecto.
 
 ---
 
@@ -61,11 +61,11 @@ Este proyecto sigue nuestro [Código de Conducta](./CODE_OF_CONDUCT.md). Al part
 ```bash
 # 1. Haz fork del repositorio en GitHub
 # 2. Clona tu fork
-git clone https://github.com/tu-usuario/protocolo-cdmx.git
-cd protocolo-cdmx
+git clone https://github.com/MartinMontero/grito-barrio.git
+cd grito-barrio
 
 # 3. Agrega el repositorio original como upstream
-git remote add upstream https://github.com/organization/protocolo-cdmx.git
+git remote add upstream https://github.com/MartinMontero/grito-barrio.git
 
 # 4. Crea una rama para tu contribución
 git checkout -b feature/nombre-descriptivo
@@ -424,12 +424,12 @@ No te preocupes, es parte del proceso. Los maintainers te explicarán por qué y
 
 ## Contacto
 
-- **Issues**: [GitHub Issues](https://github.com/organization/protocolo-cdmx/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/organization/protocolo-cdmx/discussions)
+- **Issues**: [GitHub Issues](https://github.com/MartinMontero/grito-barrio/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/MartinMontero/grito-barrio/discussions)
 - **Email**: contribute@protocolo-cdmx.org
 
 ---
 
-**¡Gracias por contribuir a Protocolo CDMX!** 🙏
+**¡Gracias por contribuir a Grito & Barrio!** 🙏
 
 Tu trabajo ayuda a proteger a defensores de derechos humanos en la Ciudad de México.

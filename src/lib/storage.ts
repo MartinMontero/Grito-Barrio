@@ -1,102 +1,104 @@
 /**
  * Storage Utilities
  * Protocolo CDMX
- * 
+ *
  * Wrapper for localStorage, sessionStorage, and File System API
  * with error handling, quota checking, and serialization
  */
 
-import { compress, decompress } from './compression'
+import { compress, decompress } from "./compression";
+import { encryptData, decryptData } from "./encryption";
+import { getDataKey, isVaultInitialized } from "./vault";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 export interface StorageOptions {
-  compress?: boolean
-  encrypt?: boolean
-  ttl?: number // Time to live in milliseconds
-  priority?: 'low' | 'normal' | 'high'
+  compress?: boolean;
+  encrypt?: boolean;
+  ttl?: number; // Time to live in milliseconds
+  priority?: "low" | "normal" | "high";
 }
 
 export interface StorageItem<T> {
-  data: T
-  timestamp: number
-  ttl?: number
-  compressed?: boolean
-  encrypted?: boolean
-  version: number
+  data: T;
+  timestamp: number;
+  ttl?: number;
+  compressed?: boolean;
+  encrypted?: boolean;
+  version: number;
 }
 
 export interface StorageQuota {
-  used: number
-  available: number
-  total: number
-  percentage: number
+  used: number;
+  available: number;
+  total: number;
+  percentage: number;
 }
 
 export interface StorageStats {
-  localStorage: StorageQuota
-  sessionStorage: StorageQuota
-  indexedDB?: StorageQuota
+  localStorage: StorageQuota;
+  sessionStorage: StorageQuota;
+  indexedDB?: StorageQuota;
 }
 
-export type StorageType = 'localStorage' | 'sessionStorage'
+export type StorageType = "localStorage" | "sessionStorage";
 
 // =============================================================================
 // CONSTANTS
 // =============================================================================
 
-const STORAGE_VERSION = 1
-const DEFAULT_TTL = 7 * 24 * 60 * 60 * 1000 // 7 days
-const MAX_LOCAL_STORAGE_SIZE = 5 * 1024 * 1024 // 5MB typical limit
-const WARNING_THRESHOLD = 0.8 // 80% capacity
+const STORAGE_VERSION = 1;
+const DEFAULT_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAX_LOCAL_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB typical limit
+const WARNING_THRESHOLD = 0.8; // 80% capacity
 
 // =============================================================================
 // LOCALSTORAGE WRAPPER
 // =============================================================================
 
 class LocalStorageWrapper {
-  private prefix = 'protocolo_cdmx_'
-  private version = STORAGE_VERSION
+  private prefix = "protocolo_cdmx_";
+  private version = STORAGE_VERSION;
 
   /**
    * Get an item from localStorage
    */
   get<T>(key: string, defaultValue?: T): T | undefined {
     try {
-      const fullKey = this.prefix + key
-      const item = localStorage.getItem(fullKey)
-      
+      const fullKey = this.prefix + key;
+      const item = localStorage.getItem(fullKey);
+
       if (!item) {
-        return defaultValue
+        return defaultValue;
       }
 
-      const parsed: StorageItem<T> = JSON.parse(item)
+      const parsed: StorageItem<T> = JSON.parse(item);
 
       // Check version
       if (parsed.version !== this.version) {
-        console.warn(`[Storage] Version mismatch for key "${key}"`)
-        this.remove(key)
-        return defaultValue
+        console.warn(`[Storage] Version mismatch for key "${key}"`);
+        this.remove(key);
+        return defaultValue;
       }
 
       // Check TTL
       if (parsed.ttl && Date.now() - parsed.timestamp > parsed.ttl) {
-        this.remove(key)
-        return defaultValue
+        this.remove(key);
+        return defaultValue;
       }
 
       // Decompress if needed
-      let data = parsed.data
-      if (parsed.compressed && typeof data === 'string') {
-        data = decompress(data) as unknown as T
+      let data = parsed.data;
+      if (parsed.compressed && typeof data === "string") {
+        data = decompress(data) as unknown as T;
       }
 
-      return data
+      return data;
     } catch (error) {
-      console.error(`[Storage] Failed to get item "${key}":`, error)
-      return defaultValue
+      console.error(`[Storage] Failed to get item "${key}":`, error);
+      return defaultValue;
     }
   }
 
@@ -105,27 +107,28 @@ class LocalStorageWrapper {
    */
   set<T>(key: string, value: T, options: StorageOptions = {}): boolean {
     try {
-      const fullKey = this.prefix + key
+      const fullKey = this.prefix + key;
 
       // Check quota before saving
       if (!this.hasSpaceFor(key, value)) {
         // Try to free space by removing expired items
-        this.removeExpired()
-        
+        this.removeExpired();
+
         if (!this.hasSpaceFor(key, value)) {
-          throw new Error('Storage quota exceeded')
+          throw new Error("Storage quota exceeded");
         }
       }
 
-      let data: unknown = value
-      let compressed = false
+      let data: unknown = value;
+      let compressed = false;
 
       // Compress if enabled and data is large
       if (options.compress) {
-        const serialized = JSON.stringify(value)
-        if (serialized.length > 1024) { // Only compress if > 1KB
-          data = compress(serialized)
-          compressed = true
+        const serialized = JSON.stringify(value);
+        if (serialized.length > 1024) {
+          // Only compress if > 1KB
+          data = compress(serialized);
+          compressed = true;
         }
       }
 
@@ -134,14 +137,14 @@ class LocalStorageWrapper {
         timestamp: Date.now(),
         ttl: options.ttl || DEFAULT_TTL,
         compressed,
-        version: this.version
-      }
+        version: this.version,
+      };
 
-      localStorage.setItem(fullKey, JSON.stringify(item))
-      return true
+      localStorage.setItem(fullKey, JSON.stringify(item));
+      return true;
     } catch (error) {
-      console.error(`[Storage] Failed to set item "${key}":`, error)
-      return false
+      console.error(`[Storage] Failed to set item "${key}":`, error);
+      return false;
     }
   }
 
@@ -150,12 +153,12 @@ class LocalStorageWrapper {
    */
   remove(key: string): boolean {
     try {
-      const fullKey = this.prefix + key
-      localStorage.removeItem(fullKey)
-      return true
+      const fullKey = this.prefix + key;
+      localStorage.removeItem(fullKey);
+      return true;
     } catch (error) {
-      console.error(`[Storage] Failed to remove item "${key}":`, error)
-      return false
+      console.error(`[Storage] Failed to remove item "${key}":`, error);
+      return false;
     }
   }
 
@@ -163,35 +166,35 @@ class LocalStorageWrapper {
    * Check if an item exists
    */
   has(key: string): boolean {
-    return this.getKeys().includes(key)
+    return this.getKeys().includes(key);
   }
 
   /**
    * Get all keys
    */
   getKeys(): string[] {
-    const keys: string[] = []
+    const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
+      const key = localStorage.key(i);
       if (key?.startsWith(this.prefix)) {
-        keys.push(key.slice(this.prefix.length))
+        keys.push(key.slice(this.prefix.length));
       }
     }
-    return keys
+    return keys;
   }
 
   /**
    * Get all items
    */
   getAll<T>(): Record<string, T> {
-    const items: Record<string, T> = {}
+    const items: Record<string, T> = {};
     for (const key of this.getKeys()) {
-      const value = this.get<T>(key)
+      const value = this.get<T>(key);
       if (value !== undefined) {
-        items[key] = value
+        items[key] = value;
       }
     }
-    return items
+    return items;
   }
 
   /**
@@ -200,12 +203,12 @@ class LocalStorageWrapper {
   clear(): boolean {
     try {
       for (const key of this.getKeys()) {
-        this.remove(key)
+        this.remove(key);
       }
-      return true
+      return true;
     } catch (error) {
-      console.error('[Storage] Failed to clear:', error)
-      return false
+      console.error("[Storage] Failed to clear:", error);
+      return false;
     }
   }
 
@@ -213,29 +216,29 @@ class LocalStorageWrapper {
    * Get storage size
    */
   getSize(): number {
-    let size = 0
+    let size = 0;
     for (const key of this.getKeys()) {
-      const fullKey = this.prefix + key
-      const item = localStorage.getItem(fullKey)
+      const fullKey = this.prefix + key;
+      const item = localStorage.getItem(fullKey);
       if (item) {
-        size += item.length * 2 // UTF-16 encoding
+        size += item.length * 2; // UTF-16 encoding
       }
     }
-    return size
+    return size;
   }
 
   /**
    * Get storage quota info
    */
   getQuota(): StorageQuota {
-    const used = this.getSize()
-    const total = MAX_LOCAL_STORAGE_SIZE
+    const used = this.getSize();
+    const total = MAX_LOCAL_STORAGE_SIZE;
     return {
       used,
       available: total - used,
       total,
-      percentage: used / total
-    }
+      percentage: used / total,
+    };
   }
 
   /**
@@ -245,58 +248,61 @@ class LocalStorageWrapper {
     const testItem: StorageItem<T> = {
       data: value,
       timestamp: Date.now(),
-      version: this.version
-    }
-    const size = JSON.stringify(testItem).length * 2
-    const quota = this.getQuota()
-    return quota.available > size
+      version: this.version,
+    };
+    const size = JSON.stringify(testItem).length * 2;
+    const quota = this.getQuota();
+    return quota.available > size;
   }
 
   /**
    * Remove expired items
    */
   private removeExpired(): number {
-    let removed = 0
+    let removed = 0;
     for (const key of this.getKeys()) {
-      const fullKey = this.prefix + key
-      const item = localStorage.getItem(fullKey)
+      const fullKey = this.prefix + key;
+      const item = localStorage.getItem(fullKey);
       if (item) {
         try {
-          const parsed: StorageItem<unknown> = JSON.parse(item)
+          const parsed: StorageItem<unknown> = JSON.parse(item);
           if (parsed.ttl && Date.now() - parsed.timestamp > parsed.ttl) {
-            this.remove(key)
-            removed++
+            this.remove(key);
+            removed++;
           }
         } catch {
           // Invalid item, remove it
-          this.remove(key)
-          removed++
+          this.remove(key);
+          removed++;
         }
       }
     }
-    return removed
+    return removed;
   }
 
   /**
    * Watch for changes
    */
-  watch<T>(key: string, callback: (newValue: T | undefined, oldValue: T | undefined) => void): () => void {
-    const fullKey = this.prefix + key
-    let lastValue = this.get<T>(key)
+  watch<T>(
+    key: string,
+    callback: (newValue: T | undefined, oldValue: T | undefined) => void,
+  ): () => void {
+    const fullKey = this.prefix + key;
+    let lastValue = this.get<T>(key);
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key === fullKey) {
-        const newValue = this.get<T>(key)
-        callback(newValue, lastValue)
-        lastValue = newValue
+        const newValue = this.get<T>(key);
+        callback(newValue, lastValue);
+        lastValue = newValue;
       }
-    }
+    };
 
-    window.addEventListener('storage', handleStorage)
-    
+    window.addEventListener("storage", handleStorage);
+
     return () => {
-      window.removeEventListener('storage', handleStorage)
-    }
+      window.removeEventListener("storage", handleStorage);
+    };
   }
 }
 
@@ -305,58 +311,58 @@ class LocalStorageWrapper {
 // =============================================================================
 
 class SessionStorageWrapper {
-  private prefix = 'protocolo_session_'
+  private prefix = "protocolo_session_";
 
   get<T>(key: string, defaultValue?: T): T | undefined {
     try {
-      const fullKey = this.prefix + key
-      const item = sessionStorage.getItem(fullKey)
-      
+      const fullKey = this.prefix + key;
+      const item = sessionStorage.getItem(fullKey);
+
       if (!item) {
-        return defaultValue
+        return defaultValue;
       }
 
-      return JSON.parse(item)
+      return JSON.parse(item);
     } catch (error) {
-      console.error(`[SessionStorage] Failed to get "${key}":`, error)
-      return defaultValue
+      console.error(`[SessionStorage] Failed to get "${key}":`, error);
+      return defaultValue;
     }
   }
 
   set<T>(key: string, value: T): boolean {
     try {
-      const fullKey = this.prefix + key
-      sessionStorage.setItem(fullKey, JSON.stringify(value))
-      return true
+      const fullKey = this.prefix + key;
+      sessionStorage.setItem(fullKey, JSON.stringify(value));
+      return true;
     } catch (error) {
-      console.error(`[SessionStorage] Failed to set "${key}":`, error)
-      return false
+      console.error(`[SessionStorage] Failed to set "${key}":`, error);
+      return false;
     }
   }
 
   remove(key: string): boolean {
     try {
-      const fullKey = this.prefix + key
-      sessionStorage.removeItem(fullKey)
-      return true
+      const fullKey = this.prefix + key;
+      sessionStorage.removeItem(fullKey);
+      return true;
     } catch (error) {
-      console.error(`[SessionStorage] Failed to remove "${key}":`, error)
-      return false
+      console.error(`[SessionStorage] Failed to remove "${key}":`, error);
+      return false;
     }
   }
 
   clear(): boolean {
     try {
       for (let i = sessionStorage.length - 1; i >= 0; i--) {
-        const key = sessionStorage.key(i)
+        const key = sessionStorage.key(i);
         if (key?.startsWith(this.prefix)) {
-          sessionStorage.removeItem(key)
+          sessionStorage.removeItem(key);
         }
       }
-      return true
+      return true;
     } catch (error) {
-      console.error('[SessionStorage] Failed to clear:', error)
-      return false
+      console.error("[SessionStorage] Failed to clear:", error);
+      return false;
     }
   }
 }
@@ -366,13 +372,13 @@ class SessionStorageWrapper {
 // =============================================================================
 
 class FileSystemWrapper {
-  private directoryHandle: FileSystemDirectoryHandle | null = null
+  private directoryHandle: FileSystemDirectoryHandle | null = null;
 
   /**
    * Check if File System Access API is supported
    */
   isSupported(): boolean {
-    return 'showDirectoryPicker' in window
+    return "showDirectoryPicker" in window;
   }
 
   /**
@@ -380,17 +386,19 @@ class FileSystemWrapper {
    */
   async requestAccess(): Promise<boolean> {
     if (!this.isSupported()) {
-      return false
+      return false;
     }
 
     try {
-      this.directoryHandle = await (window as unknown as {
-        showDirectoryPicker(): Promise<FileSystemDirectoryHandle>
-      }).showDirectoryPicker()
-      return true
+      this.directoryHandle = await (
+        window as unknown as {
+          showDirectoryPicker(): Promise<FileSystemDirectoryHandle>;
+        }
+      ).showDirectoryPicker();
+      return true;
     } catch (error) {
-      console.error('[FileSystem] Access denied:', error)
-      return false
+      console.error("[FileSystem] Access denied:", error);
+      return false;
     }
   }
 
@@ -399,25 +407,27 @@ class FileSystemWrapper {
    */
   async saveFile(filename: string, content: Blob | string): Promise<boolean> {
     if (!this.directoryHandle) {
-      console.error('[FileSystem] No directory access')
-      return false
+      console.error("[FileSystem] No directory access");
+      return false;
     }
 
     try {
-      const fileHandle = await this.directoryHandle.getFileHandle(filename, { create: true })
-      const writable = await fileHandle.createWritable()
-      
-      if (typeof content === 'string') {
-        await writable.write(content)
+      const fileHandle = await this.directoryHandle.getFileHandle(filename, {
+        create: true,
+      });
+      const writable = await fileHandle.createWritable();
+
+      if (typeof content === "string") {
+        await writable.write(content);
       } else {
-        await writable.write(content)
+        await writable.write(content);
       }
-      
-      await writable.close()
-      return true
+
+      await writable.close();
+      return true;
     } catch (error) {
-      console.error(`[FileSystem] Failed to save "${filename}":`, error)
-      return false
+      console.error(`[FileSystem] Failed to save "${filename}":`, error);
+      return false;
     }
   }
 
@@ -426,16 +436,16 @@ class FileSystemWrapper {
    */
   async readFile(filename: string): Promise<string | null> {
     if (!this.directoryHandle) {
-      return null
+      return null;
     }
 
     try {
-      const fileHandle = await this.directoryHandle.getFileHandle(filename)
-      const file = await fileHandle.getFile()
-      return await file.text()
+      const fileHandle = await this.directoryHandle.getFileHandle(filename);
+      const file = await fileHandle.getFile();
+      return await file.text();
     } catch (error) {
-      console.error(`[FileSystem] Failed to read "${filename}":`, error)
-      return null
+      console.error(`[FileSystem] Failed to read "${filename}":`, error);
+      return null;
     }
   }
 
@@ -444,15 +454,15 @@ class FileSystemWrapper {
    */
   async deleteFile(filename: string): Promise<boolean> {
     if (!this.directoryHandle) {
-      return false
+      return false;
     }
 
     try {
-      await this.directoryHandle.removeEntry(filename)
-      return true
+      await this.directoryHandle.removeEntry(filename);
+      return true;
     } catch (error) {
-      console.error(`[FileSystem] Failed to delete "${filename}":`, error)
-      return false
+      console.error(`[FileSystem] Failed to delete "${filename}":`, error);
+      return false;
     }
   }
 
@@ -461,22 +471,22 @@ class FileSystemWrapper {
    */
   async listFiles(): Promise<string[]> {
     if (!this.directoryHandle) {
-      return []
+      return [];
     }
 
-    const files: string[] = []
-    
+    const files: string[] = [];
+
     try {
       for await (const entry of (this.directoryHandle as any).values()) {
-        if (entry.kind === 'file') {
-          files.push(entry.name)
+        if (entry.kind === "file") {
+          files.push(entry.name);
         }
       }
     } catch (error) {
-      console.error('[FileSystem] Failed to list files:', error)
+      console.error("[FileSystem] Failed to list files:", error);
     }
 
-    return files
+    return files;
   }
 }
 
@@ -485,29 +495,29 @@ class FileSystemWrapper {
 // =============================================================================
 
 class MemoryStorage {
-  private storage = new Map<string, unknown>()
+  private storage = new Map<string, unknown>();
 
   get<T>(key: string, defaultValue?: T): T | undefined {
-    return (this.storage.get(key) as T) ?? defaultValue
+    return (this.storage.get(key) as T) ?? defaultValue;
   }
 
   set<T>(key: string, value: T): boolean {
-    this.storage.set(key, value)
-    return true
+    this.storage.set(key, value);
+    return true;
   }
 
   remove(key: string): boolean {
-    this.storage.delete(key)
-    return true
+    this.storage.delete(key);
+    return true;
   }
 
   clear(): boolean {
-    this.storage.clear()
-    return true
+    this.storage.clear();
+    return true;
   }
 
   getKeys(): string[] {
-    return Array.from(this.storage.keys())
+    return Array.from(this.storage.keys());
   }
 }
 
@@ -516,25 +526,25 @@ class MemoryStorage {
 // =============================================================================
 
 class StorageManager {
-  local: LocalStorageWrapper
-  session: SessionStorageWrapper
-  fileSystem: FileSystemWrapper
-  memory: MemoryStorage
+  local: LocalStorageWrapper;
+  session: SessionStorageWrapper;
+  fileSystem: FileSystemWrapper;
+  memory: MemoryStorage;
 
-  private encryptionKey: string | null = null
+  private encryptionKey: string | null = null;
 
   constructor() {
-    this.local = new LocalStorageWrapper()
-    this.session = new SessionStorageWrapper()
-    this.fileSystem = new FileSystemWrapper()
-    this.memory = new MemoryStorage()
+    this.local = new LocalStorageWrapper();
+    this.session = new SessionStorageWrapper();
+    this.fileSystem = new FileSystemWrapper();
+    this.memory = new MemoryStorage();
   }
 
   /**
    * Set encryption key
    */
   setEncryptionKey(key: string): void {
-    this.encryptionKey = key
+    this.encryptionKey = key;
   }
 
   /**
@@ -547,23 +557,23 @@ class StorageManager {
         used: 0,
         available: MAX_LOCAL_STORAGE_SIZE,
         total: MAX_LOCAL_STORAGE_SIZE,
-        percentage: 0
-      }
-    }
+        percentage: 0,
+      },
+    };
   }
 
   /**
    * Check if storage is available
    */
-  isAvailable(type: StorageType = 'localStorage'): boolean {
+  isAvailable(type: StorageType = "localStorage"): boolean {
     try {
-      const storage = type === 'localStorage' ? localStorage : sessionStorage
-      const test = '__storage_test__'
-      storage.setItem(test, test)
-      storage.removeItem(test)
-      return true
+      const storage = type === "localStorage" ? localStorage : sessionStorage;
+      const test = "__storage_test__";
+      storage.setItem(test, test);
+      storage.removeItem(test);
+      return true;
     } catch {
-      return false
+      return false;
     }
   }
 
@@ -571,46 +581,46 @@ class StorageManager {
    * Clear all storage
    */
   async clearAll(): Promise<void> {
-    this.local.clear()
-    this.session.clear()
-    this.memory.clear()
+    this.local.clear();
+    this.session.clear();
+    this.memory.clear();
   }
 
   /**
    * Export all data
    */
   async exportAll(): Promise<{
-    localStorage: Record<string, unknown>
-    sessionStorage: Record<string, unknown>
-    timestamp: string
+    localStorage: Record<string, unknown>;
+    sessionStorage: Record<string, unknown>;
+    timestamp: string;
   }> {
     return {
       localStorage: this.local.getAll(),
       sessionStorage: {}, // Session storage is temporary
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**
    * Import data
    */
   async importAll(data: {
-    localStorage: Record<string, unknown>
-    sessionStorage?: Record<string, unknown>
+    localStorage: Record<string, unknown>;
+    sessionStorage?: Record<string, unknown>;
   }): Promise<boolean> {
     try {
       // Clear existing data
-      this.clearAll()
+      this.clearAll();
 
       // Import localStorage
       for (const [key, value] of Object.entries(data.localStorage)) {
-        this.local.set(key, value)
+        this.local.set(key, value);
       }
 
-      return true
+      return true;
     } catch (error) {
-      console.error('[Storage] Import failed:', error)
-      return false
+      console.error("[Storage] Import failed:", error);
+      return false;
     }
   }
 }
@@ -619,125 +629,146 @@ class StorageManager {
 // LEGACY COMPATIBILITY FUNCTIONS (for store-helpers.ts)
 // =============================================================================
 
-const storeDataCache = new Map<string, unknown>()
+interface PersistRecord {
+  key: string;
+  /** JSON string (plaintext) OR base64 ciphertext when `encrypted` is true. */
+  data: string;
+  encrypted: boolean;
+  timestamp: number;
+}
 
 /**
- * Store data (legacy API for store-helpers.ts)
- * Uses IndexedDB if available, falls back to localStorage
+ * Persist slice state to IndexedDB (with localStorage fallback).
+ *
+ * Encryption semantics (fail-closed):
+ *  - `encrypt === true` and the vault is UNLOCKED  → encrypt with the DEK.
+ *  - `encrypt === true` and the vault is LOCKED     → throw (never write plaintext).
+ *  - `encrypt === true` and NO vault configured     → write plaintext (encryption
+ *    not yet enabled; the UI discloses this and nudges the user to set a passphrase).
+ *  - `encrypt === false`                            → write plaintext.
  */
 export async function storeData<T>(
   key: string,
   data: T,
-  encrypt: boolean = false
+  encrypt: boolean = false,
 ): Promise<boolean> {
-  try {
-    // Try IndexedDB first
-    const { db } = await import('./db')
-    await db.init()
-    
-    const result = await db.put('settings' as any, {
+  const serialized = JSON.stringify(data);
+  let record: PersistRecord;
+
+  if (encrypt && getDataKey()) {
+    record = {
       key,
-      data: encrypt ? JSON.stringify(data) : data,
-      encrypted: encrypt,
-      timestamp: Date.now()
-    })
-    
-    if (result.success) {
-      return true
-    }
-  } catch (error) {
-    console.warn('[storeData] IndexedDB failed, falling back to localStorage:', error)
+      data: await encryptData(serialized),
+      encrypted: true,
+      timestamp: Date.now(),
+    };
+  } else if (encrypt && isVaultInitialized()) {
+    // Vault exists but is locked — refuse to persist sensitive data in the clear.
+    throw new Error(
+      `[storeData] Vault locked; refusing to persist "${key}" unencrypted.`,
+    );
+  } else {
+    record = { key, data: serialized, encrypted: false, timestamp: Date.now() };
   }
-  
-  // Fallback to localStorage
+
   try {
-    storage.local.set(key, data)
-    storeDataCache.set(key, data)
-    return true
+    const { db } = await import("./db");
+    await db.init();
+    const result = await db.put("settings" as any, record);
+    if (result.success) return true;
   } catch (error) {
-    console.error('[storeData] Failed to store data:', error)
-    return false
+    console.warn(
+      "[storeData] IndexedDB failed, falling back to localStorage:",
+      error,
+    );
+  }
+
+  try {
+    // Store the same envelope shape in localStorage so getData can read it back.
+    storage.local.set(`persist:${key}`, record);
+    return true;
+  } catch (error) {
+    console.error("[storeData] Failed to store data:", error);
+    return false;
   }
 }
 
 /**
- * Get data (legacy API for store-helpers.ts)
+ * Read slice state persisted by `storeData`. Decrypts using the vault DEK when
+ * the record is encrypted; returns null if the vault is locked or decryption
+ * fails (fail-closed: never returns ciphertext as if it were data).
  */
-export async function getData<T>(
-  key: string,
-  decrypt: boolean = false
-): Promise<T | null> {
-  // Check cache first
-  const cached = storeDataCache.get(key)
-  if (cached !== undefined) {
-    return cached as T
-  }
-  
-  try {
-    // Try IndexedDB first
-    const { db } = await import('./db')
-    await db.init()
-    
-    const result = await db.get<{
-      key: string
-      data: T | string
-      encrypted: boolean
-      timestamp: number
-    }>('settings' as any, key)
-    
-    if (result.success && result.data) {
-      const { data } = result.data
-      
-      if (decrypt && typeof data === 'string') {
-        try {
-          return JSON.parse(data) as T
-        } catch {
-          return data as unknown as T
-        }
+export async function getData<T>(key: string): Promise<T | null> {
+  const decodeRecord = async (
+    record: PersistRecord | undefined | null,
+  ): Promise<T | null> => {
+    if (!record || typeof record.data !== "string") return null;
+    if (record.encrypted) {
+      const dek = getDataKey();
+      if (!dek) return null; // locked — cannot decrypt yet
+      try {
+        return JSON.parse(await decryptData(record.data)) as T;
+      } catch (error) {
+        console.error(`[getData] Failed to decrypt "${key}":`, error);
+        return null;
       }
-      
-      return data as T
     }
-  } catch (error) {
-    console.warn('[getData] IndexedDB failed, falling back to localStorage:', error)
-  }
-  
-  // Fallback to localStorage
+    try {
+      return JSON.parse(record.data) as T;
+    } catch {
+      return null;
+    }
+  };
+
   try {
-    const data = storage.local.get<T>(key)
-    if (data !== undefined) {
-      storeDataCache.set(key, data)
-      return data
+    const { db } = await import("./db");
+    await db.init();
+    const result = await db.get<PersistRecord>("settings" as any, key);
+    if (result.success && result.data) {
+      return decodeRecord(result.data);
     }
   } catch (error) {
-    console.error('[getData] Failed to get data:', error)
+    console.warn(
+      "[getData] IndexedDB failed, falling back to localStorage:",
+      error,
+    );
   }
-  
-  return null
+
+  try {
+    return decodeRecord(storage.local.get<PersistRecord>(`persist:${key}`));
+  } catch (error) {
+    console.error("[getData] Failed to get data:", error);
+    return null;
+  }
 }
 
 // =============================================================================
 // EXPORTS
 // =============================================================================
 
-export const storage = new StorageManager()
+export const storage = new StorageManager();
 
 // Individual wrappers for direct access
-export { LocalStorageWrapper, SessionStorageWrapper, FileSystemWrapper, MemoryStorage }
+export {
+  LocalStorageWrapper,
+  SessionStorageWrapper,
+  FileSystemWrapper,
+  MemoryStorage,
+};
 
 // Utility functions
-export function getStorageType(): 'localStorage' | 'sessionStorage' | 'memory' {
-  if (storage.isAvailable('localStorage')) {
-    return 'localStorage'
+export function getStorageType(): "localStorage" | "sessionStorage" | "memory" {
+  if (storage.isAvailable("localStorage")) {
+    return "localStorage";
   }
-  if (storage.isAvailable('sessionStorage')) {
-    return 'sessionStorage'
+  if (storage.isAvailable("sessionStorage")) {
+    return "sessionStorage";
   }
-  return 'memory'
+  return "memory";
 }
 
 export function estimateSize(data: unknown): number {
-  return JSON.stringify(data).length * 2
+  return JSON.stringify(data).length * 2;
 }
 
-export default storage
+export default storage;

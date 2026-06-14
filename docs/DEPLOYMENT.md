@@ -1,8 +1,8 @@
-# Deployment & CI/CD Pipeline - Protocolo CDMX
+# Deployment & CI/CD Pipeline - Grito & Barrio
 
 ## Overview
 
-This document describes the complete deployment infrastructure for Protocolo CDMX, including continuous integration, automated testing, and deployment to production.
+This document describes the complete deployment infrastructure for Grito & Barrio, including continuous integration, automated testing, and deployment to production.
 
 ## Architecture
 
@@ -429,10 +429,10 @@ npm run build
 
 ### Support
 
-**Issues:** https://github.com/protocolo-cdmx/protocolo-cdmx/issues
-**Documentation:** https://github.com/protocolo-cdmx/protocolo-cdmx/docs
-**Discussions:** https://github.com/protocolo-cdmx/protocolo-cdmx/discussions
+**Issues:** https://github.com/MartinMontero/grito-barrio/issues
+**Documentation:** https://github.com/MartinMontero/grito-barrio/docs
+**Discussions:** https://github.com/MartinMontero/grito-barrio/discussions
 
 ## License
 
-GPL v3 - Part of Protocolo CDMX
+GPL v3 - Part of Grito & Barrio

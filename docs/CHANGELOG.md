@@ -1,4 +1,4 @@
-# Changelog - Protocolo CDMX
+# Changelog - Grito & Barrio
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
@@ -8,8 +8,40 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 ## [Unreleased]
 
+### 🔒 Endurecimiento de seguridad (producción)
+- **Bóveda de cifrado real**: clave de datos (DEK) AES-256-GCM aleatoria, envuelta
+  con una clave derivada de la contraseña (PBKDF2, 600k iteraciones); la DEK vive
+  **solo en memoria**. Cambio de contraseña sin re-cifrar datos.
+- **Cifrado en reposo real y fail-closed**: los datos sensibles se guardan como
+  *solo ciphertext* (sin texto plano junto al cifrado); con la bóveda bloqueada se
+  rechaza escribir datos sensibles en claro.
+- **Modo coerción** con bóveda señuelo independiente (aislamiento criptográfico,
+  negación plausible) y **borrado de pánico durable** que destruye toda la base de
+  datos + bóveda + almacenamiento y sobrevive a recargas/cierres.
+- Corregidos: cifrado de archivos AES-GCM (reuso de nonce + desajuste de chunks),
+  códec de compresión con pérdida, `this`-binding de los exports del gestor de
+  seguridad, claves/sal con `Math.random()`, "cifrado" de respaldos que era texto
+  plano.
+- CSP endurecida (sin `unsafe-eval`/`unsafe-inline` en scripts; +COOP, worker/
+  manifest-src, upgrade-insecure-requests).
+
 ### Added
-- Nueva funcionalidad en desarrollo
+- Pantalla de bloqueo (desbloqueo por contraseña), onboarding de protección y
+  aviso "datos sin cifrar" hasta definir contraseña.
+- Navegación con react-router (AppShell): URLs reales, botón atrás, deep links;
+  todas las pantallas accesibles y conectadas al estado.
+- Code-splitting por ruta (carga diferida) — primer bundle 591KB → ~200KB.
+- Iconos PWA reales (192/512/maskable/apple-touch) y manifiesto consistente.
+
+### Changed
+- Suite de pruebas reescrita para ejercitar **código real** (criptografía, bóveda,
+  IndexedDB, store, flujo de incidente, rutas) en lugar de mocks; documentación de
+  seguridad corregida (sin borrado remoto/TLS ficticios) + limitaciones conocidas.
+
+### Fixed
+- Checklist de emergencia (IDs desalineados + mutación directa del store) ahora
+  funciona y persiste; evidencia guardada vía store cifrado; manejadores vacíos del
+  panel de emergencia y botones sin acción ahora hacen algo real.
 
 ---
 
@@ -240,4 +272,4 @@ Ejemplo:
 
 ---
 
-**Protocolo CDMX** - Manteniendo un registro de todos los cambios importantes.
+**Grito & Barrio** - Manteniendo un registro de todos los cambios importantes.

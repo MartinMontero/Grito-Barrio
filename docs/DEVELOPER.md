@@ -1,4 +1,4 @@
-# Guía para Desarrolladores - Protocolo CDMX
+# Guía para Desarrolladores - Grito & Barrio
 
 **Versión**: 1.0.0  
 **Última actualización**: Febrero 2025  
@@ -23,11 +23,11 @@
 
 ### 1.1 Arquitectura de la Aplicación
 
-Protocolo CDMX sigue una arquitectura **PWA (Progressive Web App)** con los siguientes componentes principales:
+Grito & Barrio sigue una arquitectura **PWA (Progressive Web App)** con los siguientes componentes principales:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    PWA - Protocolo CDMX                     │
+│                    PWA - Grito & Barrio                     │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
 │  │   React UI   │  │  Zustand     │  │  Web Crypto  │      │
@@ -105,7 +105,7 @@ User Action → Store Action → State Update → Component Re-render
 ## 3. Estructura del Proyecto
 
 ```
-protocolo-cdmx/
+grito-barrio/
 ├── .github/
 │   └── workflows/          # GitHub Actions CI/CD
 ├── docs/                   # Documentación del proyecto
@@ -192,8 +192,8 @@ src/store/
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/organization/protocolo-cdmx.git
-cd protocolo-cdmx
+git clone https://github.com/MartinMontero/grito-barrio.git
+cd grito-barrio
 
 # Instalar dependencias
 npm install
@@ -284,7 +284,7 @@ VITE_APP_DEBUG=false
 
 ```typescript
 /**
- * Componente Header - Protocolo CDMX
+ * Componente Header - Grito & Barrio
  * 
  * Descripción breve del componente.
  */
@@ -322,7 +322,7 @@ export function Header({ title, onEmergencyPress }: HeaderProps) {
 
 ```typescript
 /**
- * Slice de Incidentes - Protocolo CDMX
+ * Slice de Incidentes - Grito & Barrio
  */
 
 import type { StateCreator } from 'zustand'
@@ -739,8 +739,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui'
 
 ### 9.2 Contacto del Proyecto
 
-- **Issues**: [GitHub Issues](https://github.com/organization/protocolo-cdmx/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/organization/protocolo-cdmx/discussions)
+- **Issues**: [GitHub Issues](https://github.com/MartinMontero/grito-barrio/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/MartinMontero/grito-barrio/discussions)
 - **Email**: dev@protocolo-cdmx.org
 
 ### 9.3 Licencia
@@ -749,4 +749,4 @@ Este proyecto está licenciado bajo GPL v3. Ver archivo [LICENSE](../LICENSE) pa
 
 ---
 
-**Protocolo CDMX** - Desarrollado con ❤️ para la comunidad de la Ciudad de México
+**Grito & Barrio** - Desarrollado con ❤️ para la comunidad de la Ciudad de México

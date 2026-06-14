@@ -4,7 +4,7 @@
 `src/components/features/PASProtocolGuide.tsx`
 
 ## 🎯 Descripción
-El Protocolo P.A.S. (Proteger - Avisar - Socorrer) es la guía de primeros auxilios básicos para respondedores médicos en la aplicación Protocolo CDMX. Proporciona instrucciones paso a paso para evaluar seguridad, activar emergencias y proporcionar soporte vital básico.
+El Protocolo P.A.S. (Proteger - Avisar - Socorrer) es la guía de primeros auxilios básicos para respondedores médicos en la aplicación Grito & Barrio. Proporciona instrucciones paso a paso para evaluar seguridad, activar emergencias y proporcionar soporte vital básico.
 
 ## 🔄 Los Tres Pasos del Protocolo
 

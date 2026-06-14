@@ -4,7 +4,7 @@
 `src/components/features/EmergencyChecklist.tsx`
 
 ## 🎯 Descripción
-El componente EmergencyChecklist es el checklist operativo principal para la respuesta a incidentes en Protocolo CDMX. Guía a las brigadas a través de las primeras 60 minutos críticos de respuesta, organizado en 4 fases temporales con 28 items específicos.
+El componente EmergencyChecklist es el checklist operativo principal para la respuesta a incidentes en Grito & Barrio. Guía a las brigadas a través de las primeras 60 minutos críticos de respuesta, organizado en 4 fases temporales con 28 items específicos.
 
 ## 📊 Estructura del Checklist
 

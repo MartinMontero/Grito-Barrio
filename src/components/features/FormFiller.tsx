@@ -1,14 +1,13 @@
 /**
  * FormFiller Component
  * Protocolo CDMX
- * 
+ *
  * Editable form component with input fields, validation, and auto-save
  */
 
-import React, { useState, useCallback, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import {
   Save,
   Send,
@@ -18,12 +17,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  FileText,
   Edit3,
-  PenTool,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react'
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -41,123 +36,122 @@ import {
   Checkbox,
   Label,
   Badge,
-  Separator,
   Alert,
   AlertTitle,
   AlertDescription,
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  ScrollArea,
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
-} from '@/components/ui'
-import { cn } from '@/lib/utils'
-import type { FormData, FormTemplate, FormField, FieldType } from '@/types/forms'
-import { useProtocoloStore } from '@/store'
+  AccordionTrigger,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
+import type { FormData, FormTemplate, FormField } from "@/types/forms";
+import { useProtocoloStore } from "@/store";
 
 interface FormFillerProps {
-  template: FormTemplate
-  initialData?: Partial<FormData>
-  incidentId?: string
-  onSave?: (data: FormData) => void
-  onSubmit?: (data: FormData) => void
-  onCancel?: () => void
-  autoSave?: boolean
-  className?: string
+  template: FormTemplate;
+  initialData?: Partial<FormData>;
+  incidentId?: string;
+  onSave?: (data: FormData) => void;
+  onSubmit?: (data: FormData) => void;
+  onCancel?: () => void;
+  autoSave?: boolean;
+  className?: string;
 }
 
 interface ValidationErrors {
-  [key: string]: string
+  [key: string]: string;
 }
 
 interface SignaturePadProps {
-  value?: string
-  onChange: (value: string) => void
-  label?: string
+  value?: string;
+  onChange: (value: string) => void;
+  label?: string;
 }
 
-const SignaturePad: React.FC<SignaturePadProps> = ({ value, onChange, label }) => {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null)
-  const [isDrawing, setIsDrawing] = useState(false)
+const SignaturePad: React.FC<SignaturePadProps> = ({
+  value,
+  onChange,
+  label,
+}) => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   React.useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    ctx.strokeStyle = '#000'
-    ctx.lineWidth = 2
-    ctx.lineCap = 'round'
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
 
     if (value) {
-      const img = new Image()
-      img.onload = () => ctx.drawImage(img, 0, 0)
-      img.src = value
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = value;
     }
-  }, [])
+  }, []);
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDrawing(true)
-    const canvas = canvasRef.current
-    if (!canvas) return
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect()
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const rect = canvas.getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-    ctx.beginPath()
-    ctx.moveTo(clientX - rect.left, clientY - rect.top)
-  }
+    ctx.beginPath();
+    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+  };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return
-    const canvas = canvasRef.current
-    if (!canvas) return
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect()
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const rect = canvas.getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-    ctx.lineTo(clientX - rect.left, clientY - rect.top)
-    ctx.stroke()
-  }
+    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    ctx.stroke();
+  };
 
   const stopDrawing = () => {
-    setIsDrawing(false)
-    const canvas = canvasRef.current
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
     if (canvas) {
-      onChange(canvas.toDataURL())
+      onChange(canvas.toDataURL());
     }
-  }
+  };
 
   const clear = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    onChange('')
-  }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    onChange("");
+  };
 
   return (
     <div className="space-y-2">
@@ -184,8 +178,8 @@ const SignaturePad: React.FC<SignaturePadProps> = ({ value, onChange, label }) =
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export const FormFiller: React.FC<FormFillerProps> = ({
   template,
@@ -195,238 +189,262 @@ export const FormFiller: React.FC<FormFillerProps> = ({
   onSubmit,
   onCancel,
   autoSave = true,
-  className
+  className,
 }) => {
-  const navigate = useNavigate()
-  const currentUser = useProtocoloStore((state) => state.currentUser)
-  
-  const [values, setValues] = useState<Record<string, any>>(initialData?.values || {})
-  const [errors, setErrors] = useState<ValidationErrors>({})
-  const [isDirty, setIsDirty] = useState(false)
+  const navigate = useNavigate();
+  const currentUser = useProtocoloStore((state) => state.currentUser);
+
+  const [values, setValues] = useState<Record<string, any>>(
+    initialData?.values || {},
+  );
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(
-    initialData?.updatedAt ? new Date(initialData.updatedAt) : null
-  )
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+    initialData?.updatedAt ? new Date(initialData.updatedAt) : null,
+  );
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(
-    template.sections.map(s => s.id)
-  )
+    template.sections.map((s) => s.id),
+  );
 
   // Auto-save functionality
   useEffect(() => {
-    if (!autoSave || !isDirty) return
+    if (!autoSave || !isDirty) return;
 
     const timer = setTimeout(() => {
-      handleSave(true)
-    }, 30000) // Auto-save every 30 seconds
+      handleSave(true);
+    }, 30000); // Auto-save every 30 seconds
 
-    return () => clearTimeout(timer)
-  }, [values, isDirty, autoSave])
+    return () => clearTimeout(timer);
+  }, [values, isDirty, autoSave]);
 
   const validateField = (field: FormField, value: any): string | null => {
-    if (field.required && (!value || (Array.isArray(value) && value.length === 0))) {
-      return 'Este campo es requerido'
+    if (
+      field.required &&
+      (!value || (Array.isArray(value) && value.length === 0))
+    ) {
+      return "Este campo es requerido";
     }
 
     if (field.validation) {
       if (field.validation.pattern && value) {
-        const regex = new RegExp(field.validation.pattern)
+        const regex = new RegExp(field.validation.pattern);
         if (!regex.test(value)) {
-          return 'Formato inválido'
+          return "Formato inválido";
         }
       }
 
-      if (field.validation.minLength && value?.length < field.validation.minLength) {
-        return `Mínimo ${field.validation.minLength} caracteres`
+      if (
+        field.validation.minLength &&
+        value?.length < field.validation.minLength
+      ) {
+        return `Mínimo ${field.validation.minLength} caracteres`;
       }
 
-      if (field.validation.maxLength && value?.length > field.validation.maxLength) {
-        return `Máximo ${field.validation.maxLength} caracteres`
+      if (
+        field.validation.maxLength &&
+        value?.length > field.validation.maxLength
+      ) {
+        return `Máximo ${field.validation.maxLength} caracteres`;
       }
 
       if (field.validation.min !== undefined && value < field.validation.min) {
-        return `Valor mínimo: ${field.validation.min}`
+        return `Valor mínimo: ${field.validation.min}`;
       }
 
       if (field.validation.max !== undefined && value > field.validation.max) {
-        return `Valor máximo: ${field.validation.max}`
+        return `Valor máximo: ${field.validation.max}`;
       }
     }
 
-    return null
-  }
+    return null;
+  };
 
   const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {}
-    let isValid = true
+    const newErrors: ValidationErrors = {};
+    let isValid = true;
 
-    template.sections.forEach(section => {
-      section.fields.forEach(field => {
-        const error = validateField(field, values[field.id])
+    template.sections.forEach((section) => {
+      section.fields.forEach((field) => {
+        const error = validateField(field, values[field.id]);
         if (error) {
-          newErrors[field.id] = error
-          isValid = false
+          newErrors[field.id] = error;
+          isValid = false;
         }
-      })
-    })
+      });
+    });
 
-    setErrors(newErrors)
-    return isValid
-  }
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleFieldChange = (fieldId: string, value: any) => {
-    setValues(prev => ({ ...prev, [fieldId]: value }))
-    setIsDirty(true)
+    setValues((prev) => ({ ...prev, [fieldId]: value }));
+    setIsDirty(true);
 
     // Clear error for this field
     if (errors[fieldId]) {
-      setErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[fieldId]
-        return newErrors
-      })
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldId];
+        return newErrors;
+      });
     }
-  }
+  };
 
   const handleSave = (isAutoSave = false) => {
     const formData: FormData = {
       id: initialData?.id || `form-${Date.now()}`,
       templateId: template.id,
       incidentId: incidentId || initialData?.incidentId,
-      status: initialData?.status || 'draft',
+      status: initialData?.status || "draft",
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: initialData?.createdBy || currentUser?.pseudonym || 'Unknown',
+      createdBy: initialData?.createdBy || currentUser?.pseudonym || "Unknown",
       values,
-      attachments: initialData?.attachments || []
-    }
+      attachments: initialData?.attachments || [],
+    };
 
-    onSave?.(formData)
-    setLastSaved(new Date())
-    setIsDirty(false)
+    onSave?.(formData);
+    setLastSaved(new Date());
+    setIsDirty(false);
 
     if (!isAutoSave) {
       // Show success toast or feedback
     }
-  }
+  };
 
   const handleSubmit = () => {
     if (!validateForm()) {
-      return
+      return;
     }
 
     const formData: FormData = {
       id: initialData?.id || `form-${Date.now()}`,
       templateId: template.id,
       incidentId: incidentId || initialData?.incidentId,
-      status: 'completed',
+      status: "completed",
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: initialData?.createdBy || currentUser?.pseudonym || 'Unknown',
+      createdBy: initialData?.createdBy || currentUser?.pseudonym || "Unknown",
       values,
-      attachments: initialData?.attachments || []
-    }
+      attachments: initialData?.attachments || [],
+    };
 
-    onSubmit?.(formData)
-    setShowSubmitDialog(false)
-  }
+    onSubmit?.(formData);
+    setShowSubmitDialog(false);
+  };
 
   const renderField = (field: FormField) => {
-    const error = errors[field.id]
-    const value = values[field.id]
+    const error = errors[field.id];
+    const value = values[field.id];
 
-    const fieldWrapperClass = cn(
-      "space-y-2",
-      error && "text-destructive"
-    )
+    const fieldWrapperClass = cn("space-y-2", error && "text-destructive");
 
     switch (field.type) {
-      case 'text':
+      case "text":
         return (
           <div className={fieldWrapperClass}>
             <Label htmlFor={field.id}>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Input
               id={field.id}
-              value={value || ''}
+              value={value || ""}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               placeholder={field.placeholder}
               className={cn(error && "border-destructive")}
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
-            {field.helpText && !error && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
+            {field.helpText && !error && (
+              <p className="text-xs text-muted-foreground">{field.helpText}</p>
+            )}
           </div>
-        )
+        );
 
-      case 'textarea':
+      case "textarea":
         return (
           <div className={fieldWrapperClass}>
             <Label htmlFor={field.id}>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Textarea
               id={field.id}
-              value={value || ''}
+              value={value || ""}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               placeholder={field.placeholder}
               rows={4}
               className={cn(error && "border-destructive")}
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
-            {field.helpText && !error && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
+            {field.helpText && !error && (
+              <p className="text-xs text-muted-foreground">{field.helpText}</p>
+            )}
           </div>
-        )
+        );
 
-      case 'date':
+      case "date":
         return (
           <div className={fieldWrapperClass}>
             <Label htmlFor={field.id}>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Input
               id={field.id}
               type="date"
-              value={value || ''}
+              value={value || ""}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               className={cn(error && "border-destructive")}
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-        )
+        );
 
-      case 'datetime':
+      case "datetime":
         return (
           <div className={fieldWrapperClass}>
             <Label htmlFor={field.id}>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Input
               id={field.id}
               type="datetime-local"
-              value={value || ''}
+              value={value || ""}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               className={cn(error && "border-destructive")}
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-        )
+        );
 
-      case 'number':
+      case "number":
         return (
           <div className={fieldWrapperClass}>
             <Label htmlFor={field.id}>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Input
               id={field.id}
               type="number"
-              value={value || ''}
-              onChange={(e) => handleFieldChange(field.id, parseFloat(e.target.value) || 0)}
+              value={value || ""}
+              onChange={(e) =>
+                handleFieldChange(field.id, parseFloat(e.target.value) || 0)
+              }
               placeholder={field.placeholder}
               min={field.validation?.min}
               max={field.validation?.max}
@@ -434,21 +452,25 @@ export const FormFiller: React.FC<FormFillerProps> = ({
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-        )
+        );
 
-      case 'select':
+      case "select":
         return (
           <div className={fieldWrapperClass}>
             <Label htmlFor={field.id}>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <Select
-              value={value || ''}
+              value={value || ""}
               onValueChange={(val) => handleFieldChange(field.id, val)}
             >
               <SelectTrigger className={cn(error && "border-destructive")}>
-                <SelectValue placeholder={field.placeholder || 'Seleccionar...'} />
+                <SelectValue
+                  placeholder={field.placeholder || "Seleccionar..."}
+                />
               </SelectTrigger>
               <SelectContent>
                 {field.options?.map((option) => (
@@ -460,32 +482,42 @@ export const FormFiller: React.FC<FormFillerProps> = ({
             </Select>
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-        )
+        );
 
-      case 'checkbox':
+      case "checkbox":
         return (
           <div className="flex items-start space-x-2">
             <Checkbox
               id={field.id}
               checked={value || false}
-              onCheckedChange={(checked) => handleFieldChange(field.id, checked)}
+              onCheckedChange={(checked) =>
+                handleFieldChange(field.id, checked)
+              }
             />
             <div className="grid gap-1.5 leading-none">
               <Label htmlFor={field.id}>
                 {field.label}
-                {field.required && <span className="text-destructive ml-1">*</span>}
+                {field.required && (
+                  <span className="text-destructive ml-1">*</span>
+                )}
               </Label>
-              {field.helpText && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
+              {field.helpText && (
+                <p className="text-xs text-muted-foreground">
+                  {field.helpText}
+                </p>
+              )}
             </div>
           </div>
-        )
+        );
 
-      case 'radio':
+      case "radio":
         return (
           <div className={fieldWrapperClass}>
             <Label>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <div className="space-y-2">
               {field.options?.map((option) => (
@@ -496,10 +528,15 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                     name={field.id}
                     value={option.value}
                     checked={value === option.value}
-                    onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(field.id, e.target.value)
+                    }
                     className="h-4 w-4 text-primary"
                   />
-                  <Label htmlFor={`${field.id}-${option.value}`} className="font-normal">
+                  <Label
+                    htmlFor={`${field.id}-${option.value}`}
+                    className="font-normal"
+                  >
                     {option.label}
                   </Label>
                 </div>
@@ -507,23 +544,25 @@ export const FormFiller: React.FC<FormFillerProps> = ({
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-        )
+        );
 
-      case 'signature':
+      case "signature":
         return (
           <SignaturePad
-            label={field.label + (field.required ? ' *' : '')}
+            label={field.label + (field.required ? " *" : "")}
             value={value}
             onChange={(val) => handleFieldChange(field.id, val)}
           />
-        )
+        );
 
-      case 'list':
+      case "list":
         return (
           <div className={fieldWrapperClass}>
             <Label>
               {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
+              {field.required && (
+                <span className="text-destructive ml-1">*</span>
+              )}
             </Label>
             <div className="space-y-2">
               {(value || []).map((item: string, index: number) => (
@@ -531,9 +570,9 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                   <Input
                     value={item}
                     onChange={(e) => {
-                      const newList = [...(value || [])]
-                      newList[index] = e.target.value
-                      handleFieldChange(field.id, newList)
+                      const newList = [...(value || [])];
+                      newList[index] = e.target.value;
+                      handleFieldChange(field.id, newList);
                     }}
                     placeholder={`Item ${index + 1}`}
                   />
@@ -542,8 +581,10 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      const newList = (value || []).filter((_: any, i: number) => i !== index)
-                      handleFieldChange(field.id, newList)
+                      const newList = (value || []).filter(
+                        (_: any, i: number) => i !== index,
+                      );
+                      handleFieldChange(field.id, newList);
                     }}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -554,7 +595,9 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleFieldChange(field.id, [...(value || []), ''])}
+                onClick={() =>
+                  handleFieldChange(field.id, [...(value || []), ""])
+                }
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Agregar
@@ -562,20 +605,20 @@ export const FormFiller: React.FC<FormFillerProps> = ({
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev =>
+    setExpandedSections((prev) =>
       prev.includes(sectionId)
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    )
-  }
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId],
+    );
+  };
 
   return (
     <TooltipProvider>
@@ -593,7 +636,7 @@ export const FormFiller: React.FC<FormFillerProps> = ({
             {lastSaved && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                Guardado: {format(lastSaved, 'HH:mm')}
+                Guardado: {format(lastSaved, "HH:mm")}
               </span>
             )}
             {isDirty && (
@@ -605,14 +648,20 @@ export const FormFiller: React.FC<FormFillerProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={(e) => { e.preventDefault(); setShowSubmitDialog(true); }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setShowSubmitDialog(true);
+          }}
+        >
           <Card>
             <CardHeader className="bg-muted/50">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <CardTitle>Información del Formulario</CardTitle>
                   <CardDescription>
-                    Versión {template.version} · Complete todos los campos requeridos
+                    Versión {template.version} · Complete todos los campos
+                    requeridos
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -620,7 +669,11 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                     <X className="w-4 h-4 mr-2" />
                     Cancelar
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => handleSave()}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSave()}
+                  >
                     <Save className="w-4 h-4 mr-2" />
                     Guardar
                   </Button>
@@ -638,7 +691,8 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                   <AlertCircle className="w-4 h-4" />
                   <AlertTitle>Error de validación</AlertTitle>
                   <AlertDescription>
-                    Por favor corrija los errores marcados en el formulario antes de continuar.
+                    Por favor corrija los errores marcados en el formulario
+                    antes de continuar.
                   </AlertDescription>
                 </Alert>
               )}
@@ -651,7 +705,11 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                 className="space-y-4"
               >
                 {template.sections.map((section, index) => (
-                  <AccordionItem key={section.id} value={section.id} className="border rounded-lg px-4">
+                  <AccordionItem
+                    key={section.id}
+                    value={section.id}
+                    className="border rounded-lg px-4"
+                  >
                     <AccordionTrigger className="hover:no-underline py-4">
                       <div className="flex items-center gap-2 text-left">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-medium">
@@ -670,9 +728,7 @@ export const FormFiller: React.FC<FormFillerProps> = ({
                     <AccordionContent className="pb-4">
                       <div className="space-y-6 pl-8">
                         {section.fields.map((field) => (
-                          <div key={field.id}>
-                            {renderField(field)}
-                          </div>
+                          <div key={field.id}>{renderField(field)}</div>
                         ))}
                       </div>
                     </AccordionContent>
@@ -709,13 +765,29 @@ export const FormFiller: React.FC<FormFillerProps> = ({
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="text-sm space-y-2">
-                <p><strong>Formulario:</strong> {template.title}</p>
-                <p><strong>Campos completados:</strong> {Object.keys(values).length} de {template.sections.reduce((acc, s) => acc + s.fields.length, 0)}</p>
-                {incidentId && <p><strong>Incidente:</strong> {incidentId}</p>}
+                <p>
+                  <strong>Formulario:</strong> {template.title}
+                </p>
+                <p>
+                  <strong>Campos completados:</strong>{" "}
+                  {Object.keys(values).length} de{" "}
+                  {template.sections.reduce(
+                    (acc, s) => acc + s.fields.length,
+                    0,
+                  )}
+                </p>
+                {incidentId && (
+                  <p>
+                    <strong>Incidente:</strong> {incidentId}
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowSubmitDialog(false)}
+              >
                 Seguir Editando
               </Button>
               <Button onClick={handleSubmit}>
@@ -727,7 +799,7 @@ export const FormFiller: React.FC<FormFillerProps> = ({
         </Dialog>
       </div>
     </TooltipProvider>
-  )
-}
+  );
+};
 
-export default FormFiller
+export default FormFiller;

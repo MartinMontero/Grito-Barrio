@@ -1,6 +1,6 @@
 # 🚀 Guía de Despliegue - Cloudflare Pages
 
-**Protocolo CDMX** - Emergency Response PWA
+**Grito & Barrio** - Emergency Response PWA
 
 ---
 
@@ -84,11 +84,11 @@ Cloudflare Pages se integra directamente con GitHub:
 1. Ve a [Cloudflare Pages](https://dash.cloudflare.com/pages)
 2. Click **Create a project**
 3. Conectar cuenta de GitHub
-4. Seleccionar repositorio: `MartinMontero/MXMutalAid`
+4. Seleccionar repositorio: `MartinMontero/grito-barrio`
 5. Configurar build:
 
 ```yaml
-Project name: protocolo-cdmx
+Project name: grito-barrio
 Production branch: main
 Build command: npm run build
 Build output directory: dist
@@ -140,11 +140,11 @@ npm install -g wrangler
 wrangler login
 
 # Configurar proyecto
-wrangler pages project create protocolo-cdmx
+wrangler pages project create grito-barrio
 
 # Deploy
 npm run build
-wrangler pages deploy dist --project-name=protocolo-cdmx
+wrangler pages deploy dist --project-name=grito-barrio
 ```
 
 **✅ Ventajas:**
@@ -244,7 +244,7 @@ npm run build
 **Verificación:**
 ```bash
 # Verificar headers
-curl -I https://protocolo-cdmx.pages.dev/sw.js
+curl -I https://grito-barrio.pages.dev/sw.js
 
 # Debe mostrar:
 # Cache-Control: public, max-age=0, must-revalidate
@@ -266,8 +266,8 @@ curl -I https://protocolo-cdmx.pages.dev/sw.js
 
 | Entorno | URL | Descripción |
 |---------|-----|-------------|
-| Production | `https://protocolo-cdmx.pages.dev` | Versión estable |
-| Preview | `https://<branch>.protocolo-cdmx.pages.dev` | Preview de branches |
+| Production | `https://grito-barrio.pages.dev` | Versión estable |
+| Preview | `https://<branch>.grito-barrio.pages.dev` | Preview de branches |
 | Custom | `https://tudominio.com` | Dominio personalizado |
 
 ---
@@ -297,8 +297,8 @@ wrangler pages deployment list
 
 - **Cloudflare Docs:** https://developers.cloudflare.com/pages/
 - **Wrangler CLI:** https://developers.cloudflare.com/workers/wrangler/
-- **Issues:** https://github.com/MartinMontero/MXMutalAid/issues
+- **Issues:** https://github.com/MartinMontero/grito-barrio/issues
 
 ---
 
-**Protocolo CDMX** - Optimizado para Cloudflare Pages 🚀
+**Grito & Barrio** - Optimizado para Cloudflare Pages 🚀
