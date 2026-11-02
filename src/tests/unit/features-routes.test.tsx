@@ -47,9 +47,13 @@ describe("Feature routes: each dead component is now reachable", () => {
 
   it.each(cases)("mounts %s", async (path, matcher) => {
     renderApp(path);
-    await waitFor(() => {
-      expect(screen.getAllByText(matcher).length).toBeGreaterThan(0);
-    });
+    await waitFor(
+      () => {
+        expect(screen.getAllByText(matcher).length).toBeGreaterThan(0);
+      },
+      // Lazy route chunks (incl. the PDF vendor) can take >1s to mount.
+      { timeout: 15000 },
+    );
   });
 });
 

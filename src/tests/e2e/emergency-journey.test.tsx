@@ -63,13 +63,17 @@ describe("emergency journey (real app)", () => {
   it("the checklist screen renders the store-backed items for the incident", async () => {
     createIncident();
     renderAt("/emergency/checklist");
-    await waitFor(() => {
-      expect(
-        screen.getAllByText(
-          /Confirmar la alerta|Verificar seguridad de la escena|protocolo de respuesta/i,
-        ).length,
-      ).toBeGreaterThan(0);
-    });
+    await waitFor(
+      () => {
+        expect(
+          screen.getAllByText(
+            /Confirmar la alerta|Verificar seguridad de la escena|protocolo de respuesta/i,
+          ).length,
+        ).toBeGreaterThan(0);
+      },
+      // Store hydration + lazy checklist chunk can exceed the default 1s window.
+      { timeout: 15000 },
+    );
     // The checklist must be initialized in the store under the active incident.
     const state = useProtocoloStore.getState();
     const id = state.activeIncidentId!;

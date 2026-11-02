@@ -8,8 +8,46 @@
 import "@testing-library/jest-dom";
 // A faithful in-memory IndexedDB so db.ts is exercised for real (not mocked).
 import "fake-indexeddb/auto";
+import { Buffer } from "node:buffer";
 import { webcrypto } from "node:crypto";
+import { TextDecoder, TextEncoder } from "node:util";
 import { expect, vi } from "vitest";
+
+// ============================================================================
+// REALM-CONSISTENT BUFFER SOURCE TYPES
+// ============================================================================
+// vitest's jsdom environment copies jsdom's intrinsics (Uint8Array, ArrayBuffer,
+// TextEncoder, ...) onto the global scope. Node's real WebCrypto then rejects
+// those objects as BufferSource ("salt ... is not instance of ArrayBuffer,
+// Buffer, TypedArray, or DataView") because they come from a different realm.
+// Browsers are single-realm, so the app itself is unaffected — this is purely
+// a test-environment mismatch. Restore Node-realm intrinsics so the app code
+// under test produces buffers that Node's WebCrypto accepts.
+const NodeUint8Array = Object.getPrototypeOf(Buffer) as unknown as {
+  new (length: number): Uint8Array;
+};
+const NodeArrayBuffer = new NodeUint8Array(0).buffer
+  .constructor as typeof ArrayBuffer;
+const realmIntrinsics: Record<string, unknown> = {
+  Uint8Array: NodeUint8Array,
+  ArrayBuffer: NodeArrayBuffer,
+  TextEncoder,
+  TextDecoder,
+};
+for (const [key, value] of Object.entries(realmIntrinsics)) {
+  Object.defineProperty(globalThis, key, {
+    configurable: true,
+    writable: true,
+    value,
+  });
+  if (typeof window !== "undefined") {
+    Object.defineProperty(window, key, {
+      configurable: true,
+      writable: true,
+      value,
+    });
+  }
+}
 
 // ============================================================================
 // REAL WEB CRYPTO
