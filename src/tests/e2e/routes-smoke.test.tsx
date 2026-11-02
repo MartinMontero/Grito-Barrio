@@ -76,10 +76,14 @@ describe("route smoke (real App)", () => {
     );
     // The app shell renders a <main> landmark; lazy content resolves past the
     // "Cargando" fallback.
-    await waitFor(() => {
-      expect(document.querySelector("main")).toBeTruthy();
-      expect(screen.queryByLabelText("Cargando")).toBeNull();
-    });
+    await waitFor(
+      () => {
+        expect(document.querySelector("main")).toBeTruthy();
+        expect(screen.queryByLabelText("Cargando")).toBeNull();
+      },
+      // Lazy chunks can take >1s to resolve under parallel test load.
+      { timeout: 15000 },
+    );
     // Something meaningful rendered into the content area.
     expect(
       (document.querySelector("main")?.textContent || "").length,
